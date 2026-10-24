@@ -1,6 +1,6 @@
 # redteam: Implementation status
 
-Current build: 0.5.1, local web and terminal workspace with optional configured inference and coordinator-owned scenario constraints. The provider path is mock-verified; no live API smoke test is recorded.
+Current build: 0.6.0, local web and terminal workspace with configured inference, coordinator-owned scenario constraints, and durable inference reservations. The provider path is mock-verified; no live API smoke test is recorded.
 
 This record separates implemented code from the broader product plan. The browser runner reviews one controlled signup journey. Registered actor models can be used through the configured path, but no independent human behavioral validation is recorded.
 
@@ -32,6 +32,8 @@ This record separates implemented code from the broader product plan. The browse
 | Configured inference | Optional OpenAI adapter, exact token preflight, strict action format, refusals, count drift, usage provenance, and estimates | Fake transport verified; real credentials and live availability not tested |
 | Actor runtime | Permitted inspection, coordinator-owned identity, observed citations, checked decisions, limits, cancellation, and usage receipts | Scripted adapter plus optional configured OpenAI adapter; no live smoke test |
 | Scenario constraints | Coordinator states bind decisions; hidden states remain unknown until every supporting fact is observed; positive purchase and investment requirements fail closed | Operator declarations; no authentication of actual funds, authority, diligence, amounts, or terms |
+| Durable inference budget | Atomic token/cost reservations, fixed protected pools, invocation identities, dispatch guards, actual settlement, overrun stop, and uncertain liability across restart | Local SQLite; configured rates, not provider billing; no complete analyst task scheduler |
+| Budget inspection | `redteam budgets show RUN_ID` reads current amounts and transition events; configured reports save a budget artifact | Report-time snapshots can precede later receipts |
 | Consumer and investor demo | Scripted rejection and conditional investment, with reasons, conditions, gaps, and evidence | Authored software fixtures; not behavioral predictions |
 | Shared actor reports | Scripted and configured run catalog, report detail, permission checks, and artifact verification | Not durable live-agent task orchestration |
 
@@ -46,7 +48,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 113 passed, zero failed or skipped |
+| Full automated suite | 125 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -61,7 +63,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Decision resolution | Four tests passed for version resolution, identity, scope, references, withdrawal, and denied validation claims |
 | Vault integrity | Record-bound authentication, modified ciphertext rejection, and missing-key behavior passed |
 | Registry dashboard | Actual source counts and draft model cards passed desktop and mobile browser checks |
-| Packaged installation | Installed 0.5.1 version, constraint example, actor demo, catalog, and artifact verification passed; missing-key rejection remains covered by the full suite |
+| Packaged installation | Installed 0.6.0 version/help/examples, configured fake-provider path, durable budget CLI, scripted actor demo, catalog, and artifact verification passed |
 | Packaged web service | Installed 0.5.0 server passed desktop and mobile flows, actor report inspection, access changes, and evidence verification |
 | Actor runtime checks | Eighteen tests passed, including coordinator constraint omission, state escalation, evidence substitution, hidden states, unknown barriers, and positive-action requirements |
 | Actor demo evidence | Consumer and investor reports saved; three artifacts passed hash checks |
@@ -69,14 +71,15 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Actor dashboard | Scripted run, report inspection, artifact verification, and mobile layout passed browser checks |
 | Provider verification | Eleven fake-transport checks passed; no real API requests |
 | Processing permissions | Five checks passed, including legacy defaults and zero dispatch on denial |
-| Configured execution | Five checks passed for mocked end-to-end records, redaction, refusal, and missing credentials |
+| Configured execution | Eight checks passed, including persisted reservations, unknown liability, late receipts, overrun records, CLI inspection, redaction, refusal, and missing credentials |
+| Durable ledger | Nine checks passed, including six competing processes, protected pools, immutable identities, restart, closure, settlement, overruns, permissions, and symlinks |
 | Report withdrawal | API checks passed; a browser check confirmed the open report closes and cached detail is cleared |
 | Local file boundaries | Dangling database symlinks denied before target creation; credential-bearing target URLs rejected |
 | Pinned Chromium download | Earlier cache-lock failure; installed Chrome fallback verified |
 
 An initial test pass attempt exposed browser shutdown deadlines under load. The implementation now closes contexts explicitly and uses the documented bounded cleanup allowance. The full suite passed after that correction. An installed-build review from before that correction correctly reported limited coverage; it did not report an app defect.
 
-Visual checks for 0.5.0 are saved under `outputs/preview/`. The current installable archive is `outputs/redteam-0.5.1.tgz`. Its compiled CLI passed the version, bundled constraint example, scripted decisions, catalog, and three-artifact verification checks in an isolated installation. No visual layout changed in 0.5.1. Generated data is excluded from Git.
+Visual checks for 0.5.0 are saved under `outputs/preview/`. The current installable archive is `outputs/redteam-0.6.0.tgz`. The compiled installed path passed a configured fake-provider run, two settled reservations, 360 micro-USD in configured-rate estimates, zero held liability, budget CLI inspection, both scripted actions, catalog persistence, and all artifact hashes. No live provider calls occurred. No visual layout changed. Generated data is excluded from Git.
 
 Earlier D1 reports remain under `outputs/runs/`. The dashboard imports recognized reports from that directory. New service runs use `.redteam/runs/`.
 
@@ -89,13 +92,13 @@ Earlier D1 reports remain under `outputs/runs/`. The dashboard imports recognize
 - A verified live provider run, empirical actor calibration, analyst leads, subagents, and the roundtable.
 - Country adaptation, consumer buying models, and investor decision models.
 - Validated purchase, conversion, investment, or population predictions.
-- Hosted tenant authentication, durable distributed workers, and concurrent model budgets.
+- Hosted tenant authentication, durable distributed workers, analyst task leases, and integration of shared parent budgets with a specialist scheduler.
 - Release comparison, real-world outcome tracking, and commercial demand evidence.
 
 No real provider calls occurred in the recorded checks. Scripted runs report zero model spend. Configured runs retain rate-based estimates and unknown-usage markers. Infrastructure cost is not calculated.
 
 ## Next milestone
 
-Coordinator constraints are implemented in `src/domain/scenario-constraints.ts`, `src/actor.ts`, and the configured execution path. Demos, examples, adapter instructions, and tests use the new contract. Next, implement durable budget reservations and task-state foundations before enabling bounded specialist requests. The broader hierarchy still depends on commercial evidence. A live provider smoke test requires configured credentials, selected model access, and current pricing. Keep scripted fixtures, mock responses, live model output, and human observations distinct.
+Coordinator constraints and durable inference reservations are implemented and packaged. Next, add task identities, guarded transitions, leases, and crash recovery without automatic replay of uncertain invocations. Browser time, tool fees, and infrastructure cost are outside the inference ledger. Broader hierarchy still depends on commercial evidence. A live provider smoke test requires configured credentials, selected model access, and current pricing. Keep scripted fixtures, mock responses, live model output, and human observations distinct.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.

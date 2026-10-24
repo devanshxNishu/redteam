@@ -48,18 +48,24 @@ Read `docs/master-plan.md`, `docs/development-backlog.md`, and `docs/implementat
 
 ## Current milestone
 
-The web, terminal, registry, and actor mechanics are complete within their documented fixture scope. The archive is `outputs/redteam-0.5.1.tgz`. External target execution is not enabled by access grants yet.
+The web, terminal, registry, and actor mechanics are complete within their documented fixture scope. The archive is `outputs/redteam-0.6.0.tgz`. External target execution is not enabled by access grants yet.
+
+Version 0.6.0 adds the durable inference ledger in `src/budget.ts`, the pre-dispatch wrapper in `src/budgeted-inference.ts`, and configured-run integration in `src/actor-execution.ts`. Current budget inspection is in `src/cli.ts`; report typing is in `src/actor-reports.ts`. The contract is `docs/budget-ledger.md`. Tests are `tests/budget.test.ts` and the extended `tests/configured-actor.test.ts`.
+
+Type checking and the full 125-test suite passed with zero failures or skips. The focused ledger/configured suite passed 17 tests. Six competing processes could reserve only the available pool. Unknown spend stayed held after cancellation and restart. A late receipt reconciled a closed run without rewriting its report. No live provider requests were used.
+
+Version 0.6.0 built, packed, and installed in an isolated prefix. `work/verify-installed-0.6.0.mjs` verified compiled help/version/examples, registered synthetic inputs, configured fake transport (four requests), two settled reservations, 360 micro-USD estimated spend, zero held cost, current-budget CLI, both scripted demo decisions, persisted catalog, and all artifact hashes. Results are in `outputs/installed-verification-0.6.0.json`. Real credentials were not loaded.
 
 The default demo adapter is an authored script. An optional OpenAI adapter is implemented and mock-verified. No live model credentials or real human research are configured. Runtime and registry contracts are in `docs/actor-runtime.md` and `docs/research-registry.md`.
 
-The optional adapter and coordinator constraints are implemented and packaged. Continue with durable budget and task-state foundations. The original integration checklist is `docs/inference-adapter-plan.md`. Official token-counting and structured-output documentation was fetched during planning. Cached copies are in `work/openai-token-counting.md` and `work/openai-structured-outputs.md`; verify current API details before changing provider behavior. No API key was loaded and no live model request was made.
+The optional adapter, coordinator constraints, and durable inference reservations are packaged. Continue with task-state foundations. The original integration checklist is `docs/inference-adapter-plan.md`. Official token-counting and structured-output documentation was fetched during planning. Cached copies are in `work/openai-token-counting.md` and `work/openai-structured-outputs.md`; verify current API details before changing provider behavior. No API key was loaded and no live model request was made.
 
 Use synthetic fixtures for software verification. Keep them visibly separate from human research. Never promote synthetic fixtures into validated psychology.
 
 ## Next sequence
 
-1. Add durable atomic budget reservations and task-state foundations. Existing per-actor limits and single coordinator ownership are not distributed budget protection or durable analyst leases.
-2. Verify competing reservations, idempotent settlement, uncertain calls, restart recovery, and cancellation without automatic release of unknown spend.
+1. Add task identities, guarded transitions, lease ownership, and restart recovery. Keep uncertain invocation identities immutable; never replay a possibly dispatched provider call automatically. The ledger now protects inference token and estimated-cost allocation, but it does not schedule workers or cover browser/tool/infrastructure fees.
+2. Integrate task fencing with dispatcher permissions before accepting worker outputs. A lease timeout must not release unknown spend or permit duplicate side effects. Sealed outputs must remain immutable.
 3. Add bounded analyst task coordination when prerequisites permit. The commercial hierarchy gate remains unproven; do not enable broad specialist fan-out or claim the roundtable is complete.
 4. A live API smoke test needs explicit model configuration, valid credentials, current rates, and processing permission. Do not reuse desktop authentication or invent pricing. Continue independent work if these inputs are missing.
 5. Continue external runner work after isolation and access prerequisites are met.

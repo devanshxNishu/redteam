@@ -17,6 +17,7 @@ import { authorizedActorRuns } from "./actor-reports.ts";
 import { configureInference } from "./inference-config.ts";
 import { executeConfiguredActor } from "./actor-execution.ts";
 import type { ActorLimits } from "./actor.ts";
+import { BudgetLedger } from "./budget.ts";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspace = resolve(process.cwd());
@@ -42,6 +43,7 @@ redteam research evaluation score EVALUATION_ID
 redteam actors demo
 redteam actors list
 redteam actors run --scenario FILE --limits FILE --config FILE
+redteam budgets show RUN_ID
 redteam demo [--variant broken|fixed]
 redteam --version
 redteam examples
@@ -151,6 +153,12 @@ async function main(): Promise<void> {
     if (args.length !== 1 || args[0] !== "list") throw new Error("Usage: redteam runs list");
     const store = new WorkspaceStore(workspace);
     try { print(store.jobs()); } finally { store.close(); }
+    return;
+  }
+  if (command === "budgets") {
+    if (args.length !== 2 || args[0] !== "show") throw new Error("Usage: redteam budgets show RUN_ID");
+    const ledger = new BudgetLedger(workspace);
+    try { print({ ...ledger.snapshot(args[1]!), events: ledger.events(args[1]!) }); } finally { ledger.close(); }
     return;
   }
   if (command === "research") {

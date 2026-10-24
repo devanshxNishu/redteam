@@ -40,10 +40,12 @@ Strict action output remains subject to the runtime's knowledge, identity, evide
 
 Reports record the requested configuration hash, provider response identifier, returned model identifier, preflight count, output allowance, and usage where available. Cost uses integer ceiling arithmetic and operator-configured rates. Keys and HTTP authorization headers are excluded from reports.
 
+Configured runs reserve their remaining token and estimated-cost allowance in a durable local ledger before each adapter call. Unknown usage stays reserved after failure, timeout, cancellation, and restart. Known refusal usage still settles. Reports contain a budget snapshot; `redteam budgets show RUN_ID` reads later reconciliation. This ledger does not impose a provider billing cap. See `docs/budget-ledger.md` for details.
+
 Current research permissions also apply when reading earlier reports. Withdrawal restricts dependent report access and redacts model content from summaries. Local raw files and previously exported copies are outside this managed retrieval boundary; secure erasure is not implemented.
 
 ## Limits of interpretation
 
-An accepted response is a simulated decision. Reference checks and coordinator constraints establish traceability and consistency, rather than semantic truth or psychological realism. Constraint declarations still require independent evidence review. Human evaluation, live provider verification, durable cost reconciliation, and production isolation remain additional work.
+An accepted response is a simulated decision. Reference checks and coordinator constraints establish traceability and consistency, rather than semantic truth or psychological realism. Constraint declarations still require independent evidence review. Human evaluation, live provider verification, authenticated billing reconciliation, complete task coordination, and production isolation remain additional work.
 
 Official documentation used for implementation: [Counting tokens](https://developers.openai.com/api/docs/guides/token-counting) and [Structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs).

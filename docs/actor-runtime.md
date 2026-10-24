@@ -33,7 +33,9 @@ These declarations establish a software boundary. They do not authenticate funds
 
 Every run has step, read, context, output, token, cost, and time limits. Revoked research blocks later decision acceptance. An uncooperative adapter cannot prevent local timeout or cancellation from returning a partial report.
 
-Trusted adapters must bound provider request liability before dispatch and return usage receipts. The runtime checks receipts and stops after an overrun. Receipt checks cannot undo provider charges. A failed or timed-out call without a valid receipt retains an unknown-cost marker and its requested reservation. Provider billing reconciliation, durable reservations, and production isolation are later work.
+Trusted adapters must bound provider request liability before dispatch and return usage receipts. The runtime checks receipts and stops after an overrun. Receipt checks cannot undo provider charges. A failed or timed-out call without a valid receipt retains an unknown-cost marker and its requested reservation.
+
+Configured terminal runs now reserve tokens and estimated cost in a durable SQLite ledger before dispatch. Uncertain liability survives restart and cancellation. Late valid usage can settle without reopening a stopped run. `redteam budgets show RUN_ID` reads current state. Direct calls to the injected `runActor` function retain its in-memory limits; callers must explicitly attach the durable wrapper. See `docs/budget-ledger.md` for pool protections, receipt states, and boundaries. Provider billing reconciliation, complete task coordination, and production isolation remain open.
 
 No invalid or partial decision is accepted as a complete result. Reports separate completed, policy-denied, invalid-decision, adapter-failed, cancelled, and limited runs.
 

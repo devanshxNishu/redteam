@@ -2,7 +2,7 @@
 
 Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
 
-Version 0.5 provides a local workspace, an installable CLI, scoped access grants, browser evidence, a research registry, and bounded stakeholder runtime mechanics. Optional OpenAI inference is implemented and tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.6 provides a local workspace, an installable CLI, scoped access grants, browser evidence, a research registry, and bounded stakeholder runtime mechanics. Configured actor runs reserve estimated cost and tokens in a durable local ledger. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -24,7 +24,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.5.1.tgz
+npm install --global ./redteam-0.6.0.tgz
 redteam --help
 ```
 
@@ -131,6 +131,8 @@ redteam verify RUN_DIRECTORY
 ```
 
 The same scripted demo is available in the dashboard's Stakeholder models view. It saves a consumer rejection and a conditional investor decision, including constraints, evidence, missing information, and conditions. Both interfaces use the shared actor-run catalog.
+
+Configured terminal runs also save a durable budget snapshot. Use `redteam budgets show RUN_ID` to inspect current reported spend and unsettled reservations, including late receipts. Unknown cost remains held after timeout or restart. This protects local allocation at configured rates; it does not establish actual provider billing. See [the ledger contract](docs/budget-ledger.md).
 
 The adapter is an authored software fixture. It makes no live model calls and does not predict demand or funding. The runtime enforces information access, observed references, decision consistency, step and read limits, context and output size, usage receipts, timeouts, and cancellation. Unknown usage remains visible when a call ends without a receipt.
 

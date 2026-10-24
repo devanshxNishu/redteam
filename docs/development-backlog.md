@@ -18,7 +18,7 @@ Research protocol → human observations → candidate model → controlled acto
 
 The coordinator and roundtable connect these paths after the evidence path works.
 
-Implementation checkpoint, 0.5.1: fixture browser evidence, registry/evaluation controls, bounded actor mechanics, and coordinator-owned scenario constraints are implemented. The full 113-test suite passes. These software checks do not satisfy human research, predictive validation, paid-demand, or broad hierarchy gates. See `docs/implementation-status.md` for exact coverage.
+Implementation checkpoint, 0.6.0: fixture browser evidence, registry/evaluation controls, bounded actor mechanics, coordinator-owned scenario constraints, and durable inference reservations are implemented. The full 125-test suite passes. Reservation checks include competing processes and persistent unknown liability. Complete task leases, all-resource budgets, human research, predictive validation, paid demand, and broad hierarchy gates remain open. See `docs/implementation-status.md` for exact coverage.
 
 ## 2. Priority definitions
 

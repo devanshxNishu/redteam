@@ -4,6 +4,7 @@ import { WorkspaceStore } from "./workspace.ts";
 import type { ActorReport } from "./actor.ts";
 import type { Artifact } from "./evidence.ts";
 import { ResearchRegistry } from "./research.ts";
+import type { BudgetSnapshot } from "./budget.ts";
 
 export interface ActorDemoReport {
   schemaVersion: "1.0";
@@ -15,6 +16,7 @@ export interface ActorDemoReport {
   reports: ActorReport[];
   artifacts: Artifact[];
   integrityErrors: string[];
+  budget?: BudgetSnapshot;
 }
 
 export async function readActorReport(store: WorkspaceStore, workspace: string, id: string, registry?: ResearchRegistry): Promise<ActorDemoReport> {
