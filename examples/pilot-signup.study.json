@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0",
+  "id": "pilot-signup-demo",
+  "title": "Pilot signup readiness",
+  "decision": "Can a new user complete the pilot signup journey?",
+  "stakeholderGoal": "Start a pilot after choosing to try the product.",
+  "targetKind": "local_fixture",
+  "requirementPath": "fixtures/pilot-signup.requirement.md",
+  "limits": { "maxStepsPerExecution": 8, "maxRequestsPerExecution": 30, "operationTimeoutMs": 3000, "executionTimeoutMs": 15000 },
+  "steps": [
+    { "operation": "navigate", "path": "/" },
+    { "operation": "fill", "selector": "#name", "value": "Demo User" },
+    { "operation": "fill", "selector": "#email", "value": "demo@example.test" },
+    { "operation": "click", "selector": "button[type=submit]" },
+    { "operation": "assert_text", "selector": "h1", "expected": "Your pilot is ready" }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "name": "redteam",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Evidence-first app review and researched stakeholder decision simulations.",
+  "engines": { "node": ">=24.12.0" },
+  "bin": { "redteam": "dist/cli.js" },
+  "files": ["dist", "web", "examples", "fixtures", "README.md", "docs/master-plan.md", "docs/development-backlog.md", "docs/implementation-status.md", "docs/research-registry.md", "docs/actor-runtime.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
+    "ui": "node src/cli.ts ui",
+    "redteam": "node src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --test-concurrency=1 tests/*.test.ts",
+    "demo": "node src/cli.ts demo",
+    "demo:fixed": "node src/cli.ts demo --variant fixed",
+    "verify": "node src/cli.ts verify",
+    "browser:install": "PLAYWRIGHT_BROWSERS_PATH=./.cache/ms-playwright playwright install chromium --only-shell"
+  },
+  "dependencies": { "playwright": "1.64.1" },
+  "devDependencies": { "@types/node": "24.19.2", "typescript": "7.0.2" }
+}

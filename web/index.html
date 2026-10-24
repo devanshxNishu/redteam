@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="redteam-token" content="__REDTEAM_TOKEN__">
+  <title>redteam — Review workspace</title>
+  <meta name="description" content="Your local workspace for app reviews, evidence, and scoped access.">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#overview"><span class="brand-mark" aria-hidden="true">r/</span>redteam<span class="version">LOCAL</span></a>
+    <p class="sidebar-label">WORKSPACE</p>
+    <nav aria-label="Workspace navigation">
+      <a href="#overview" data-view="overview" class="selected"><span aria-hidden="true">◈</span>Overview</a>
+      <a href="#reviews" data-view="reviews"><span aria-hidden="true">▤</span>Reviews<span id="nav-count" class="nav-count">0</span></a>
+      <a href="#access" data-view="access"><span aria-hidden="true">⌁</span>Access</a>
+      <a href="#research" data-view="research"><span aria-hidden="true">◎</span>Stakeholder models</a>
+      <a href="#terminal" data-view="terminal"><span aria-hidden="true">›_</span>Terminal</a>
+    </nav>
+    <div class="sidebar-note"><span class="tiny-dot"></span><strong>Evidence comes first.</strong><p>Observed results, model judgments, and business hypotheses stay distinct.</p></div>
+    <div class="workspace-path"><span>LOCAL PROJECT</span><p id="workspace-path">Connecting…</p></div>
+  </aside>
+  <main>
+    <header class="topbar"><div><span class="muted">Workspace</span><span class="slash">/</span><span id="breadcrumb">Overview</span></div><div class="connection"><span class="tiny-dot" id="connection-dot"></span><span id="connection-status">Connecting</span></div></header>
+    <section data-panel="overview" class="panel">
+      <div class="page-heading"><div><p class="eyebrow">THE REVIEW WORKSPACE</p><h1>Confidence starts<br>with evidence.</h1><p class="lede">Find what breaks. Understand what matters.<br>Keep the proof behind every recommendation.</p></div><div class="heading-aside"><span class="outline-badge">LOCAL DEVELOPMENT BUILD</span><p>Web + terminal.<br>One source of truth.</p></div></div>
+      <div class="metrics">
+        <article><span>Reviews recorded</span><strong id="metric-reviews">0</strong><small>Across this workspace</small></article>
+        <article><span>Findings captured</span><strong id="metric-findings">0</strong><small>Linked to execution evidence</small></article>
+        <article><span>Evidence artifacts</span><strong id="metric-artifacts">0</strong><small>Screenshots, traces, and records</small></article>
+        <article><span>Active access grants</span><strong id="metric-access">0</strong><small>Scoped and revocable</small></article>
+      </div>
+      <div class="overview-grid">
+        <article class="card launch-card"><div class="section-kicker"><span class="red-square"></span> START A REVIEW</div><h2>Test the evidence path.</h2><p class="muted">Run a real browser journey and reproduce the result in a fresh session.</p><label for="fixture-variant">Local demo build</label><select id="fixture-variant"><option value="broken">Broken signup · intentional defect</option><option value="fixed">Fixed signup · passing comparison</option></select><div class="journey"><span>JOURNEY</span><strong>Start a product pilot</strong><p>Open signup → enter valid details → submit → check confirmation</p></div><button id="run-review" class="primary">Start review <span aria-hidden="true">↗</span></button><p class="fine-print">Controlled synthetic fixture. No model calls or external app actions.</p></article>
+        <article class="card activity-card"><div class="card-title"><h2>Recent activity</h2><span class="subtle-pill" id="active-count">0 active</span></div><div id="activity-list" class="activity-list"></div><a class="text-link" href="#reviews">View all reviews <span aria-hidden="true">→</span></a></article>
+      </div>
+      <article class="principle"><span class="principle-icon" aria-hidden="true">⊕</span><div><strong>A finding is a claim with receipts.</strong><p>Every review keeps its expected result, actual observation, fresh reproduction, and limitations together.</p></div><span class="mono">D1 / EVIDENCE PATH</span></article>
+    </section>
+    <section data-panel="reviews" class="panel" hidden>
+      <div class="page-heading compact"><div><p class="eyebrow">OBSERVATIONS, WITH RECEIPTS</p><h1>Reviews</h1><p class="lede">Inspect the result. Follow the evidence.</p></div></div>
+      <article class="card table-card"><div class="card-title"><h2>Review history</h2><span class="muted">Local workspace</span></div><div class="table-scroll"><table><thead><tr><th>Review</th><th>State</th><th>Findings</th><th>Evidence</th><th>Created</th><th></th></tr></thead><tbody id="reviews-body"></tbody></table></div></article>
+    </section>
+    <section data-panel="access" class="panel" hidden>
+      <div class="page-heading compact"><div><p class="eyebrow">EXPLICIT ACCESS. VISIBLE BOUNDARIES.</p><h1>Access</h1><p class="lede">Connect targets through the web or terminal.<br>Inspect and revoke grants from either interface.</p></div></div>
+      <div class="access-grid"><article class="card"><h2>Add a web target</h2><form id="access-form"><label for="access-name">Name</label><input id="access-name" name="name" placeholder="Staging app" required maxlength="120"><label for="access-target">Origin</label><input id="access-target" name="target" type="url" placeholder="https://staging.example.com" required><label for="access-hours">Expires after</label><select id="access-hours" name="hours"><option value="24">24 hours</option><option value="168">7 days</option><option value="720">30 days</option></select><p class="fine-print">Grants browser read and interaction capabilities. External app execution is a later runner milestone.</p><button class="primary" type="submit">Create access grant <span aria-hidden="true">+</span></button></form></article><article class="card terminal-note"><p class="section-kicker">PREFER THE TERMINAL?</p><h2>Your session.<br>Your permissions.</h2><p>Import an authenticated browser session through the CLI. Session values are encrypted locally and never returned by the dashboard API.</p><pre><code>redteam access grant \
+  --target https://staging.example.com \
+  --session ./storage-state.json</code></pre><p class="fine-print">A grant records permission; it does not start an external review.</p></article></div>
+      <article class="card table-card grants-table"><div class="card-title"><h2>Access grants</h2><span class="muted">Revocation removes stored sessions</span></div><div id="grant-list"></div></article>
+    </section>
+    <section data-panel="research" class="panel" hidden>
+      <div class="page-heading compact"><div><p class="eyebrow">BEHAVIOR MUST EARN ITS VALIDITY</p><h1>Stakeholder models</h1><p class="lede">Research first. Simulate within the evidence.</p></div></div>
+      <article class="card research-state"><span class="research-symbol" aria-hidden="true">◎</span><span class="outline-badge">RESEARCH REGISTRY</span><h2>The model library starts with people.</h2><p id="research-summary">Connecting to the local registry…</p><div class="research-steps"><div><strong id="research-sources">0</strong><span>Sources registered</span></div><div><strong id="research-grounded">0</strong><span>Models with declared human grounding</span></div><div><strong id="research-validated">0</strong><span>Independently validated models</span></div></div><p class="fine-print">Synthetic fixtures stay labeled as drafts. Passing a software evaluation does not validate behavior. Agent count cannot establish demand or funding probability.</p><pre><code>redteam research demo
+redteam research sources
+redteam research models</code></pre></article>
+      <article class="card actor-demos"><div class="card-title"><h2>Stakeholder runtime checks</h2><span class="outline-badge">SCRIPTED FIXTURES</span></div><p class="muted">Inspect simulated buying and investment decisions, their evidence, and their unresolved conditions. These authored responses test the runtime; they do not forecast human behavior.</p><button id="run-actor-demo" class="primary">Run scripted stakeholder demo <span aria-hidden="true">↗</span></button><p class="fine-print">No live model calls, purchases, or investments.</p><div id="actor-run-list"></div></article>
+      <div id="model-list" class="model-list"></div>
+    </section>
+    <section data-panel="terminal" class="panel" hidden>
+      <div class="page-heading compact"><div><p class="eyebrow">THE SAME WORKSPACE, FROM YOUR SHELL</p><h1>Made for the terminal.</h1><p class="lede">Install Redteam. Grant access. Run a review.<br>Open the evidence wherever you work.</p></div></div>
+      <div class="terminal-grid"><article class="card command-card"><div class="card-title"><h2>Install a packaged build</h2><span class="mono">NODE 24.12+</span></div><pre><code>npm install --global ./redteam-0.4.0.tgz
+redteam --help
+redteam ui</code></pre><p class="muted">The release archive is generated locally with <code>npm pack</code>. Registry publication is not required.</p></article><article class="card command-card"><h2>Grant project access</h2><pre><code>redteam access grant \
+  --path ./my-app \
+  --allow code:read,code:test
+
+redteam access list
+redteam access revoke GRANT_ID</code></pre></article><article class="card command-card"><h2>Run and inspect</h2><pre><code>redteam review --demo broken
+redteam review --demo fixed
+redteam runs list
+redteam actors demo
+redteam actors list
+redteam verify RUN_DIRECTORY</code></pre></article><article class="card command-card"><h2>Start from source</h2><pre><code>npm install
+npm run build
+npm link
+redteam ui</code></pre><p class="fine-print">Review data and credentials stay under the current project's <code>.redteam/</code> directory.</p></article></div>
+    </section>
+    <footer><span class="footer-brand">redteam</span><span>Evidence over assumption.</span><span class="mono">LOCAL WORKSPACE · v0.4</span></footer>
+  </main>
+  <dialog id="review-dialog" aria-labelledby="detail-title"><div class="dialog-top"><div><p class="eyebrow">RUN DETAIL</p><h2 id="detail-title">Review</h2></div><button id="close-dialog" class="icon-button" aria-label="Close review detail">×</button></div><div id="detail-content"></div></dialog>
+  <div id="toast" role="status" hidden></div>
+</body>
+</html>

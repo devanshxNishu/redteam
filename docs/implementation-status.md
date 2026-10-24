@@ -1,0 +1,94 @@
+# redteam: Implementation status
+
+Current build: 0.4.0, local web and terminal workspace with registry and bounded actor mechanics.
+
+This record separates implemented code from the broader product plan. The current release reviews one controlled signup journey. It does not simulate researched human behavior.
+
+## Implemented
+
+| Area | Current behavior | Boundary |
+|---|---|---|
+| Web dashboard | Overview, live jobs, review history, findings, evidence, access, and terminal instructions | Local single-user service |
+| Installable CLI | Compiled JavaScript package; UI startup, review submission, run list, grants, artifact checks | npm archive; not published to a registry |
+| Shared workspace | SQLite jobs, grants, audit events, and one coordinator | `.redteam/` under the current directory |
+| Job lifecycle | Queue, primary run, verifier run, reporting, completion, limited coverage, failure, interruption | One active review; up to eight active or queued jobs |
+| Startup recovery | Marks unfinished jobs interrupted | Does not replay browser actions automatically |
+| Access grants | Exact web origins or canonical directories; capabilities, expiry, and revocation | External runner and code tools are not enabled |
+| Browser sessions | CLI import; encrypted local storage; metadata-only API responses | Local key beside the database; no OS keychain integration |
+| Local API | Bearer session, Host and Origin checks, CSP, no cross-origin API access | Not remote tenant authentication |
+| Study contract | Approved signup steps and valid input preconditions | Local fixtures only; one final text assertion |
+| Expected result | Captured requirement identifier and source | Documented fixture oracle |
+| Browser evidence | Actual screenshots, traces, events, execution records, hashes | Missing evidence restricts coverage |
+| Reproduction | Fresh browser and fixture dataset per execution | Repeated procedure; not independent human assessment |
+| Findings | Expected and actual result, verification, next action, business hypothesis | No measured adoption impact |
+| Reports | JSON, Markdown, and dashboard detail | No complete startup assessment engine |
+| Decision contract | Consumer and investor record consistency checks | No independent behavioral validity |
+| Research sources | Immutable metadata, encrypted content, separate grounding/training/evaluation uses, expiry, and withdrawal | Operator-declared provenance; not authenticated research |
+| Model versions | Immutable specification and hash; draft, declared research grounding, and restriction | Synthetic sources cannot ground models; no validated status |
+| Evaluation locks | Registered cases, model and source hashes, horizon, baseline, thresholds, and immutable predictions | Software agreement check; no independent research approval |
+| Leakage controls | Participant separation, denied held-out retrieval, and exposure tracking across evaluations | Uses declared identities and references; not external provenance authentication |
+| Registered decisions | Model, scope, coordinator identity, and reference resolution | Verifies consistency and permissions; not behavioral truth |
+| Actor runtime | Permitted inspection, coordinator-owned identity, observed citations, checked decisions, limits, cancellation, and usage receipts | Injected adapter; no live inference provider configured |
+| Consumer and investor demo | Scripted rejection and conditional investment, with reasons, conditions, gaps, and evidence | Authored software fixtures; not behavioral predictions |
+| Shared actor reports | Web and terminal catalog, report detail, and artifact verification | Scripted runs; not durable live-agent task orchestration |
+
+Revocation removes the active encrypted session and denies subsequent retrieval. It does not invalidate credentials at their provider or securely erase backups and old database pages.
+
+The runner has deadlines for setup, actions, evidence capture, and cleanup. Browser contexts close explicitly before browser shutdown. The default cleanup allowance is ten seconds. Cleanup failures remain visible and prevent complete coverage.
+
+## Recorded verification
+
+Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
+
+| Check | Result |
+|---|---|
+| Type checking | Passed |
+| Full automated suite | 83 passed, zero failed or skipped |
+| Build | Compiled JavaScript and declarations emitted |
+| Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
+| Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
+| Desktop dashboard | Real metrics, review detail, captured screenshot, and artifact verification passed |
+| Mobile dashboard | All five views checked at 390 px; no page overflow |
+| Access flow | Browser created and revoked a scoped test grant |
+| API boundaries | Missing session, foreign Origin, and forged Host denied |
+| Evidence tampering | Changed artifact denied; verification returned invalid |
+| Session handling | Encryption, owner-only files, metadata exclusion, revocation, expiry, and target checks passed |
+| Coordinator ownership | Concurrent owner denied without interrupting active jobs |
+| Registry controls | Twelve tests passed for immutability, scope, permissions, locks, exposure, withdrawal, and synthetic status |
+| Decision resolution | Four tests passed for version resolution, identity, scope, references, withdrawal, and denied validation claims |
+| Vault integrity | Record-bound authentication, modified ciphertext rejection, and missing-key behavior passed |
+| Registry dashboard | Actual source counts and draft model cards passed desktop and mobile browser checks |
+| Packaged installation | Installed 0.4.0 CLI executed scripted actors and listed the same persisted catalog outside the source tree |
+| Packaged web service | Installed 0.4.0 server passed desktop and mobile flows, actor report verification, and a CLI-connected fixed browser review |
+| Actor runtime checks | Ten tests passed for information access, actions, identity, citations, budgets, timeouts, cancellation, and withdrawal |
+| Actor demo evidence | Consumer and investor reports saved; three artifacts passed hash checks |
+| Shared actor API | Saved both scripted decisions, served the report, and detected artifact changes |
+| Actor dashboard | Scripted run, report inspection, artifact verification, and mobile layout passed browser checks |
+| Local file boundaries | Dangling database symlinks denied before target creation; credential-bearing target URLs rejected |
+| Pinned Chromium download | Earlier cache-lock failure; installed Chrome fallback verified |
+
+An initial test pass attempt exposed browser shutdown deadlines under load. The implementation now closes contexts explicitly and uses the documented bounded cleanup allowance. The full suite passed after that correction. An installed-build review from before that correction correctly reported limited coverage; it did not report an app defect.
+
+Visual checks are saved under `outputs/preview/`. The current installable archive is `outputs/redteam-0.4.0.tgz`. Generated data is excluded from Git.
+
+Earlier D1 reports remain under `outputs/runs/`. The dashboard imports recognized reports from that directory. New service runs use `.redteam/runs/`.
+
+## Remaining scope
+
+- Authorized external app execution and production worker isolation.
+- Source-code review and scoped code-test tools.
+- Verified human research provenance, consent-document review, and representative sampling.
+- Real held-out human evaluation, uncertainty analysis, and independent research review.
+- Live LLM actors, lead agents, subagents, and the roundtable.
+- Country adaptation, consumer buying models, and investor decision models.
+- Validated purchase, conversion, investment, or population predictions.
+- Hosted tenant authentication, durable distributed workers, and concurrent model budgets.
+- Release comparison, real-world outcome tracking, and commercial demand evidence.
+
+No model calls occur in this release. Recorded model spending is US$0; infrastructure costs are not calculated.
+
+## Next milestone
+
+Add explicit external-processing permissions before enabling a live provider. Follow `docs/inference-adapter-plan.md`. Then implement and test a configured inference adapter with token preflight, structured outputs, refusal handling, and cost reconciliation. Keep fixture output distinct from live model output and human behavior.
+
+App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
