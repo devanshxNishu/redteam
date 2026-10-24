@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { sha256 } from "./evidence.ts";
 import { encryptLocal, decryptLocal } from "./vault.ts";
 import { workspaceDirectory } from "./workspace.ts";
+import { consumerActions, investorActions } from "./domain/decisions.ts";
 
 export interface ModelScope { country: string; language: string; segment: string; category: string; decision: string }
 export interface SourceInput {
@@ -19,10 +20,12 @@ export interface SourceInput {
   consentRef: string | null;
   permissions: { grounding: boolean; training: boolean; evaluation: boolean };
   expiresAt: string | null;
+  processing?: "local_only" | "external_model_allowed";
   limitations: string[];
   content: { text: string; observedAction?: string };
 }
 export interface ResearchSource extends Omit<SourceInput, "content"> {
+  processing: "local_only" | "external_model_allowed";
   contentHash: string;
   createdAt: string;
   provenance: "operator_declared";
@@ -79,8 +82,6 @@ export interface RegisteredEvaluation extends EvaluationInput {
   result: EvaluationResult | null;
 }
 
-const consumerActions = ["buy", "trial", "compare", "request_approval", "defer", "reject", "abandon", "renew", "cancel", "abstain"];
-const investorActions = ["pass", "monitor", "request_information", "begin_diligence", "recommend_investment", "approve_investment", "conditional_investment", "abstain"];
 const scopeKeys = ["country", "language", "segment", "category", "decision"] as const;
 function scopeMatches(a: ModelScope, b: ModelScope): boolean { return scopeKeys.every(key => a[key] === b[key]); }
 
@@ -123,7 +124,7 @@ function number(input: unknown, label: string, minimum: number, maximum: number,
   return input;
 }
 function parseSource(input: unknown): SourceInput {
-  const value = object(input, ["id", "kind", "title", "reference", "collectedAt", "method", "scope", "partition", "participantRefs", "consentRef", "permissions", "expiresAt", "limitations", "content"], "source");
+  const value = object(input, ["id", "kind", "title", "reference", "collectedAt", "method", "scope", "partition", "participantRefs", "consentRef", "permissions", "expiresAt", "processing", "limitations", "content"], "source");
   const permissions = object(value.permissions, ["grounding", "training", "evaluation"], "permissions");
   for (const key of ["grounding", "training", "evaluation"]) if (typeof permissions[key] !== "boolean") throw new Error(`permissions.${key} must be boolean.`);
   const content = object(value.content, ["text", "observedAction"], "content");
@@ -134,6 +135,7 @@ function parseSource(input: unknown): SourceInput {
     participantRefs: texts(value.participantRefs, "participantRefs"), consentRef: value.consentRef === null ? null : text(value.consentRef, "consentRef"),
     permissions: { grounding: permissions.grounding as boolean, training: permissions.training as boolean, evaluation: permissions.evaluation as boolean },
     expiresAt: value.expiresAt === null ? null : date(value.expiresAt, "expiresAt"), limitations: texts(value.limitations, "limitations", 1),
+    processing: value.processing === undefined ? "local_only" : choice(value.processing, ["local_only", "external_model_allowed"], "processing"),
     content: { text: text(content.text, "content.text"), ...(content.observedAction !== undefined ? { observedAction: text(content.observedAction, "content.observedAction") } : {}) },
   };
   if (result.partition === "held_out" && (result.permissions.grounding || result.permissions.training)) throw new Error("Held-out sources cannot permit grounding or training.");
@@ -175,17 +177,23 @@ export class ResearchRegistry {
     catch (error) { this.db.exec("ROLLBACK"); throw error; }
   }
   private audit(action: string, entity: string): void { this.db.prepare("INSERT INTO research_audit(at, action, entity) VALUES (?, ?, ?)").run(new Date().toISOString(), action, entity); }
-  sources(): ResearchSource[] { return this.db.prepare("SELECT document FROM research_sources ORDER BY id").all().map(row => JSON.parse(String(row.document)) as ResearchSource); }
+  sources(): ResearchSource[] { return this.db.prepare("SELECT document FROM research_sources ORDER BY id").all().map(row => {
+    const source = JSON.parse(String(row.document)) as ResearchSource;
+    source.processing ??= "local_only";
+    return source;
+  }); }
   source(id: string): ResearchSource {
     const row = this.db.prepare("SELECT document FROM research_sources WHERE id=?").get(id);
     if (!row) throw new Error("Research source not found.");
-    return JSON.parse(String(row.document)) as ResearchSource;
+    const source = JSON.parse(String(row.document)) as ResearchSource;
+    source.processing ??= "local_only";
+    return source;
   }
   addSource(input: unknown): ResearchSource {
     const parsed = parseSource(input);
     const { content, ...metadata } = parsed;
     const serialized = JSON.stringify(content);
-    const source: ResearchSource = { ...metadata, contentHash: sha256(serialized), createdAt: new Date().toISOString(), provenance: "operator_declared", revokedAt: null, revocationReason: null };
+    const source: ResearchSource = { ...metadata, processing: parsed.processing ?? "local_only", contentHash: sha256(serialized), createdAt: new Date().toISOString(), provenance: "operator_declared", revokedAt: null, revocationReason: null };
     return this.transaction(() => {
       this.db.prepare("INSERT INTO research_sources(id, document, content) VALUES (?, ?, ?)").run(source.id, JSON.stringify(source), encryptLocal(this.directory, `research:${source.id}`, serialized));
       this.audit("source_added", source.id);
@@ -265,6 +273,18 @@ export class ResearchRegistry {
     if (use !== "exploratory") throw new Error("Validated prediction requires independent research review; no validated models are available.");
     if (!scopeMatches(model.scope, scope(requestedScope))) throw new Error("Decision scope is outside the model version.");
     if (["restricted", "retired"].includes(model.status)) throw new Error("This model version is not permitted for use.");
+    return model;
+  }
+
+  authorizeProcessing(id: string, version: string, destination: "local" | "external"): RegisteredModel {
+    const model = this.model(id, version);
+    this.authorizeModel(id, version, model.scope, "exploratory");
+    if (destination !== "local" && destination !== "external") throw new Error("Unknown model processing destination.");
+    if (destination === "external") {
+      for (const sourceId of model.sourceIds) {
+        if (this.permitted(sourceId, "grounding").processing !== "external_model_allowed") throw new Error("External model processing is not permitted by every source used in this model version.");
+      }
+    }
     return model;
   }
 
@@ -379,7 +399,8 @@ export class ResearchRegistry {
   }
   summary() {
     const models = this.models();
-    return { sources: this.sources().length, models, evaluations: this.evaluations().length, groundedModels: models.filter(model => model.status === "research_grounded").length, validatedModels: 0,
+    const visible = models.map(model => model.status === "restricted" || model.status === "retired" ? { ...model, goals: [], constraints: [], knownInformation: [], decisionRules: [], sourceIds: [], limitations: ["Current research permissions do not permit model content retrieval."] } : model);
+    return { sources: this.sources().length, models: visible, evaluations: this.evaluations().length, groundedModels: models.filter(model => model.status === "research_grounded").length, validatedModels: 0,
       status: "Local registry. Model provenance is operator-declared. Independent behavioral validation is not available." };
   }
   close(): void { this.db.close(); }

@@ -56,14 +56,14 @@ const baseKeys = [
   "constraints", "rationale", "missingInformation", "limitations", "changeConditions",
   "domain", "action",
 ];
-const consumerActions = [
+export const consumerActions = Object.freeze([
   "buy", "trial", "compare", "request_approval", "defer", "reject", "abandon",
   "renew", "cancel", "abstain",
-];
-const investorActions = [
+] as const);
+export const investorActions = Object.freeze([
   "pass", "monitor", "request_information", "begin_diligence",
   "recommend_investment", "approve_investment", "conditional_investment", "abstain",
-];
+] as const);
 
 /** Validates structure and decision constraints, not research truth or reference resolution. */
 export function validateDecisionRecord(input: unknown): DecisionValidation {
@@ -237,7 +237,7 @@ function nonempty(value: unknown, path: string, errors: string[]): boolean {
   return true;
 }
 
-function choice(value: unknown, choices: string[], path: string, errors: string[]): boolean {
+function choice(value: unknown, choices: readonly string[], path: string, errors: string[]): boolean {
   if (typeof value !== "string" || !choices.includes(value)) {
     errors.push(`${path} must be one of: ${choices.join(", ")}`);
     return false;

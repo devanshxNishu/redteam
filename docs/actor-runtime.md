@@ -1,6 +1,6 @@
 # Bounded stakeholder runtime
 
-The runtime executes a simulated decision against one registered model version and a coordinator-supplied scenario. It has an injected inference adapter. The packaged demonstration uses an authored script. No live model provider is configured.
+The runtime executes a simulated decision against one registered model version and a coordinator-supplied scenario. It has an injected inference adapter. The packaged demonstration uses an authored script. No live provider is configured by default. Optional configured OpenAI runs are documented in `docs/live-inference.md` and have been verified with fake transport only.
 
 ## Information boundary
 

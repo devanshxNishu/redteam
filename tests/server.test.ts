@@ -88,6 +88,23 @@ test("actor API saves scripted decisions in the shared catalog and verifies thei
   assert.equal(invalid.valid, false);
 }));
 
+test("research withdrawal redacts model content and blocks existing actor report access", async () => temporary(async server => {
+  const headers = { Authorization: `Bearer ${server.token}` };
+  const summary = await (await fetch(`${server.origin}/api/actors/demo`, { method: "POST", headers })).json() as { runId: string };
+  const registry = new ResearchRegistry(resolve(server.store.directory, ".."));
+  let withdrawnModel: string;
+  try {
+    const model = registry.models()[0]!; withdrawnModel = model.id;
+    registry.revokeSource(model.sourceIds[0]!, "Synthetic withdrawal test");
+  } finally { registry.close(); }
+  assert.equal((await fetch(`${server.origin}/api/actors/${summary.runId}`, { headers })).status, 400);
+  assert.equal((await fetch(`${server.origin}/api/actors/${summary.runId}/verify`, { method: "POST", headers })).status, 400);
+  const state = await (await fetch(`${server.origin}/api/workspace`, { headers })).json() as { actorRuns: { restricted: boolean; decisions: unknown[] }[]; research: { models: { id: string; status: string; goals: string[]; sourceIds: string[] }[] } };
+  assert.equal(state.actorRuns[0]?.restricted, true); assert.deepEqual(state.actorRuns[0]?.decisions, []);
+  const model = state.research.models.find(item => item.id === withdrawnModel)!;
+  assert.equal(model.status, "restricted"); assert.deepEqual(model.goals, []); assert.deepEqual(model.sourceIds, []);
+}));
+
 test("API review produces real evidence, verifies it, and rejects changed artifacts", { timeout: 60000 }, async () => temporary(async server => {
   const headers = { Authorization: `Bearer ${server.token}`, "Content-Type": "application/json" };
   const response = await fetch(`${server.origin}/api/reviews`, { method: "POST", headers, body: JSON.stringify({ variant: "fixed" }) });

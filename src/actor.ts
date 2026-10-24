@@ -13,6 +13,7 @@ export interface ActorFact {
   value: string;
   kind: "scenario_fact" | "app_observation";
   visibility: "initial" | "on_request";
+  processing?: "local_only" | "external_model_allowed";
 }
 export interface ActorScenario {
   id: string;
@@ -23,6 +24,7 @@ export interface ActorScenario {
   scope: ModelScope;
   decisionBody?: "individual" | "committee";
   facts: ActorFact[];
+  processing?: "local_only" | "external_model_allowed";
 }
 export interface ActorLimits {
   maxSteps: number;
@@ -48,13 +50,16 @@ export interface AdapterRequest {
 export interface InferenceAdapter {
   id: string;
   mode: "scripted_fixture" | "live_model";
+  dataLocation?: "local" | "external";
+  costBasis?: "scripted_zero" | "configured_rate_estimate" | "provider_receipt";
+  configurationHash?: string;
   /** Trusted adapters must bound request liability before making a provider call. */
   next(view: Readonly<AdapterView>, request: AdapterRequest): Promise<unknown>;
 }
 export interface ActorReport {
   id: string;
   mode: "simulated";
-  backend: { id: string; mode: InferenceAdapter["mode"] };
+  backend: { id: string; mode: InferenceAdapter["mode"]; dataLocation: "local" | "external" | "undeclared"; costBasis: "scripted_zero" | "configured_rate_estimate" | "provider_receipt" | "adapter_declared"; configurationHash?: string };
   model: { id: string; version: string; hash: string } | null;
   scenarioRef: string;
   outcome: "completed" | "limit_reached" | "policy_denied" | "invalid_decision" | "adapter_failed" | "cancelled";
@@ -62,6 +67,7 @@ export interface ActorReport {
   errors: string[];
   usage: { steps: number; reads: number; inputTokens: number; outputTokens: number; costMicrousd: number; unreceiptedCalls: number; unreceiptedReservationMicrousd: number };
   events: { kind: string; at: string; ref?: string }[];
+  receipts: { step: number; inputTokens: number; outputTokens: number; costMicrousd: number; providerResponseId?: string; providerModel?: string; preflightInputTokens?: number; outputTokenLimit?: number }[];
   limitations: string[];
 }
 
@@ -69,6 +75,7 @@ class ActorFailure extends Error {
   readonly outcome: ActorReport["outcome"];
   constructor(outcome: ActorReport["outcome"], message: string) { super(message); this.outcome = outcome; }
 }
+export class InferenceBudgetError extends Error {}
 function failure(outcome: ActorReport["outcome"], message: string): never { throw new ActorFailure(outcome, message); }
 function record(input: unknown, allowed: string[], label: string): Record<string, unknown> {
   if (!input || typeof input !== "object" || Array.isArray(input) || ![Object.prototype, null].includes(Object.getPrototypeOf(input))) failure("adapter_failed", `${label} must be a plain object.`);
@@ -87,22 +94,25 @@ function safeText(value: unknown, maximum: number): value is string { return typ
 function validateScenario(scenario: ActorScenario): void {
   for (const key of ["id", "runId", "actorRef", "modelId", "modelVersion"] as const) if (!safeText(scenario[key], 120)) failure("policy_denied", `Scenario ${key} requires a short identifier.`);
   if (scenario.decisionBody !== undefined && !["individual", "committee"].includes(scenario.decisionBody)) failure("policy_denied", "Unsupported decision body.");
+  if (scenario.processing !== undefined && !["local_only", "external_model_allowed"].includes(scenario.processing)) failure("policy_denied", "Unsupported scenario processing permission.");
   if (!Array.isArray(scenario.facts) || scenario.facts.length > 100) failure("policy_denied", "A scenario supports at most 100 facts.");
   const ids = new Set<string>();
   for (const fact of scenario.facts) {
     if (!safeText(fact.id, 120) || !safeText(fact.label, 240) || !safeText(fact.value, 20000) || !["initial", "on_request"].includes(fact.visibility) || !["scenario_fact", "app_observation"].includes(fact.kind) || ids.has(fact.id)) failure("policy_denied", "Scenario facts require unique references and supported visibility.");
     ids.add(fact.id);
+    if (fact.processing !== undefined && !["local_only", "external_model_allowed"].includes(fact.processing)) failure("policy_denied", "Unsupported fact processing permission.");
   }
 }
 
 /** The adapter gets scoped data only; this runtime exposes no browser, shell, or payment tools. */
 export async function runActor(registry: ResearchRegistry, input: ActorScenario, adapter: InferenceAdapter, limits: ActorLimits, signal?: AbortSignal): Promise<ActorReport> {
   const report: ActorReport = {
-    id: randomUUID(), mode: "simulated", backend: { id: adapter.id, mode: adapter.mode }, model: null, scenarioRef: input.id,
-    outcome: "adapter_failed", decision: null, errors: [], usage: { steps: 0, reads: 0, inputTokens: 0, outputTokens: 0, costMicrousd: 0, unreceiptedCalls: 0, unreceiptedReservationMicrousd: 0 }, events: [],
+    id: randomUUID(), mode: "simulated", backend: { id: adapter.id, mode: adapter.mode, dataLocation: adapter.dataLocation ?? (adapter.mode === "scripted_fixture" ? "local" : "undeclared"), costBasis: adapter.costBasis ?? (adapter.mode === "scripted_fixture" ? "scripted_zero" : "adapter_declared"), ...(adapter.configurationHash ? { configurationHash: adapter.configurationHash } : {}) }, model: null, scenarioRef: input.id,
+    outcome: "adapter_failed", decision: null, errors: [], usage: { steps: 0, reads: 0, inputTokens: 0, outputTokens: 0, costMicrousd: 0, unreceiptedCalls: 0, unreceiptedReservationMicrousd: 0 }, events: [], receipts: [],
     limitations: [adapter.mode === "scripted_fixture" ? "Scripted software adapter. No live model calls or human behavior are represented." : "Model-generated simulation. Independent behavioral validity is not established.",
       "The gateway filters supplied information. It cannot remove a language model's prior knowledge or validate its psychological realism.",
       "Usage receipts come from the trusted adapter. Provider billing verification and production isolation require additional infrastructure.",
+      ...(adapter.costBasis === "configured_rate_estimate" ? ["Reported cost uses operator-configured rates. It is an estimate, not a provider billing receipt."] : []),
       "A failed or timed-out call without a valid usage receipt has unknown final cost. Its requested reservation remains visible.",
       "Decisions are simulated records. No purchase, investment, browser action, or external message is executed."],
   };
@@ -117,6 +127,14 @@ export async function runActor(registry: ResearchRegistry, input: ActorScenario,
     if (!safeText(adapter.id, 120) || !["scripted_fixture", "live_model"].includes(adapter.mode)) failure("policy_denied", "The inference adapter requires a declared identity and mode.");
     const scenario = structuredClone(input);
     const model = registry.authorizeModel(scenario.modelId, scenario.modelVersion, scenario.scope, "exploratory");
+    const authorizeProcessing = () => {
+      const destination = report.backend.dataLocation;
+      if (destination === "undeclared" || !["local", "external"].includes(destination)) failure("policy_denied", "Live adapters must declare where model processing occurs.");
+      try { registry.authorizeProcessing(model.id, model.version, destination as "local" | "external"); }
+      catch { failure("policy_denied", "Current research permissions do not permit this model processing destination."); }
+      if (destination === "external" && (scenario.processing !== "external_model_allowed" || scenario.facts.some(fact => fact.processing !== "external_model_allowed"))) failure("policy_denied", "External processing requires explicit permission for this scenario and every fact.");
+    };
+    authorizeProcessing();
     report.model = { id: model.id, version: model.version, hash: model.hash };
     const facts = new Map(scenario.facts.map(fact => [fact.id, fact]));
     if (model.sourceIds.some(id => facts.has(id))) failure("policy_denied", "Research and observation references must be distinct.");
@@ -129,6 +147,7 @@ export async function runActor(registry: ResearchRegistry, input: ActorScenario,
     for (let step = 0; step < limits.maxSteps; step++) {
       if (combined.aborted) failure("cancelled", "Actor execution was cancelled.");
       registry.authorizeModel(model.id, model.version, scenario.scope, "exploratory");
+      authorizeProcessing();
       const remainingMs = limits.timeoutMs - (performance.now() - startedAt);
       if (remainingMs <= 0) failure("limit_reached", "Actor deadline reached.");
       const usedTokens = report.usage.inputTokens + report.usage.outputTokens;
@@ -147,12 +166,14 @@ export async function runActor(registry: ResearchRegistry, input: ActorScenario,
         raw = await withinDeadline(Promise.race([pending, cancelled]), remainingMs, "Actor adapter");
       } catch (error) {
         if (combined.aborted) failure("cancelled", "Actor execution was cancelled.");
+        if (error instanceof InferenceBudgetError) failure("limit_reached", "Inference request does not fit the remaining token or estimated cost budget.");
         if (error instanceof LimitError) failure("limit_reached", "Actor adapter deadline reached.");
         failure("adapter_failed", "Inference adapter failed. No valid decision was accepted.");
       } finally { if (cancelCall) combined.removeEventListener("abort", cancelCall); }
       if (combined.aborted) failure("cancelled", "Actor execution was cancelled.");
       registry.authorizeModel(model.id, model.version, scenario.scope, "exploratory");
-      const receipt = record(raw, ["action", "usage"], "adapter reply");
+      authorizeProcessing();
+      const receipt = record(raw, ["action", "usage", "error", "provenance"], "adapter reply");
       const usage = record(receipt.usage, ["inputTokens", "outputTokens", "costMicrousd"], "usage receipt");
       const inputTokens = count(usage.inputTokens, "inputTokens");
       const outputTokens = count(usage.outputTokens, "outputTokens");
@@ -161,8 +182,23 @@ export async function runActor(registry: ResearchRegistry, input: ActorScenario,
       report.usage.outputTokens += outputTokens;
       report.usage.costMicrousd += costMicrousd;
       report.usage.unreceiptedCalls--; report.usage.unreceiptedReservationMicrousd = 0;
+      const acceptedReceipt: ActorReport["receipts"][number] = { step: report.usage.steps, inputTokens, outputTokens, costMicrousd };
+      if (receipt.provenance !== undefined) {
+        const provenance = record(receipt.provenance, ["providerResponseId", "providerModel", "preflightInputTokens", "outputTokenLimit"], "provider provenance");
+        for (const key of ["providerResponseId", "providerModel"] as const) if (provenance[key] !== undefined) {
+          if (!safeText(provenance[key], 200)) failure("adapter_failed", "Invalid provider provenance identifier.");
+          acceptedReceipt[key] = provenance[key];
+        }
+        for (const key of ["preflightInputTokens", "outputTokenLimit"] as const) if (provenance[key] !== undefined) acceptedReceipt[key] = count(provenance[key], key);
+      }
+      report.receipts.push(acceptedReceipt);
       if (!Number.isSafeInteger(report.usage.inputTokens + report.usage.outputTokens) || !Number.isSafeInteger(report.usage.costMicrousd)) failure("adapter_failed", "Adapter usage exceeds supported accounting precision.");
       if (report.usage.inputTokens + report.usage.outputTokens > limits.maxTotalTokens || report.usage.costMicrousd > limits.maxCostMicrousd) failure("limit_reached", "Adapter usage exceeded the permitted budget. Receipt retained; no further calls allowed.");
+      if (receipt.error !== undefined) {
+        const error = record(receipt.error, ["code"], "adapter error");
+        if (!["refused", "incomplete", "invalid_output", "preflight_mismatch"].includes(String(error.code))) failure("adapter_failed", "Inference adapter returned an unsupported error code.");
+        failure("adapter_failed", `Inference adapter returned ${String(error.code)}. Usage receipt retained.`);
+      }
       const action = record(receipt.action, ["type", "ref", "decision"], "actor action");
       if (JSON.stringify(action).length > limits.maxOutputChars) failure("limit_reached", "Adapter output limit reached.");
       if (action.type === "inspect") {

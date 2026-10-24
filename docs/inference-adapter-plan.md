@@ -1,6 +1,6 @@
 # Live inference integration: next milestone
 
-Status: researched design; not implemented or configured.
+Status: implemented and mock-verified in version 0.5. See `docs/live-inference.md`. No live provider smoke test is recorded. The list below preserves the integration requirements; billing reconciliation and live verification remain incomplete.
 
 The current runtime has a provider-neutral adapter and usage receipt contract. Its packaged adapter is a software script. No API key was loaded and no live inference request was made during this milestone.
 

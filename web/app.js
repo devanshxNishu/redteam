@@ -4,6 +4,7 @@ let data = null;
 let timer;
 let toastTimer;
 const imageUrls = [];
+let openedActorRun = null;
 const activeStates = new Set(["queued", "running", "verifying", "reporting"]);
 
 function node(tag, text, className) {
@@ -102,11 +103,15 @@ function render() {
   $("actor-run-list").replaceChildren(...data.actorRuns.slice(0, 10).map(run => {
     const row = node("div", undefined, "grant-item");
     const copy = node("div", undefined, "grant-main");
-    copy.append(node("strong", "Scripted consumer + investor"), node("p", run.decisions.map(decision => `${decision.domain ?? "actor"}: ${(decision.action ?? decision.outcome).replaceAll("_", " ")}`).join(" · ")), node("small", `${date(run.createdAt)} · ${run.artifacts} artifacts`));
+    copy.append(node("strong", run.kind === "model_actor_run" ? "Configured model simulation" : "Scripted consumer + investor"), node("p", run.restricted ? "Research permission changed. Report restricted." : run.decisions.map(decision => `${decision.domain ?? "actor"}: ${(decision.action ?? decision.outcome).replaceAll("_", " ")}`).join(" · ")), node("small", `${date(run.createdAt)} · ${run.artifacts} artifacts`));
     const inspect = node("button", "Inspect actor report →", "small-button");
+    inspect.disabled = run.restricted;
     inspect.addEventListener("click", () => showActorReport(run.runId));
     row.append(copy, inspect); return row;
   }));
+  if (openedActorRun && data.actorRuns.some(run => run.runId === openedActorRun && run.restricted)) {
+    $("review-dialog").close(); toast("Research permissions changed. The actor report is now restricted.", true);
+  }
 }
 async function refresh() {
   clearTimeout(timer);
@@ -126,8 +131,8 @@ function section(title) { const element = node("section", undefined, "detail-sec
 async function showActorReport(id) {
   try {
     const report = await api(`/api/actors/${id}`);
-    $("detail-title").textContent = "Scripted stakeholder decisions";
-    const summary = section("Software demonstration"); summary.append(node("p", report.note));
+    $("detail-title").textContent = report.kind === "model_actor_run" ? "Configured model simulation" : "Scripted stakeholder decisions";
+    const summary = section(report.kind === "model_actor_run" ? "Simulation scope" : "Software demonstration"); summary.append(node("p", report.note));
     const sections = report.reports.map(actor => {
       const result = section(actor.decision ? `${actor.decision.domain} · ${actor.decision.action.replaceAll("_", " ")}` : actor.outcome.replaceAll("_", " "));
       if (actor.decision) {
@@ -153,6 +158,7 @@ async function showActorReport(id) {
     });
     const actions = node("div", undefined, "detail-actions"); actions.append(verify);
     $("detail-content").replaceChildren(summary, ...sections, evidence, actions);
+    openedActorRun = id;
     $("review-dialog").showModal();
   } catch (error) { toast(error.message, true); }
 }
@@ -217,7 +223,7 @@ $("run-actor-demo").addEventListener("click", async () => {
   finally { button.disabled = false; }
 });
 $("close-dialog").addEventListener("click", () => $("review-dialog").close());
-$("review-dialog").addEventListener("close", () => { for (const url of imageUrls.splice(0)) URL.revokeObjectURL(url); });
+$("review-dialog").addEventListener("close", () => { for (const url of imageUrls.splice(0)) URL.revokeObjectURL(url); openedActorRun = null; $("detail-content").replaceChildren(); });
 window.addEventListener("hashchange", setView);
 setView();
 void refresh();

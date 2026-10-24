@@ -1,0 +1,9 @@
+{
+  "maxSteps": 6,
+  "maxReads": 3,
+  "maxOutputChars": 16000,
+  "maxContextChars": 60000,
+  "maxTotalTokens": 12000,
+  "maxCostMicrousd": 50000,
+  "timeoutMs": 60000
+}

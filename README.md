@@ -2,7 +2,7 @@
 
 Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
 
-Version 0.4 provides a local workspace, an installable CLI, scoped access grants, browser evidence, a research registry, and bounded stakeholder runtime mechanics. Live inference and the agent roundtable remain development milestones.
+Version 0.5 provides a local workspace, an installable CLI, scoped access grants, browser evidence, a research registry, and bounded stakeholder runtime mechanics. Optional OpenAI inference is implemented and tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -24,7 +24,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.4.0.tgz
+npm install --global ./redteam-0.5.0.tgz
 redteam --help
 ```
 
@@ -134,8 +134,16 @@ The same scripted demo is available in the dashboard's Stakeholder models view. 
 
 The adapter is an authored software fixture. It makes no live model calls and does not predict demand or funding. The runtime enforces information access, observed references, decision consistency, step and read limits, context and output size, usage receipts, timeouts, and cancellation. Unknown usage remains visible when a call ends without a receipt.
 
-See the [runtime contract](docs/actor-runtime.md). Live provider integration and analyst subagents remain later milestones.
+See the [runtime contract](docs/actor-runtime.md). The optional configured provider path is described below. Analyst subagents remain a later milestone.
 
-Consumer and investor decision contracts check structure and material constraints. Registered decision validation additionally resolves model versions, scopes, permitted references, and coordinator identities. These controls do not generate decisions or prove behavioral truth. There are no live LLM actors, country psychology models, purchase forecasts, or investment forecasts in this build.
+Consumer and investor decision contracts check structure and material constraints. Registered decision validation additionally resolves model versions, scopes, permitted references, and coordinator identities. These controls do not generate decisions or prove behavioral truth. No live API run or human behavioral validation has been recorded. Country psychology models, purchase forecasts, and investment forecasts remain unvalidated.
+
+## Optional configured inference
+
+The OpenAI adapter and `redteam actors run` are verified with fake transport. A real API key, selected model, and current pricing are required for a live run. None were loaded or selected during development.
+
+Sources, the scenario, and every fact must explicitly allow external model processing. Existing records default to local processing. The adapter checks input tokens before generation, limits output, handles refusal and incomplete responses, and keeps known usage. Cost is estimated from configured rates, rather than verified provider billing.
+
+See [configured inference](docs/live-inference.md) for templates and commands. `redteam examples` locates bundled templates after installation. The dashboard run button continues to use the authored script.
 
 See the [master plan](docs/master-plan.md), [development backlog](docs/development-backlog.md), and [implementation status](docs/implementation-status.md).

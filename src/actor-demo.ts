@@ -67,6 +67,7 @@ export async function runActorDemo(workspace: string, registry: ResearchRegistry
   lines.push("## Evidence", "", ...store.artifacts.map(artifact => `- [${artifact.owner}](${artifact.path}): SHA-256 ${artifact.sha256}`), "", "These records check runtime mechanics. They do not measure demand or funding probability.");
   await writeFile(resolve(store.root, "report.md"), lines.join("\n") + "\n", { flag: "wx", mode: 0o600 });
   const summary: ActorRunSummary = { runId, kind: "scripted_actor_demo", createdAt: document.generatedAt, outcome: document.outcome as ActorRunSummary["outcome"],
+    modelVersions: reports.flatMap(report => report.model ? [{ id: report.model.id, version: report.model.version }] : []),
     decisions: reports.map(report => ({ ...(report.decision ? { domain: report.decision.domain, action: report.decision.action } : {}), outcome: report.outcome })), directory: store.root, artifacts: store.artifacts.length };
   const workspaceStore = new WorkspaceStore(workspace);
   try { workspaceStore.saveActorRun(summary); } finally { workspaceStore.close(); }

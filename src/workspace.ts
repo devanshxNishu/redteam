@@ -29,12 +29,13 @@ export interface ReviewJob {
 }
 export interface ActorRunSummary {
   runId: string;
-  kind: "scripted_actor_demo";
+  kind: "scripted_actor_demo" | "model_actor_run";
   createdAt: string;
   outcome: "completed" | "limited_coverage";
   directory: string;
   decisions: { domain?: "consumer" | "investor"; action?: string; outcome: string }[];
   artifacts: number;
+  modelVersions?: { id: string; version: string }[];
 }
 
 export function workspaceDirectory(workspace: string): string {

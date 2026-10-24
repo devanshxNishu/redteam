@@ -1,0 +1,17 @@
+{
+  "id": "inference-fixture-source",
+  "kind": "synthetic_fixture",
+  "title": "Synthetic inference demonstration",
+  "reference": "fixture:inference-example",
+  "collectedAt": "2026-10-24T00:00:00.000Z",
+  "method": "Authored software fixture; no human observation",
+  "scope": { "country": "synthetic-market", "language": "en", "segment": "software-fixture", "category": "synthetic-pilot", "decision": "fixture-purchase" },
+  "partition": "grounding",
+  "participantRefs": ["synthetic-unit"],
+  "consentRef": null,
+  "permissions": { "grounding": true, "training": false, "evaluation": false },
+  "processing": "external_model_allowed",
+  "expiresAt": null,
+  "limitations": ["Synthetic software fixture. Not human research or a validated purchase model."],
+  "content": { "text": "Use the supplied synthetic offer and budget to exercise a bounded simulated decision." }
+}

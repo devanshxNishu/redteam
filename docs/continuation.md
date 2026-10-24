@@ -29,23 +29,30 @@ Read `docs/master-plan.md`, `docs/development-backlog.md`, and `docs/implementat
 - The pinned Chromium installer encountered cache-lock failures. The runner has a tested installed-Chrome fallback on macOS.
 - Consumer and investor decision records have consistency guards. No researched actors or behavioral predictions exist yet.
 
+## Version 0.5 verification
+
+- External processing permissions, optional OpenAI adapter, configured terminal runs, usage provenance, and report revocation gates are implemented.
+- Type checking and the full 105-test suite passed. Provider tests used only fake transport. No real API key or live request was used.
+- `docs/live-inference.md` documents explicit configuration and pricing estimates. `redteam examples` locates packaged templates.
+- Version 0.5 packed and installed into the isolated prefix. Version, bundled examples, scripted actor execution, persisted catalog, and missing-key rejection passed. The installed server passed desktop and mobile flows and artifact checks. A browser withdrawal check confirmed that cached report content is cleared and the run is restricted.
+
 ## Current milestone
 
-The web, terminal, registry, and actor mechanics are complete within their documented fixture scope. The archive is `outputs/redteam-0.4.0.tgz`. External target execution is not enabled by access grants yet.
+The web, terminal, registry, and actor mechanics are complete within their documented fixture scope. The archive is `outputs/redteam-0.5.0.tgz`. External target execution is not enabled by access grants yet.
 
-The packaged adapter is an authored software script. No live model credentials or real human research are configured. Runtime and registry contracts are in `docs/actor-runtime.md` and `docs/research-registry.md`.
+The default demo adapter is an authored script. An optional OpenAI adapter is implemented and mock-verified. No live model credentials or real human research are configured. Runtime and registry contracts are in `docs/actor-runtime.md` and `docs/research-registry.md`.
 
-Next, implement the live adapter prerequisites in `docs/inference-adapter-plan.md`. Official token-counting and structured-output documentation was fetched during planning. Cached copies are in `work/openai-token-counting.md` and `work/openai-structured-outputs.md`; verify current API details before implementing. No API key was loaded and no live model request was made.
+The optional adapter is implemented. Continue with coordinator-owned constraints in the next sequence. The original integration checklist is `docs/inference-adapter-plan.md`. Official token-counting and structured-output documentation was fetched during planning. Cached copies are in `work/openai-token-counting.md` and `work/openai-structured-outputs.md`; verify current API details before implementing. No API key was loaded and no live model request was made.
 
 Use synthetic fixtures for software verification. Keep them visibly separate from human research. Never promote synthetic fixtures into validated psychology.
 
 ## Next sequence
 
-1. Add separate external-model processing permission for sources, derived model content, and scenario facts. Default existing records to local-only.
-2. Implement a configured inference adapter with exact token preflight, output limits, structured action parsing, refusal handling, and receipt reconciliation. Test with fake transport first.
-3. Add an explicit terminal command for configured live runs. Do not select a paid model or infer valid credentials without evidence.
-4. Add durable task coordination and evidence-based roundtable mechanics when their prerequisites are met.
-5. Continue authorized external runner work after its isolation and access prerequisites are met.
+1. Add coordinator-owned constraints to scenarios. Positive consumer and investor choices must not invent satisfied affordability, payment access, authority, mandate, capital, or diligence states. Keep unobserved facts out of the adapter view.
+2. Test constraint omission, state escalation, conflicting evidence, unknown material facts, and conditional decisions.
+3. Add bounded analyst task coordination, leases, and protected budgets when prerequisites permit. The commercial hierarchy gate remains unproven.
+4. A live API smoke test needs explicit model configuration, valid credentials, current rates, and processing permission. Do not reuse desktop authentication or invent pricing. Continue independent work if these inputs are missing.
+5. Continue external runner work after isolation and access prerequisites are met.
 
 ## Last substantive fixes
 

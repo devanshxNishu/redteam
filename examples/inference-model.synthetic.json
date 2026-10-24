@@ -1,0 +1,12 @@
+{
+  "id": "inference-fixture-buyer",
+  "version": "1",
+  "domain": "consumer",
+  "scope": { "country": "synthetic-market", "language": "en", "segment": "software-fixture", "category": "synthetic-pilot", "decision": "fixture-purchase" },
+  "sourceIds": ["inference-fixture-source"],
+  "goals": ["Assess the synthetic offer against the supplied budget"],
+  "constraints": ["Honor the supplied scenario facts and uncertainty"],
+  "knownInformation": [],
+  "decisionRules": ["Inspect permitted information before citing it; keep decisions simulated"],
+  "limitations": ["Draft synthetic fixture. No human behavior or demand has been validated."]
+}

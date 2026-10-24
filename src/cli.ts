@@ -13,6 +13,10 @@ import { ReviewService } from "./review-service.ts";
 import { ResearchRegistry } from "./research.ts";
 import { runResearchDemo } from "./research-demo.ts";
 import { runActorDemo } from "./actor-demo.ts";
+import { authorizedActorRuns } from "./actor-reports.ts";
+import { configureInference } from "./inference-config.ts";
+import { executeConfiguredActor } from "./actor-execution.ts";
+import type { ActorLimits } from "./actor.ts";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspace = resolve(process.cwd());
@@ -37,8 +41,10 @@ redteam research evaluation lock EVALUATION_ID FILE
 redteam research evaluation score EVALUATION_ID
 redteam actors demo
 redteam actors list
+redteam actors run --scenario FILE --limits FILE --config FILE
 redteam demo [--variant broken|fixed]
 redteam --version
+redteam examples
 
 State is saved in .redteam under the current directory.
 The browser runner currently supports the controlled signup demo. External access grants are stored for a future runner; they do not execute external actions.`;
@@ -72,7 +78,8 @@ async function readInput(file: string): Promise<unknown> {
   const path = resolve(file);
   const info = await stat(path);
   if (!info.isFile() || info.size > 2_000_000) throw new Error("Input must be a regular JSON file no larger than 2 MB.");
-  return JSON.parse(await readFile(path, "utf8")) as unknown;
+  try { return JSON.parse(await readFile(path, "utf8")) as unknown; }
+  catch { throw new Error("Input file must contain valid JSON."); }
 }
 
 async function runReview(variant: "broken" | "fixed"): Promise<void> {
@@ -112,6 +119,7 @@ async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2);
   if (!command || command === "--help" || command === "help") { console.log(help); return; }
   if (command === "--version") { console.log((JSON.parse(await readFile(resolve(root, "package.json"), "utf8")) as { version: string }).version); return; }
+  if (command === "examples") { if (args.length) throw new Error("Usage: redteam examples"); console.log(resolve(root, "examples")); return; }
   if (command === "ui") {
     const options = flags(args, ["--port"]);
     const port = Number(options["--port"] ?? 4317);
@@ -155,7 +163,7 @@ async function main(): Promise<void> {
     try {
       if (args.length === 1 && args[0] === "demo") print(runResearchDemo(registry));
       else if (args.length === 1 && args[0] === "sources") print(registry.sources());
-      else if (args.length === 1 && args[0] === "models") print(registry.models());
+      else if (args.length === 1 && args[0] === "models") print(registry.summary().models);
       else if (args.length === 3 && args[0] === "source" && args[1] === "add") print(registry.addSource(await load(args[2])));
       else if (args.length >= 3 && args[0] === "source" && args[1] === "revoke") {
         const options = flags(args.slice(3), ["--reason"]);
@@ -171,12 +179,25 @@ async function main(): Promise<void> {
     return;
   }
   if (command === "actors") {
-    if (args.length === 1 && args[0] === "list") {
-      const store = new WorkspaceStore(workspace);
-      try { print(store.actorRuns()); } finally { store.close(); }
+    if (args[0] === "run") {
+      const options = flags(args.slice(1), ["--scenario", "--limits", "--config"]);
+      if (!options["--scenario"] || !options["--limits"] || !options["--config"]) throw new Error("Supply --scenario, --limits, and --config JSON files.");
+      const { adapter, configuration } = configureInference(await readInput(options["--config"]), process.env.OPENAI_API_KEY);
+      const scenario = await readInput(options["--scenario"]);
+      const limits = await readInput(options["--limits"]) as ActorLimits;
+      const registry = new ResearchRegistry(workspace);
+      try { const result = await executeConfiguredActor(workspace, registry, scenario, limits, adapter, configuration); print(result); if (result.outcome !== "completed") process.exitCode = 1; }
+      finally { registry.close(); }
       return;
     }
-    if (args.length !== 1 || args[0] !== "demo") throw new Error("Usage: redteam actors demo|list");
+    if (args.length === 1 && args[0] === "list") {
+      const store = new WorkspaceStore(workspace);
+      let research: ResearchRegistry | undefined;
+      try { research = new ResearchRegistry(workspace); print(await authorizedActorRuns(store, research, workspace)); }
+      finally { research?.close(); store.close(); }
+      return;
+    }
+    if (args.length !== 1 || args[0] !== "demo") throw new Error("Usage: redteam actors demo|list|run");
     const registry = new ResearchRegistry(workspace);
     try {
       const result = await runActorDemo(workspace, registry);

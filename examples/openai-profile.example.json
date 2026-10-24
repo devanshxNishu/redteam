@@ -1,0 +1,7 @@
+{
+  "provider": "openai",
+  "model": "",
+  "inputUsdPerMillion": "",
+  "outputUsdPerMillion": "",
+  "maximumOutputTokens": 1024
+}

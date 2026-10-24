@@ -118,6 +118,6 @@ test("bad accounting, missing limits, and excessive context deny execution", asy
   assert.equal(invalid.decision, null); assert.equal(calls, 0);
   const tooSmall = await runActor(registry, scenario, backend, { ...limits, maxContextChars: 100 });
   assert.equal(tooSmall.outcome, "limit_reached"); assert.equal(calls, 0);
-  const noTokens = await runActor(registry, scenario, { ...backend, mode: "live_model" }, { ...limits, maxTotalTokens: 0 });
+  const noTokens = await runActor(registry, scenario, { ...backend, mode: "live_model", dataLocation: "local" }, { ...limits, maxTotalTokens: 0 });
   assert.equal(noTokens.outcome, "limit_reached"); assert.equal(calls, 0);
 }));

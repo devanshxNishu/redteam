@@ -9,7 +9,7 @@ import { ReviewService } from "./review-service.ts";
 import { checkArtifacts } from "./evidence.ts";
 import { ResearchRegistry } from "./research.ts";
 import { runActorDemo } from "./actor-demo.ts";
-import { readActorReport } from "./actor-reports.ts";
+import { readActorReport, authorizedActorRuns } from "./actor-reports.ts";
 
 async function body(request: IncomingMessage): Promise<Record<string, unknown>> {
   if (request.headers["content-type"]?.split(";")[0] !== "application/json") throw new Error("Use application/json.");
@@ -74,7 +74,7 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
         const grants = store.grants().map(grant => ({ ...grant, active: isGrantActive(grant) }));
         send(response, 200, { name: "redteam", mode: "local", workspace: options.workspace, jobs, grants,
           metrics: { reviews: jobs.length, findings: jobs.reduce((sum, job) => sum + job.findingCount, 0), artifacts: jobs.reduce((sum, job) => sum + job.artifactCount, 0), accessGrants: grants.filter(grant => grant.active).length },
-          research: research.summary(), actorRuns: store.actorRuns(),
+          research: research.summary(), actorRuns: await authorizedActorRuns(store, research, options.workspace),
           audit: store.auditLog() });
         return;
       }
@@ -93,10 +93,10 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
         return;
       }
       const actorDetail = /^\/api\/actors\/([a-f0-9-]{36})$/.exec(url.pathname);
-      if (request.method === "GET" && actorDetail) { send(response, 200, await readActorReport(store, options.workspace, actorDetail[1]!)); return; }
+      if (request.method === "GET" && actorDetail) { send(response, 200, await readActorReport(store, options.workspace, actorDetail[1]!, research)); return; }
       const actorVerify = /^\/api\/actors\/([a-f0-9-]{36})\/verify$/.exec(url.pathname);
       if (request.method === "POST" && actorVerify) {
-        const report = await readActorReport(store, options.workspace, actorVerify[1]!);
+        const report = await readActorReport(store, options.workspace, actorVerify[1]!, research);
         const errors = await checkArtifacts(store.actorRun(actorVerify[1]!)!.directory, report.artifacts);
         send(response, 200, { valid: errors.length === 0, artifacts: report.artifacts.length, errors }); return;
       }
