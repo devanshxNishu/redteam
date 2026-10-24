@@ -36,21 +36,31 @@ Read `docs/master-plan.md`, `docs/development-backlog.md`, and `docs/implementat
 - `docs/live-inference.md` documents explicit configuration and pricing estimates. `redteam examples` locates packaged templates.
 - Version 0.5 packed and installed into the isolated prefix. Version, bundled examples, scripted actor execution, persisted catalog, and missing-key rejection passed. The installed server passed desktop and mobile flows and artifact checks. A browser withdrawal check confirmed that cached report content is cleared and the run is restricted.
 
+## Version 0.5.1 verification
+
+- Coordinator-owned constraint parsing, visibility projection, and acceptance checks are in `src/domain/scenario-constraints.ts` and `src/actor.ts`.
+- `src/actor-execution.ts` accepts the new scenario field. `src/actor-demo.ts`, `examples/inference-scenario.synthetic.json`, and the OpenAI instructions use it.
+- Positive purchase and investment actions require the appropriate observed, material coordinator states. Actors cannot omit or alter supplied constraints or replace their evidence.
+- Hidden states remain unknown until every supporting fact is read. Deferral and conditional investment remain possible when material information is unknown.
+- Type checking passed. The full suite passed: 113 tests, zero failures or skips. The focused actor/provider/processing suite passed all 39 tests. Provider verification used fake transport only.
+- Package version is 0.5.1. Build, archive, and isolated installed CLI passed. Version, bundled constraint example, both scripted actor actions, persisted catalog, and all three artifact hashes passed. Results are in `outputs/installed-verification-0.5.1.json`. Earlier 0.5.0 web verification remains recorded separately.
+- Runtime, inference, and README documentation explain the contract and migration. Scenario declarations still require semantic review; this change authenticates no human research or actual money, authority, diligence, amounts, or terms.
+
 ## Current milestone
 
-The web, terminal, registry, and actor mechanics are complete within their documented fixture scope. The archive is `outputs/redteam-0.5.0.tgz`. External target execution is not enabled by access grants yet.
+The web, terminal, registry, and actor mechanics are complete within their documented fixture scope. The archive is `outputs/redteam-0.5.1.tgz`. External target execution is not enabled by access grants yet.
 
 The default demo adapter is an authored script. An optional OpenAI adapter is implemented and mock-verified. No live model credentials or real human research are configured. Runtime and registry contracts are in `docs/actor-runtime.md` and `docs/research-registry.md`.
 
-The optional adapter is implemented. Continue with coordinator-owned constraints in the next sequence. The original integration checklist is `docs/inference-adapter-plan.md`. Official token-counting and structured-output documentation was fetched during planning. Cached copies are in `work/openai-token-counting.md` and `work/openai-structured-outputs.md`; verify current API details before implementing. No API key was loaded and no live model request was made.
+The optional adapter and coordinator constraints are implemented and packaged. Continue with durable budget and task-state foundations. The original integration checklist is `docs/inference-adapter-plan.md`. Official token-counting and structured-output documentation was fetched during planning. Cached copies are in `work/openai-token-counting.md` and `work/openai-structured-outputs.md`; verify current API details before changing provider behavior. No API key was loaded and no live model request was made.
 
 Use synthetic fixtures for software verification. Keep them visibly separate from human research. Never promote synthetic fixtures into validated psychology.
 
 ## Next sequence
 
-1. Add coordinator-owned constraints to scenarios. Positive consumer and investor choices must not invent satisfied affordability, payment access, authority, mandate, capital, or diligence states. Keep unobserved facts out of the adapter view.
-2. Test constraint omission, state escalation, conflicting evidence, unknown material facts, and conditional decisions.
-3. Add bounded analyst task coordination, leases, and protected budgets when prerequisites permit. The commercial hierarchy gate remains unproven.
+1. Add durable atomic budget reservations and task-state foundations. Existing per-actor limits and single coordinator ownership are not distributed budget protection or durable analyst leases.
+2. Verify competing reservations, idempotent settlement, uncertain calls, restart recovery, and cancellation without automatic release of unknown spend.
+3. Add bounded analyst task coordination when prerequisites permit. The commercial hierarchy gate remains unproven; do not enable broad specialist fan-out or claim the roundtable is complete.
 4. A live API smoke test needs explicit model configuration, valid credentials, current rates, and processing permission. Do not reuse desktop authentication or invent pricing. Continue independent work if these inputs are missing.
 5. Continue external runner work after isolation and access prerequisites are met.
 

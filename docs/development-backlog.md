@@ -18,6 +18,8 @@ Research protocol → human observations → candidate model → controlled acto
 
 The coordinator and roundtable connect these paths after the evidence path works.
 
+Implementation checkpoint, 0.5.1: fixture browser evidence, registry/evaluation controls, bounded actor mechanics, and coordinator-owned scenario constraints are implemented. The full 113-test suite passes. These software checks do not satisfy human research, predictive validation, paid-demand, or broad hierarchy gates. See `docs/implementation-status.md` for exact coverage.
+
 ## 2. Priority definitions
 
 | Priority | Meaning |

@@ -3,7 +3,8 @@ import { performance } from "node:perf_hooks";
 import { ResearchRegistry } from "./research.ts";
 import type { ModelScope, RegisteredModel } from "./research.ts";
 import { validateRegisteredDecision } from "./domain/registered-decision.ts";
-import type { DecisionRecord } from "./domain/decisions.ts";
+import type { DecisionConstraint, DecisionRecord } from "./domain/decisions.ts";
+import { readScenarioConstraints, visibleScenarioConstraints, checkScenarioConstraints } from "./domain/scenario-constraints.ts";
 import { withinDeadline } from "./deadline.ts";
 import { LimitError } from "./policy.ts";
 
@@ -24,6 +25,7 @@ export interface ActorScenario {
   scope: ModelScope;
   decisionBody?: "individual" | "committee";
   facts: ActorFact[];
+  constraints?: DecisionConstraint[];
   processing?: "local_only" | "external_model_allowed";
 }
 export interface ActorLimits {
@@ -40,6 +42,7 @@ export interface AdapterView {
   scenario: { id: string; actorRef: string; scope: ModelScope; decisionBody: "individual" | "committee" | null };
   availableReads: { ref: string; label: string; kind: "research_source" | ActorFact["kind"] }[];
   observations: { ref: string; value: string; kind: "research_source" | ActorFact["kind"] }[];
+  constraints: DecisionConstraint[];
 }
 export interface AdapterRequest {
   signal: AbortSignal;
@@ -111,6 +114,7 @@ export async function runActor(registry: ResearchRegistry, input: ActorScenario,
     outcome: "adapter_failed", decision: null, errors: [], usage: { steps: 0, reads: 0, inputTokens: 0, outputTokens: 0, costMicrousd: 0, unreceiptedCalls: 0, unreceiptedReservationMicrousd: 0 }, events: [], receipts: [],
     limitations: [adapter.mode === "scripted_fixture" ? "Scripted software adapter. No live model calls or human behavior are represented." : "Model-generated simulation. Independent behavioral validity is not established.",
       "The gateway filters supplied information. It cannot remove a language model's prior knowledge or validate its psychological realism.",
+      "Scenario constraint states are coordinator declarations. Their semantic accuracy and research provenance require independent review.",
       "Usage receipts come from the trusted adapter. Provider billing verification and production isolation require additional infrastructure.",
       ...(adapter.costBasis === "configured_rate_estimate" ? ["Reported cost uses operator-configured rates. It is an estimate, not a provider billing receipt."] : []),
       "A failed or timed-out call without a valid usage receipt has unknown final cost. Its requested reservation remains visible.",
@@ -137,6 +141,9 @@ export async function runActor(registry: ResearchRegistry, input: ActorScenario,
     authorizeProcessing();
     report.model = { id: model.id, version: model.version, hash: model.hash };
     const facts = new Map(scenario.facts.map(fact => [fact.id, fact]));
+    let constraints: DecisionConstraint[];
+    try { constraints = readScenarioConstraints(scenario.constraints, [...facts.keys()]); }
+    catch (error) { failure("policy_denied", error instanceof Error ? error.message : "Invalid scenario constraints."); }
     if (model.sourceIds.some(id => facts.has(id))) failure("policy_denied", "Research and observation references must be distinct.");
     const observations: AdapterView["observations"] = scenario.facts.filter(fact => fact.visibility === "initial").map(fact => ({ ref: fact.id, value: fact.value, kind: fact.kind }));
     const seen = new Set(observations.map(item => item.ref));
@@ -152,7 +159,7 @@ export async function runActor(registry: ResearchRegistry, input: ActorScenario,
       if (remainingMs <= 0) failure("limit_reached", "Actor deadline reached.");
       const usedTokens = report.usage.inputTokens + report.usage.outputTokens;
       if (usedTokens >= limits.maxTotalTokens && adapter.mode !== "scripted_fixture") failure("limit_reached", "Actor inference token budget exhausted.");
-      const view: AdapterView = { model: structuredClone(model), scenario: { id: scenario.id, actorRef: scenario.actorRef, scope: scenario.scope, decisionBody: model.domain === "investor" ? scenario.decisionBody ?? "individual" : null }, availableReads, observations };
+      const view: AdapterView = { model: structuredClone(model), scenario: { id: scenario.id, actorRef: scenario.actorRef, scope: scenario.scope, decisionBody: model.domain === "investor" ? scenario.decisionBody ?? "individual" : null }, availableReads, observations, constraints: visibleScenarioConstraints(constraints, seen) };
       if (JSON.stringify(view).length > limits.maxContextChars) failure("limit_reached", "Actor context limit reached.");
       report.usage.steps++;
       report.usage.unreceiptedCalls++;
@@ -225,6 +232,8 @@ export async function runActor(registry: ResearchRegistry, input: ActorScenario,
         const accepted = decision as DecisionRecord;
         const cited = [...accepted.evidenceRefs, ...accepted.constraints.flatMap(constraint => constraint.evidenceRefs)];
         if (cited.some(ref => !seen.has(ref))) failure("invalid_decision", "Decision cites information the actor has not observed.");
+        const constraintErrors = checkScenarioConstraints(accepted, constraints, seen);
+        if (constraintErrors.length) failure("invalid_decision", constraintErrors.join("; "));
         if (performance.now() - startedAt >= limits.timeoutMs) failure("limit_reached", "Actor deadline reached before decision acceptance.");
         report.decision = accepted; report.outcome = "completed"; event("decision_accepted"); return report;
       } else failure("policy_denied", "Unsupported actor action. Only permitted inspection and simulated decisions are available.");

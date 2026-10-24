@@ -26,7 +26,14 @@ export async function runActorDemo(workspace: string, registry: ResearchRegistry
     const model = registry.addModel({ id: `${prefix}-${domain}`, version: "1", domain, scope, sourceIds: [source.id], goals: ["Exercise a bounded simulated decision"], constraints: ["Use the supplied software fixture only"], knownInformation: [],
       decisionRules: ["Scripted adapter returns the authored fixture response after reading its context"], limitations: ["Draft synthetic fixture. No live model or human behavior."] });
     scenarios.push({ id: `${prefix}-${domain}-scenario`, runId, actorRef: `${prefix}-${domain}-actor`, modelId: model.id, modelVersion: model.version, scope,
-      ...(domain === "investor" ? { decisionBody: "individual" as const } : {}), facts: [
+      ...(domain === "investor" ? { decisionBody: "individual" as const } : {}), constraints: domain === "consumer" ? [
+        { key: "affordability", state: "unsatisfied", material: true, evidenceRefs: ["consumer-context"] },
+      ] : [
+        { key: "mandate", state: "satisfied", material: true, evidenceRefs: ["investor-context"] },
+        { key: "available_capital", state: "satisfied", material: true, evidenceRefs: ["investor-context"] },
+        { key: "decision_authority", state: "unknown", material: true, evidenceRefs: [] },
+        { key: "required_diligence", state: "unknown", material: true, evidenceRefs: [] },
+      ], facts: [
         { id: `${domain}-offer`, label: "Synthetic offer", value: domain === "consumer" ? "The pilot costs 20 synthetic units." : "The synthetic startup requests 100 synthetic capital units.", kind: "app_observation", visibility: "initial" },
         { id: `${domain}-context`, label: "Synthetic decision context", value: domain === "consumer" ? "The synthetic buyer has a budget of 5 units. The offer is unaffordable in this fixture." : "The fixture mandate and capital permit this deal. Decision authority and required diligence are unknown.", kind: "scenario_fact", visibility: "on_request" },
       ] });

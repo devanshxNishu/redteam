@@ -36,7 +36,7 @@ Source records remain immutable. A changed processing permission requires a new 
 
 The OpenAI adapter counts the same input and schema before generation. It then bounds output tokens against the remaining token and configured-rate reservation. Empty reservations cause no provider request. Redirects are denied and failed requests are not retried automatically.
 
-Strict action output remains subject to the runtime's knowledge, identity, evidence, and decision checks. Refusal, incomplete output, malformed actions, and token-count drift cannot produce an accepted decision. Known usage is retained on these failures. Missing receipts retain an unknown-cost marker.
+Strict action output remains subject to the runtime's knowledge, identity, evidence, coordinator-constraint, and decision checks. Add trusted constraint declarations to the scenario before requesting a positive purchase or investment action; the bundled scenario demonstrates an affordability barrier. Refusal, incomplete output, malformed actions, and token-count drift cannot produce an accepted decision. Known usage is retained on these failures. Missing receipts retain an unknown-cost marker.
 
 Reports record the requested configuration hash, provider response identifier, returned model identifier, preflight count, output allowance, and usage where available. Cost uses integer ceiling arithmetic and operator-configured rates. Keys and HTTP authorization headers are excluded from reports.
 
@@ -44,6 +44,6 @@ Current research permissions also apply when reading earlier reports. Withdrawal
 
 ## Limits of interpretation
 
-An accepted response is a simulated decision. Reference checks establish traceability, rather than semantic truth or psychological realism. Trusted scenario constraints, independent research evaluation, live provider verification, durable cost reconciliation, and production isolation remain additional work.
+An accepted response is a simulated decision. Reference checks and coordinator constraints establish traceability and consistency, rather than semantic truth or psychological realism. Constraint declarations still require independent evidence review. Human evaluation, live provider verification, durable cost reconciliation, and production isolation remain additional work.
 
 Official documentation used for implementation: [Counting tokens](https://developers.openai.com/api/docs/guides/token-counting) and [Structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs).

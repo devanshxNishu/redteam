@@ -6,12 +6,13 @@ import { resolve } from "node:path";
 import { ResearchRegistry } from "../src/research.ts";
 import { runActor } from "../src/actor.ts";
 import type { ActorScenario, ActorLimits, InferenceAdapter } from "../src/actor.ts";
+import type { DecisionConstraint } from "../src/domain/decisions.ts";
 
 const scope = { country: "synthetic-market", language: "en", segment: "fixture", category: "software", decision: "assess-fixture" };
 const limits: ActorLimits = { maxSteps: 4, maxReads: 2, maxOutputChars: 5000, maxContextChars: 20000, maxTotalTokens: 1000, maxCostMicrousd: 100, timeoutMs: 1000 };
 const receipt = (action: unknown, usage = { inputTokens: 0, outputTokens: 0, costMicrousd: 0 }) => ({ action, usage });
 const decline = () => ({ type: "decide", decision: { action: "reject", evidenceRefs: ["budget"], constraints: [{ key: "affordability", state: "unsatisfied", material: true, evidenceRefs: ["budget"] }],
-  rationale: "Scripted fixture declines an unaffordable offer.", missingInformation: [], limitations: ["Software fixture only."], changeConditions: ["A different fixture budget could change this decision."] } });
+  rationale: "Scripted fixture declines an unaffordable offer.", missingInformation: [] as string[], limitations: ["Software fixture only."], changeConditions: ["A different fixture budget could change this decision."] } });
 function adapter(next: InferenceAdapter["next"]): InferenceAdapter { return { id: "test-script", mode: "scripted_fixture", next }; }
 async function temporary(work: (registry: ResearchRegistry, scenario: ActorScenario) => Promise<void>, domain: "consumer" | "investor" = "consumer"): Promise<void> {
   const directory = await mkdtemp(resolve(tmpdir(), "redteam-actor-"));
@@ -97,6 +98,12 @@ test("research withdrawal during an adapter call blocks decision acceptance", as
 
 test("investor runtime returns explicit conditions and preserves coordinator decision authority", async () => temporary(async (registry, scenario) => {
   scenario.decisionBody = "individual";
+  scenario.constraints = [
+    { key: "mandate", state: "satisfied", material: true, evidenceRefs: ["offer"] },
+    { key: "available_capital", state: "satisfied", material: true, evidenceRefs: ["offer"] },
+    { key: "decision_authority", state: "unknown", material: true, evidenceRefs: [] },
+    { key: "required_diligence", state: "unknown", material: true, evidenceRefs: [] },
+  ];
   const result = await runActor(registry, scenario, adapter(async () => receipt({ type: "decide", decision: {
     action: "conditional_investment", evidenceRefs: ["offer"], constraints: [
       { key: "mandate", state: "satisfied", material: true, evidenceRefs: ["offer"] },
@@ -121,3 +128,105 @@ test("bad accounting, missing limits, and excessive context deny execution", asy
   const noTokens = await runActor(registry, scenario, { ...backend, mode: "live_model", dataLocation: "local" }, { ...limits, maxTotalTokens: 0 });
   assert.equal(noTokens.outcome, "limit_reached"); assert.equal(calls, 0);
 }));
+
+const purchaseConstraints = (): DecisionConstraint[] => ["affordability", "payment_access", "purchase_authority"].map(key => ({ key, state: "satisfied", material: true, evidenceRefs: ["offer"] }));
+const purchase = (action = "buy", constraints = purchaseConstraints()) => ({ type: "decide", decision: { ...decline().decision, action, constraints, evidenceRefs: ["offer"] } });
+
+test("self-declared funds and authority cannot authorize a purchase or renewal", async () => temporary(async (registry, scenario) => {
+  for (const action of ["buy", "renew"]) {
+    const result = await runActor(registry, scenario, adapter(async () => receipt(purchase(action))), limits);
+    assert.equal(result.outcome, "invalid_decision"); assert.equal(result.decision, null);
+    assert.match(result.errors.join(";"), /coordinator constraint/);
+  }
+}));
+
+test("positive consumer decisions require every observed coordinator requirement", async () => temporary(async (registry, scenario) => {
+  scenario.facts[0]!.value = "Synthetic fixture: budget covers price; payment and purchase approval are available.";
+  scenario.constraints = purchaseConstraints();
+  for (const action of ["buy", "renew"]) {
+    const valid = await runActor(registry, scenario, adapter(async () => receipt(purchase(action))), limits);
+    assert.equal(valid.outcome, "completed", valid.errors.join(";"));
+  }
+  for (const key of ["affordability", "payment_access", "purchase_authority"]) {
+    scenario.constraints = purchaseConstraints().filter(item => item.key !== key);
+    const missing = await runActor(registry, scenario, adapter(async () => receipt(purchase())), limits);
+    assert.equal(missing.outcome, "invalid_decision"); assert.match(missing.errors.join(";"), new RegExp(key));
+  }
+}));
+
+test("coordinator constraints cannot be omitted, downgraded, escalated, or given different evidence", async () => temporary(async (registry, scenario) => {
+  scenario.facts[1]!.visibility = "initial";
+  scenario.constraints = [{ key: "affordability", state: "unsatisfied", material: true, evidenceRefs: ["budget"] }];
+  const variants: DecisionConstraint[][] = [[],
+    [{ ...scenario.constraints[0]!, material: false }],
+    [{ ...scenario.constraints[0]!, state: "satisfied" }],
+    [{ ...scenario.constraints[0]!, evidenceRefs: ["offer"] }],
+  ];
+  for (const constraints of variants) {
+    const action = decline(); action.decision.constraints = constraints;
+    const result = await runActor(registry, scenario, adapter(async () => receipt(action)), limits);
+    assert.equal(result.outcome, "invalid_decision"); assert.match(result.errors.join(";"), /preserve.*affordability/);
+  }
+}));
+
+test("hidden constraints expose only unknown until their supporting facts are observed", async () => temporary(async (registry, scenario) => {
+  scenario.constraints = [{ key: "affordability", state: "unsatisfied", material: true, evidenceRefs: ["budget"] }];
+  let calls = 0;
+  const result = await runActor(registry, scenario, adapter(async view => {
+    assert(Object.isFrozen(view.constraints));
+    if (calls++ === 0) {
+      assert.deepEqual(view.constraints, [{ key: "affordability", state: "unknown", material: true, evidenceRefs: [] }]);
+      return receipt({ type: "inspect", ref: "budget" });
+    }
+    assert.deepEqual(view.constraints, scenario.constraints);
+    return receipt(decline());
+  }), limits);
+  assert.equal(result.outcome, "completed");
+  const deferred = decline(); deferred.decision.action = "defer"; deferred.decision.evidenceRefs = ["offer"];
+  deferred.decision.constraints = [{ key: "affordability", state: "unknown", material: true, evidenceRefs: [] }];
+  deferred.decision.missingInformation = ["Read the available budget before deciding"];
+  const unknown = await runActor(registry, scenario, adapter(async () => receipt(deferred)), limits);
+  assert.equal(unknown.outcome, "completed");
+}));
+
+test("all supporting facts are required before a constraint state is disclosed", async () => temporary(async (registry, scenario) => {
+  scenario.constraints = [{ key: "affordability", state: "unsatisfied", material: true, evidenceRefs: ["offer", "budget"] }];
+  const action = purchase("trial", []);
+  const result = await runActor(registry, scenario, adapter(async view => {
+    assert.deepEqual(view.constraints[0], { key: "affordability", state: "unknown", material: true, evidenceRefs: [] });
+    return receipt(action);
+  }), limits);
+  assert.equal(result.outcome, "invalid_decision"); assert.equal(result.decision, null);
+}));
+
+test("malformed or non-scenario constraint evidence denies dispatch", async () => temporary(async (registry, scenario) => {
+  const valid = { key: "affordability", state: "satisfied", material: true, evidenceRefs: ["offer"] };
+  const variants = [null, [valid, valid], [{ ...valid, evidenceRefs: [] }], [{ ...valid, evidenceRefs: ["source"] }],
+    [{ ...valid, evidenceRefs: ["offer", "offer"] }], [{ ...valid, extra: true }], [{ ...valid, material: "true" }]];
+  for (const constraints of variants) {
+    let calls = 0; scenario.constraints = constraints as DecisionConstraint[];
+    const result = await runActor(registry, scenario, adapter(async () => { calls++; return receipt(purchase()); }), limits);
+    assert.equal(result.outcome, "policy_denied"); assert.equal(calls, 0);
+  }
+}));
+
+test("investment decisions cannot create their own mandate, capital, authority, or diligence", async () => temporary(async (registry, scenario) => {
+  const constraints: DecisionConstraint[] = ["mandate", "available_capital", "decision_authority", "required_diligence"].map(key => ({ key, state: "satisfied", material: true, evidenceRefs: ["offer"] }));
+  for (const action of ["approve_investment", "recommend_investment", "conditional_investment"]) {
+    const response = { type: "decide", decision: { ...decline().decision, action, evidenceRefs: ["offer"], constraints, conditions: ["Fixture terms"] } };
+    const untrusted = await runActor(registry, scenario, adapter(async () => receipt(response)), limits);
+    assert.equal(untrusted.outcome, "invalid_decision");
+    scenario.constraints = constraints;
+    const trusted = await runActor(registry, scenario, adapter(async () => receipt(response)), limits);
+    assert.equal(trusted.outcome, "completed", trusted.errors.join(";"));
+    delete scenario.constraints;
+  }
+}, "investor"));
+
+test("unknown investment authority and diligence cannot be upgraded to approval", async () => temporary(async (registry, scenario) => {
+  scenario.constraints = ["mandate", "available_capital", "decision_authority", "required_diligence"].map(key => ({ key, state: ["mandate", "available_capital"].includes(key) ? "satisfied" : "unknown", material: true, evidenceRefs: ["mandate", "available_capital"].includes(key) ? ["offer"] : [] }));
+  const forged = scenario.constraints.map(item => ({ ...item, state: "satisfied", evidenceRefs: ["offer"] }));
+  const response = { type: "decide", decision: { ...decline().decision, action: "approve_investment", evidenceRefs: ["offer"], constraints: forged, conditions: [] } };
+  const result = await runActor(registry, scenario, adapter(async () => receipt(response)), limits);
+  assert.equal(result.outcome, "invalid_decision"); assert.match(result.errors.join(";"), /decision_authority/);
+}, "investor"));

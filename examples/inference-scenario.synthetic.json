@@ -5,6 +5,9 @@
   "modelVersion": "1",
   "scope": { "country": "synthetic-market", "language": "en", "segment": "software-fixture", "category": "synthetic-pilot", "decision": "fixture-purchase" },
   "processing": "external_model_allowed",
+  "constraints": [
+    { "key": "affordability", "state": "unsatisfied", "material": true, "evidenceRefs": ["budget"] }
+  ],
   "facts": [
     { "id": "offer", "label": "Synthetic offer", "value": "The synthetic pilot costs 20 units.", "kind": "app_observation", "visibility": "initial", "processing": "external_model_allowed" },
     { "id": "budget", "label": "Synthetic budget", "value": "The synthetic buyer has a budget of 5 units.", "kind": "scenario_fact", "visibility": "on_request", "processing": "external_model_allowed" }

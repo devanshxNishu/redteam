@@ -17,7 +17,17 @@ This boundary limits supplied information. It cannot remove a language model's p
 
 The coordinator supplies run, actor, scenario, model, scope, and decision-body identity. The adapter cannot replace those fields. Final records must pass structural checks, material constraint checks, registered model and scope access, and evidence resolution. Cited information must have been observed by that actor.
 
-Constraint references establish traceability. They do not prove that an interpretation is correct. Semantic evidence review remains necessary.
+## Coordinator constraints
+
+A scenario can include `constraints`, each with `key`, `state`, `material`, and `evidenceRefs`. Known states require references to scenario facts. Research references, duplicate keys, unsupported fields, and known states without evidence are rejected before adapter dispatch.
+
+The adapter receives each constraint as `unknown` with no citations until it has observed every supporting fact. An explicit unknown state with no evidence is visible immediately. Its decision must preserve every supplied constraint, including material status and the observed evidence references. It cannot omit a barrier, change its state, or substitute a different citation. A deferred decision can preserve an unobserved constraint as unknown and identify the missing information.
+
+Purchases and renewals require observed, material, satisfied coordinator constraints for `affordability`, `payment_access`, and `purchase_authority`. Investment approval requires `mandate`, `available_capital`, `decision_authority`, and `required_diligence`. Recommendations require mandate, capital, and diligence. Conditional investment requires satisfied mandate and capital, explicit material authority and diligence states, and conditions for unresolved barriers. Self-declared actor states cannot supply these requirements.
+
+An older scenario without constraints can still produce a negative or information-seeking decision. Positive purchase and investment decisions now fail closed without the required coordinator declarations. Update existing scenario files before using those actions.
+
+These declarations establish a software boundary. They do not authenticate funds, authority, diligence, or human behavior. Additional actor interpretations and cited references still require semantic evidence review. The runtime does not derive affordability from prices or validate proposed investment amounts and terms.
 
 ## Limits and failure
 

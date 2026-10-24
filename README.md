@@ -24,7 +24,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.5.0.tgz
+npm install --global ./redteam-0.5.1.tgz
 redteam --help
 ```
 
@@ -136,7 +136,7 @@ The adapter is an authored software fixture. It makes no live model calls and do
 
 See the [runtime contract](docs/actor-runtime.md). The optional configured provider path is described below. Analyst subagents remain a later milestone.
 
-Consumer and investor decision contracts check structure and material constraints. Registered decision validation additionally resolves model versions, scopes, permitted references, and coordinator identities. These controls do not generate decisions or prove behavioral truth. No live API run or human behavioral validation has been recorded. Country psychology models, purchase forecasts, and investment forecasts remain unvalidated.
+Consumer and investor decision contracts check structure and material constraints. The actor runtime also binds decisions to coordinator-supplied scenario constraints. It blocks positive purchase and investment actions when the required observed funds, access, authority, mandate, or diligence declarations are missing. Registered decision validation resolves model versions, scopes, permitted references, and coordinator identities. These controls do not prove behavioral truth or authenticate scenario declarations. No live API run or human behavioral validation has been recorded. Country psychology models, purchase forecasts, and investment forecasts remain unvalidated.
 
 ## Optional configured inference
 

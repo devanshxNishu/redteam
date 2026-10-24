@@ -12,7 +12,7 @@ import type { PublicOpenAIConfiguration } from "./inference-config.ts";
 export async function executeConfiguredActor(workspace: string, registry: ResearchRegistry, input: unknown, limits: ActorLimits, adapter: InferenceAdapter, configuration: PublicOpenAIConfiguration) {
   if (adapter.mode !== "live_model") throw new Error("Configured runs require a declared live-model adapter. Use actors demo for scripted fixtures.");
   if (!input || typeof input !== "object" || Array.isArray(input) || Object.values(Object.getOwnPropertyDescriptors(input)).some(item => !("value" in item))) throw new Error("Scenario input requires plain data.");
-  const allowed = ["id", "actorRef", "modelId", "modelVersion", "scope", "decisionBody", "facts", "processing"];
+  const allowed = ["id", "actorRef", "modelId", "modelVersion", "scope", "decisionBody", "facts", "constraints", "processing"];
   if (Reflect.ownKeys(input).some(key => typeof key !== "string" || !allowed.includes(key))) throw new Error("Unsupported scenario field. The coordinator supplies run identity.");
   const runId = randomUUID();
   const scenario = { ...structuredClone(input), runId } as ActorScenario;

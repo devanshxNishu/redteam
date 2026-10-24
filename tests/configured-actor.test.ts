@@ -26,7 +26,9 @@ async function temporary(work: (registry: ResearchRegistry, directory: string, s
     registry.addSource({ id: "source", kind: "synthetic_fixture", title: "Configured adapter fixture", reference: "fixture:configured", collectedAt: "2026-01-01T00:00:00.000Z", method: "Software fixture", scope, partition: "grounding", participantRefs: ["synthetic-unit"], consentRef: null,
       permissions: { grounding: true, training: false, evaluation: false }, processing: external ? "external_model_allowed" : "local_only", expiresAt: null, limitations: ["Not human research"], content: { text: "Synthetic bounded decision rule" } });
     registry.addModel({ id: "model", version: "1", domain: "consumer", scope, sourceIds: ["source"], goals: ["Test a configured decision"], constraints: ["Honor the supplied budget"], knownInformation: [], decisionRules: ["Use observed fixture data"], limitations: ["Synthetic test model"] });
-    await work(registry, directory, { id: "scenario", actorRef: "actor", modelId: "model", modelVersion: "1", scope, processing: "external_model_allowed", facts: [
+    await work(registry, directory, { id: "scenario", actorRef: "actor", modelId: "model", modelVersion: "1", scope, processing: "external_model_allowed", constraints: [
+      { key: "affordability", state: "unsatisfied", material: true, evidenceRefs: ["budget"] },
+    ], facts: [
       { id: "offer", label: "Fixture offer", value: "Price: 20 units", kind: "app_observation", visibility: "initial", processing: "external_model_allowed" },
       { id: "budget", label: "Fixture budget", value: "Budget: 5 units", kind: "scenario_fact", visibility: "on_request", processing: "external_model_allowed" },
     ] });
