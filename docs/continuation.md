@@ -46,7 +46,7 @@ Read `docs/master-plan.md`, `docs/development-backlog.md`, and `docs/implementat
 - Package version is 0.5.1. Build, archive, and isolated installed CLI passed. Version, bundled constraint example, both scripted actor actions, persisted catalog, and all three artifact hashes passed. Results are in `outputs/installed-verification-0.5.1.json`. Earlier 0.5.0 web verification remains recorded separately.
 - Runtime, inference, and README documentation explain the contract and migration. Scenario declarations still require semantic review; this change authenticates no human research or actual money, authority, diligence, amounts, or terms.
 
-## Current milestone
+## Version 0.6 verification
 
 The web, terminal, registry, and actor mechanics are complete within their documented fixture scope. The archive is `outputs/redteam-0.6.0.tgz`. External target execution is not enabled by access grants yet.
 
@@ -56,20 +56,33 @@ Type checking and the full 125-test suite passed with zero failures or skips. Th
 
 Version 0.6.0 built, packed, and installed in an isolated prefix. `work/verify-installed-0.6.0.mjs` verified compiled help/version/examples, registered synthetic inputs, configured fake transport (four requests), two settled reservations, 360 micro-USD estimated spend, zero held cost, current-budget CLI, both scripted demo decisions, persisted catalog, and all artifact hashes. Results are in `outputs/installed-verification-0.6.0.json`. Real credentials were not loaded.
 
-The default demo adapter is an authored script. An optional OpenAI adapter is implemented and mock-verified. No live model credentials or real human research are configured. Runtime and registry contracts are in `docs/actor-runtime.md` and `docs/research-registry.md`.
+## Current milestone: Version 0.7
 
-The optional adapter, coordinator constraints, and durable inference reservations are packaged. Continue with task-state foundations. The original integration checklist is `docs/inference-adapter-plan.md`. Official token-counting and structured-output documentation was fetched during planning. Cached copies are in `work/openai-token-counting.md` and `work/openai-structured-outputs.md`; verify current API details before changing provider behavior. No API key was loaded and no live model request was made.
+Task ownership and factual partial recovery are integrated. Type checking, build, and the full 148-test suite passed with zero failures or skips. `outputs/redteam-0.7.0.tgz` is built and installed. `work/verify-installed-0.7.0.mjs` passed compiled CLI and desktop/mobile browser checks. It verified a four-artifact accepted fake-provider run, a three-artifact interrupted recovery with unsettled usage and no decision, task inspection/recovery, scripted demos, three catalog entries, and source withdrawal restricting both dependent reports. No overflow or browser errors were observed. Results are `outputs/installed-verification-0.7.0.json`; screenshots are under `outputs/preview/`. The temporary service and browser are stopped.
+
+Exact implementation files:
+
+- `src/actor-task.ts`: one-attempt configured actor, fenced ownership, heartbeat, bounded finalization, and conservative expired-task recovery.
+- `src/tasks.ts`: guarded task records, sealed-output hashes, dispatch intents, expiry, and no automatic retry. An unpublished seal is interrupted after its deadline while its digest remains intact.
+- `src/actor-execution.ts`: private manifest before inference, model/hash pin, same task/budget invocation IDs, verified worker bytes, current-source recheck, and coordinator acceptance. Rejected candidates do not enter accepted decisions.
+- `src/budgeted-inference.ts`: ownership checks before reservation/dispatch; only provably undispatched liability can be released. Late receipts still settle after a stopped run.
+- `src/actor-recovery.ts`: frozen-manifest and sealed-byte checks, factual partial report, catalog entry, idempotent recovery, no inference calls, and no accepted decision promotion. It repairs a missing catalog entry for its own partial report.
+- `src/cli.ts`: task list/show/cancel/recover and SIGINT/SIGTERM cancellation. New configured runs also check earlier expired tasks.
+- `src/actor-reports.ts`: catalog model references protect recovered report retrieval after withdrawal, even with an empty actor-result list.
+- `web/app.js`: report outcome/task state and unsettled usage are visible in the dialog.
+- `tests/configured-actor.test.ts`: sixteen integration checks, including killed-worker recovery, shared identities, lease renewal, cancellation, stale-output rejection, and recovery publication while the cancelled coordinator finishes. An existing verified recovery report is preserved instead of overwritten.
+- `tests/actor-recovery.test.ts`: six recovery checks; `tests/tasks.test.ts`: nine task-state checks. All are authored software fixtures.
+
+Contracts are `docs/task-state.md`, `docs/budget-ledger.md`, and `docs/live-inference.md`. The default demo remains a script. No live API key, live model smoke test, real participant research, or behavioral validation is recorded.
+
+Official token-counting and structured-output documentation was fetched during earlier integration. Cached copies are `work/openai-token-counting.md` and `work/openai-structured-outputs.md`. Verify current official API details before changing provider behavior. Do not reuse desktop authentication or invent rates.
 
 Use synthetic fixtures for software verification. Keep them visibly separate from human research. Never promote synthetic fixtures into validated psychology.
 
 ## Next sequence
 
-An unreleased task-state prototype is implemented in `src/tasks.ts`. `tests/tasks.test.ts` passed all nine checks; type checking and the compiled build passed. Its transition and integration contract is `docs/task-state.md`. It is not connected to configured actor execution and is not in the existing 0.6.0 archive. The last full released-path suite passed 125 tests before this independent prototype; the new task suite was verified separately. No new live calls or real credentials were used.
-
-The prototype stores immutable task specifications/question keys, bounded attempts, fenced leases, dispatch intents, sealed artifact metadata, and transition events. Four competing processes could claim only once. Expired ownership cannot publish or heartbeat, recovery never requeues, and any dispatch intent blocks the pre-dispatch retry method. Task cancellation does not free budget liability. Sealed metadata is not artifact-byte or semantic verification.
-
-1. Integrate one configured actor task with the durable wrapper using `docs/task-state.md`. Freeze a manifest, protect current ownership before dispatch, preserve the same invocation identity, renew leases, and verify artifacts before accepting outputs. Keep a separate bounded coordinator finalization allowance so actor timeout does not require unsafe lease resurrection.
-2. Test ownership expiry during a fake provider call, stale output, cancellation, and restart. Do not automatically replay a possibly dispatched invocation. The ledger protects inference allocation but does not schedule workers or cover browser/tool/infrastructure fees.
+1. Repair catalog publication for an already completed normal report if the process ended between report writing and catalog insertion. Import only the exact recorded accepted worker artifact under its completed fence and current research permissions. Never promote an unfinished sealed candidate. This case is not handled by partial recovery yet.
+2. Extend recovery checks to concurrent publication and remaining interruption points. Keep uncertain invocation identities and original sealed outputs unchanged. Do not broaden to specialist dispatch before its prerequisites.
 3. Add bounded analyst task coordination when prerequisites permit. The commercial hierarchy gate remains unproven; do not enable broad specialist fan-out or claim the roundtable is complete.
 4. A live API smoke test needs explicit model configuration, valid credentials, current rates, and processing permission. Do not reuse desktop authentication or invent pricing. Continue independent work if these inputs are missing.
 5. Continue external runner work after isolation and access prerequisites are met.
@@ -84,7 +97,7 @@ The prototype stores immutable task specifications/question keys, bounded attemp
 
 The temporary preview service is stopped during turn teardown. Reopen it with `npm run ui` when needed. Runtime data remains in `.redteam/` and is excluded from Git and release archives.
 
-Release commits from this continuation are `13ac283` (scenario constraints) and `56d13cc` (durable inference ledger). `outputs/release-verification.json` now records the installed 0.6.0 release (71 packaged files). No preview service was started during this continuation.
+Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), and `f770971` (task-state foundation). The 0.7 installed verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.7.0.json` record its final package and checks. `outputs/test-results-0.7.0.txt` records the full suite. Preview services and test browsers are stopped.
 
 ## External inputs still required
 

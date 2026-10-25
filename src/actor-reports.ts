@@ -5,6 +5,8 @@ import type { ActorReport } from "./actor.ts";
 import type { Artifact } from "./evidence.ts";
 import { ResearchRegistry } from "./research.ts";
 import type { BudgetSnapshot } from "./budget.ts";
+import type { ActorTaskSnapshot } from "./actor-task.ts";
+import type { ActorAcceptance } from "./actor-execution.ts";
 
 export interface ActorDemoReport {
   schemaVersion: "1.0";
@@ -17,6 +19,10 @@ export interface ActorDemoReport {
   artifacts: Artifact[];
   integrityErrors: string[];
   budget?: BudgetSnapshot;
+  task?: ActorTaskSnapshot;
+  acceptance?: ActorAcceptance;
+  workerOutcome?: ActorReport["outcome"];
+  recovery?: { reason: "unfinished_report"; recordedAt: string; acceptedDecisionRecovered: false };
 }
 
 export async function readActorReport(store: WorkspaceStore, workspace: string, id: string, registry?: ResearchRegistry): Promise<ActorDemoReport> {
@@ -32,6 +38,10 @@ export async function readActorReport(store: WorkspaceStore, workspace: string, 
   if (report.schemaVersion !== "1.0" || !["scripted_actor_demo", "model_actor_run"].includes(report.kind) || report.runId !== id || !Array.isArray(report.reports) || !Array.isArray(report.artifacts)) throw new Error("Unrecognized actor report.");
   const research = registry ?? new ResearchRegistry(workspace);
   try {
+    for (const ref of summary.modelVersions ?? []) {
+      const model = research.model(ref.id, ref.version);
+      research.authorizeModel(model.id, model.version, model.scope, "exploratory");
+    }
     for (const actor of report.reports) if (actor.model) {
       const model = research.model(actor.model.id, actor.model.version);
       research.authorizeModel(model.id, model.version, model.scope, "exploratory");

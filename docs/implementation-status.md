@@ -1,6 +1,6 @@
 # redteam: Implementation status
 
-Current build: 0.6.0, local web and terminal workspace with configured inference, coordinator-owned scenario constraints, and durable inference reservations. The provider path is mock-verified; no live API smoke test is recorded.
+Current build: 0.7.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, and partial crash reports. The provider path is mock-verified; no live API smoke test is recorded.
 
 This record separates implemented code from the broader product plan. The browser runner reviews one controlled signup journey. Registered actor models can be used through the configured path, but no independent human behavioral validation is recorded.
 
@@ -34,6 +34,9 @@ This record separates implemented code from the broader product plan. The browse
 | Scenario constraints | Coordinator states bind decisions; hidden states remain unknown until every supporting fact is observed; positive purchase and investment requirements fail closed | Operator declarations; no authentication of actual funds, authority, diligence, amounts, or terms |
 | Durable inference budget | Atomic token/cost reservations, fixed protected pools, invocation identities, dispatch guards, actual settlement, overrun stop, and uncertain liability across restart | Local SQLite; configured rates, not provider billing; no complete analyst task scheduler |
 | Budget inspection | `redteam budgets show RUN_ID` reads current amounts and transition events; configured reports save a budget artifact | Report-time snapshots can precede later receipts |
+| Configured actor task | Frozen manifest, one fenced attempt, heartbeats, dispatch identity, verified worker artifact, permission/model recheck, and coordinator acceptance | One local actor; no specialist scheduler or production worker isolation |
+| Task control | List/show/cancel/recover commands; SIGINT/SIGTERM cancellation; stale outputs rejected | Local trusted coordinator and clock; database contention can affect latency |
+| Interrupted reports | Expired tasks and uncertain spend stay recorded; verified frozen/sealed evidence produces a partial report with no accepted decision | No inference replay; repair of a completed normal report missing its catalog entry remains open |
 | Consumer and investor demo | Scripted rejection and conditional investment, with reasons, conditions, gaps, and evidence | Authored software fixtures; not behavioral predictions |
 | Shared actor reports | Scripted and configured run catalog, report detail, permission checks, and artifact verification | Not durable live-agent task orchestration |
 
@@ -48,7 +51,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 125 passed, zero failed or skipped |
+| Full automated suite | 148 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -63,23 +66,25 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Decision resolution | Four tests passed for version resolution, identity, scope, references, withdrawal, and denied validation claims |
 | Vault integrity | Record-bound authentication, modified ciphertext rejection, and missing-key behavior passed |
 | Registry dashboard | Actual source counts and draft model cards passed desktop and mobile browser checks |
-| Packaged installation | Installed 0.6.0 version/help/examples, configured fake-provider path, durable budget CLI, scripted actor demo, catalog, and artifact verification passed |
-| Packaged web service | Installed 0.5.0 server passed desktop and mobile flows, actor report inspection, access changes, and evidence verification |
+| Packaged installation | Installed 0.7.0 version/help/examples, configured fake provider, task and budget CLI, partial recovery, scripted demo, catalog, and artifact verification passed |
+| Packaged web service | Installed 0.7.0 completed/recovered dialogs passed desktop and 390 px checks, artifact verification, and withdrawal restrictions; broader five-view flows remain verified on 0.5.0 |
 | Actor runtime checks | Eighteen tests passed, including coordinator constraint omission, state escalation, evidence substitution, hidden states, unknown barriers, and positive-action requirements |
 | Actor demo evidence | Consumer and investor reports saved; three artifacts passed hash checks |
 | Shared actor API | Saved both scripted decisions, served the report, and detected artifact changes |
 | Actor dashboard | Scripted run, report inspection, artifact verification, and mobile layout passed browser checks |
 | Provider verification | Eleven fake-transport checks passed; no real API requests |
 | Processing permissions | Five checks passed, including legacy defaults and zero dispatch on denial |
-| Configured execution | Eight checks passed, including persisted reservations, unknown liability, late receipts, overrun records, CLI inspection, redaction, refusal, and missing credentials |
+| Configured execution | Sixteen checks passed, including manifests, shared identities, cancellation, concurrent recovery publication, heartbeat renewal, expired output, a killed worker, budgets, redaction, and missing credentials |
 | Durable ledger | Nine checks passed, including six competing processes, protected pools, immutable identities, restart, closure, settlement, overruns, permissions, and symlinks |
+| Task ownership | Nine checks passed, including competing claims, stale fences, bounded renewal, sealed output, safe pre-dispatch retry, restart, and private state files |
+| Partial report recovery | Six checks passed for factual reports, catalog repair, idempotency, unpublished sealed candidates, changed/symlink evidence, active-task preservation, and research withdrawal |
 | Report withdrawal | API checks passed; a browser check confirmed the open report closes and cached detail is cleared |
 | Local file boundaries | Dangling database symlinks denied before target creation; credential-bearing target URLs rejected |
 | Pinned Chromium download | Earlier cache-lock failure; installed Chrome fallback verified |
 
 An initial test pass attempt exposed browser shutdown deadlines under load. The implementation now closes contexts explicitly and uses the documented bounded cleanup allowance. The full suite passed after that correction. An installed-build review from before that correction correctly reported limited coverage; it did not report an app defect.
 
-Visual checks for 0.5.0 are saved under `outputs/preview/`. The current installable archive is `outputs/redteam-0.6.0.tgz`. The compiled installed path passed a configured fake-provider run, two settled reservations, 360 micro-USD in configured-rate estimates, zero held liability, budget CLI inspection, both scripted actions, catalog persistence, and all artifact hashes. No live provider calls occurred. No visual layout changed. Generated data is excluded from Git.
+The current installable archive is `outputs/redteam-0.7.0.tgz`. Installed verification recorded four fake provider requests, an accepted completed task with four valid artifacts, a recovered interrupted run with three valid artifacts and no accepted decision, task CLI inspection, scripted demos, and three catalog entries. Completed and recovered report dialogs passed desktop/mobile checks with no overflow or browser errors. Withdrawing the source restricted both affected reports. Screenshots are under `outputs/preview/`; results are in `outputs/installed-verification-0.7.0.json`. The temporary service and browser are stopped. No live provider calls occurred. Generated data is excluded from Git.
 
 Earlier D1 reports remain under `outputs/runs/`. The dashboard imports recognized reports from that directory. New service runs use `.redteam/runs/`.
 
@@ -99,8 +104,6 @@ No real provider calls occurred in the recorded checks. Scripted runs report zer
 
 ## Next milestone
 
-Coordinator constraints and durable inference reservations are implemented and packaged. An unreleased task-state prototype is now in `src/tasks.ts`, with nine focused tests in `tests/tasks.test.ts` and its contract in `docs/task-state.md`. Type checking and the compiled build passed. Four competing processes could claim a task only once. Tests cover stale fences, expiry, explicit pre-dispatch retry, sealed metadata, cancellation, restart, permissions, and symlinks. The released 0.6.0 archive does not contain this later prototype; it is not wired to actor execution and does not launch workers.
-
-Next, integrate task ownership with dispatch and output acceptance under the sequence in `docs/task-state.md`. Browser time, tool fees, and infrastructure cost are outside the inference ledger. Broader hierarchy still depends on commercial evidence. A live provider smoke test requires configured credentials, selected model access, and current pricing. Keep scripted fixtures, mock responses, live model output, and human observations distinct.
+Configured task ownership and partial crash reports are implemented and verified through the installed package and browser. Next, repair catalog publication after a crash involving an already completed normal report, while preserving its exact accepted artifact and permission boundaries. Shared specialist scheduling, browser/tool/infrastructure budgets, and production isolation remain open. Broader hierarchy still depends on commercial evidence. Live provider and human evaluation require their actual external inputs.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.

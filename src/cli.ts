@@ -18,6 +18,8 @@ import { configureInference } from "./inference-config.ts";
 import { executeConfiguredActor } from "./actor-execution.ts";
 import type { ActorLimits } from "./actor.ts";
 import { BudgetLedger } from "./budget.ts";
+import { TaskStore } from "./tasks.ts";
+import { recoverConfiguredActors } from "./actor-recovery.ts";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspace = resolve(process.cwd());
@@ -44,6 +46,10 @@ redteam actors demo
 redteam actors list
 redteam actors run --scenario FILE --limits FILE --config FILE
 redteam budgets show RUN_ID
+redteam tasks list [RUN_ID]
+redteam tasks show TASK_ID
+redteam tasks cancel TASK_ID
+redteam tasks recover RUN_ID
 redteam demo [--variant broken|fixed]
 redteam --version
 redteam examples
@@ -161,6 +167,17 @@ async function main(): Promise<void> {
     try { print({ ...ledger.snapshot(args[1]!), events: ledger.events(args[1]!) }); } finally { ledger.close(); }
     return;
   }
+  if (command === "tasks") {
+    if (args[0] === "recover" && args.length === 2) { print(await recoverConfiguredActors(workspace, args[1]!)); return; }
+    const tasks = new TaskStore(workspace);
+    try {
+      if (args[0] === "list" && (args.length === 1 || args.length === 2)) print(tasks.list(args[1]));
+      else if (args[0] === "show" && args.length === 2) print({ record: tasks.task(args[1]!), events: tasks.events(args[1]!) });
+      else if (args[0] === "cancel" && args.length === 2) { tasks.cancel(args[1]!); print(tasks.task(args[1]!)); }
+      else throw new Error("Usage: redteam tasks list [RUN_ID]|show TASK_ID|cancel TASK_ID|recover RUN_ID");
+    } finally { tasks.close(); }
+    return;
+  }
   if (command === "research") {
     const registry = new ResearchRegistry(workspace);
     const load = async (file: string | undefined): Promise<unknown> => {
@@ -194,8 +211,11 @@ async function main(): Promise<void> {
       const scenario = await readInput(options["--scenario"]);
       const limits = await readInput(options["--limits"]) as ActorLimits;
       const registry = new ResearchRegistry(workspace);
-      try { const result = await executeConfiguredActor(workspace, registry, scenario, limits, adapter, configuration); print(result); if (result.outcome !== "completed") process.exitCode = 1; }
-      finally { registry.close(); }
+      const controller = new AbortController();
+      const cancel = () => controller.abort();
+      process.once("SIGINT", cancel); process.once("SIGTERM", cancel);
+      try { const result = await executeConfiguredActor(workspace, registry, scenario, limits, adapter, configuration, { signal: controller.signal }); print(result); if (result.outcome !== "completed") process.exitCode = 1; }
+      finally { process.removeListener("SIGINT", cancel); process.removeListener("SIGTERM", cancel); registry.close(); }
       return;
     }
     if (args.length === 1 && args[0] === "list") {

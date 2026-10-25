@@ -79,6 +79,7 @@ class ActorFailure extends Error {
   constructor(outcome: ActorReport["outcome"], message: string) { super(message); this.outcome = outcome; }
 }
 export class InferenceBudgetError extends Error {}
+export class InferencePolicyError extends Error {}
 function failure(outcome: ActorReport["outcome"], message: string): never { throw new ActorFailure(outcome, message); }
 function record(input: unknown, allowed: string[], label: string): Record<string, unknown> {
   if (!input || typeof input !== "object" || Array.isArray(input) || ![Object.prototype, null].includes(Object.getPrototypeOf(input))) failure("adapter_failed", `${label} must be a plain object.`);
@@ -174,6 +175,7 @@ export async function runActor(registry: ResearchRegistry, input: ActorScenario,
       } catch (error) {
         if (combined.aborted) failure("cancelled", "Actor execution was cancelled.");
         if (error instanceof InferenceBudgetError) failure("limit_reached", "Inference request does not fit the remaining token or estimated cost budget.");
+        if (error instanceof InferencePolicyError) failure("policy_denied", "The coordinator denied inference dispatch because task ownership is no longer valid.");
         if (error instanceof LimitError) failure("limit_reached", "Actor adapter deadline reached.");
         failure("adapter_failed", "Inference adapter failed. No valid decision was accepted.");
       } finally { if (cancelCall) combined.removeEventListener("abort", cancelCall); }

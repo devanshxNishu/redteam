@@ -30,7 +30,7 @@ An overrun receipt is retained in full, including spend beyond the reservation. 
 
 ## Reports and terminal inspection
 
-Configured runs save three artifacts: scenario/configuration snapshot, actor report, and budget snapshot. They also include the report-time budget state in JSON and Markdown.
+Configured runs save four artifacts: frozen manifest, worker result, budget snapshot, and task snapshot. They also include the report-time budget state in JSON and Markdown. Recovered interrupted runs can have three artifacts when no sealed worker result survived.
 
 ```sh
 redteam budgets show RUN_ID
@@ -45,7 +45,7 @@ A late adapter receipt can settle after the actor stops. It updates the durable 
 - Cost uses the operator's configured rates. It is not a provider-enforced billing cap or reconciled invoice.
 - Provider receipts and adapters remain trusted. Fabricated usage cannot be independently detected here.
 - The current adapter wrapper reserves its entire remaining request allowance. It is conservative and may serialize concurrent callers. A future scheduler must reserve bounded individual requests under the same parent cap.
-- Browser time, tool fees, infrastructure cost, task leases, retries, and distributed worker recovery are not integrated with this ledger.
+- Local configured actor leases and cancellation are integrated. Browser time, tool fees, infrastructure cost, a retry scheduler, and distributed workers are not integrated with this ledger.
 - Database lock waits can extend local response latency. Dispatch checks the deadline again before calling the adapter. Production worker isolation and stronger timing controls remain open.
 - Records contain run/task/configuration references and quantities. They exclude API keys, prompts, research text, and provider error bodies.
 - Unknown usage cannot be cleared through the CLI. Billing reconciliation needs authenticated receipt provenance before such an operation is added.

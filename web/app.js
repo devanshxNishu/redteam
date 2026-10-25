@@ -133,6 +133,12 @@ async function showActorReport(id) {
     const report = await api(`/api/actors/${id}`);
     $("detail-title").textContent = report.kind === "model_actor_run" ? "Configured model simulation" : "Scripted stakeholder decisions";
     const summary = section(report.kind === "model_actor_run" ? "Simulation scope" : "Software demonstration"); summary.append(node("p", report.note));
+    summary.append(node("p", `Run outcome: ${report.outcome.replaceAll("_", " ")}.`));
+    if (report.task) summary.append(node("p", `Task state: ${report.task.record.state.replaceAll("_", " ")}.`));
+    if (report.budget) {
+      const pending = report.budget.invocations.filter(item => ["reserved", "in_flight", "uncertain"].includes(item.state)).length;
+      summary.append(node("p", pending ? `${pending} ${pending === 1 ? "request has" : "requests have"} unsettled usage. Reported cost is incomplete.` : "All recorded inference usage is settled."));
+    }
     const sections = report.reports.map(actor => {
       const result = section(actor.decision ? `${actor.decision.domain} · ${actor.decision.action.replaceAll("_", " ")}` : actor.outcome.replaceAll("_", " "));
       if (actor.decision) {

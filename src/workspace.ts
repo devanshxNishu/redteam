@@ -29,6 +29,7 @@ export interface ReviewJob {
 }
 export interface ActorRunSummary {
   runId: string;
+  taskId?: string;
   kind: "scripted_actor_demo" | "model_actor_run";
   createdAt: string;
   outcome: "completed" | "limited_coverage";

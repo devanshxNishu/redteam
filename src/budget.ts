@@ -82,6 +82,7 @@ export class BudgetLedger {
     if (!row) throw new Error("Budget run not found.");
     return JSON.parse(String(row.document)) as StoredRun;
   }
+  hasRun(id: string): boolean { return Boolean(this.db.prepare("SELECT id FROM budget_runs WHERE id=?").get(id)); }
   private invocation(id: string): BudgetInvocation {
     const row = this.db.prepare("SELECT document FROM budget_invocations WHERE id=?").get(id);
     if (!row) throw new Error("Budget invocation not found.");

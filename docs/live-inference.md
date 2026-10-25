@@ -24,7 +24,9 @@ redteam actors run \
 
 This command can make billable provider requests when configured. The example limits allow at most 12,000 reported tokens and US$0.05 at the configured rates. The cost limit is an estimate; it is not a provider billing cap. Verify account pricing and account controls before a paid run. Model availability and feature support require a live check.
 
-The dashboard can inspect configured runs created through the terminal. Its run button continues to use the scripted fixture.
+The dashboard can inspect configured runs created through the terminal. Its run button continues to use the scripted fixture. Configured actors now use one fenced task. Use `redteam tasks list`, `redteam tasks show TASK_ID`, or `redteam tasks cancel TASK_ID` for control from another terminal. Ctrl+C also requests bounded cancellation and a partial report.
+
+`redteam tasks recover RUN_ID` records expired ownership and publishes available factual partial evidence without repeating provider requests. A new configured run also checks prior unfinished tasks. An unfinished sealed candidate is never promoted into an accepted decision during recovery.
 
 ## Processing permission
 

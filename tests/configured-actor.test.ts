@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { ResearchRegistry } from "../src/research.ts";
 import { WorkspaceStore } from "../src/workspace.ts";
 import { authorizedActorRuns, readActorReport } from "../src/actor-reports.ts";
@@ -13,6 +13,8 @@ import { executeConfiguredActor } from "../src/actor-execution.ts";
 import type { ActorScenario, ActorLimits, InferenceAdapter } from "../src/actor.ts";
 import { checkArtifacts } from "../src/evidence.ts";
 import { BudgetLedger } from "../src/budget.ts";
+import { TaskStore } from "../src/tasks.ts";
+import { recoverConfiguredActors } from "../src/actor-recovery.ts";
 
 // All provider exchanges below use an injected local function. They are not live
 // OpenAI observations and must not be used as model-quality evidence.
@@ -63,7 +65,15 @@ test("configured fake-provider execution saves receipts, model versions, and ver
     assert.equal(report.reports[0]?.backend.costBasis, "configured_rate_estimate");
     assert.equal(report.reports[0]?.usage.costMicrousd, 360);
     assert.equal(report.reports[0]?.usage.unreceiptedCalls, 0);
-    assert.equal(report.artifacts.length, 3);
+    assert.equal(report.artifacts.length, 4);
+    assert.equal(report.acceptance?.status, "accepted");
+    assert.equal(report.task?.record.state, "completed");
+    const manifest = report.artifacts.find(artifact => artifact.owner === "coordinator")!;
+    assert.equal(report.task?.record.spec.manifestHash, manifest.sha256);
+    assert.equal(report.task?.record.dispatchIntents.length, 2);
+    assert.deepEqual(report.task?.record.dispatchIntents.map(item => item.invocationRef).sort(), report.budget?.invocations.map(item => item.id).sort());
+    const output = report.artifacts.find(artifact => artifact.id === report.task?.record.output?.artifactRef)!;
+    assert.equal(output.sha256, report.task?.record.output?.sha256);
     assert.equal(report.budget?.run.state, "closed");
     assert.equal(report.budget?.invocations.length, 2);
     assert(report.budget?.invocations.every(item => item.state === "settled"));
@@ -77,6 +87,145 @@ test("configured fake-provider execution saves receipts, model versions, and ver
     assert.equal((await authorizedActorRuns(store, registry, directory))[0]?.restricted, true);
     await assert.rejects(readActorReport(store, directory, result.runId, registry), /restrict/);
   } finally { store.close(); }
+}));
+
+function localReply(view: Parameters<InferenceAdapter["next"]>[0]) {
+  return { action: { type: "decide", decision: { action: "reject", evidenceRefs: ["budget"], constraints: view.constraints,
+    rationale: "Synthetic fixture rejects an unaffordable offer", missingInformation: [], limitations: ["Software fixture, not behavior research"], changeConditions: ["Use another scenario"] } }, usage: { inputTokens: 7, outputTokens: 3, costMicrousd: 17 } };
+}
+
+test("a worker result is rejected when its task is cancelled before coordinator acceptance", async () => temporary(async (registry, directory, scenario) => {
+  scenario.facts[1]!.visibility = "initial";
+  const { configuration } = configureInference(profile, secret, provider().transport);
+  const backend: InferenceAdapter = { id: "cancelled-output-fixture", mode: "live_model", dataLocation: "local", next: async view => {
+    const tasks = new TaskStore(directory);
+    try { tasks.cancel(tasks.list()[0]!.spec.id); } finally { tasks.close(); }
+    return localReply(view);
+  } };
+  const result = await executeConfiguredActor(directory, registry, scenario, limits, backend, configuration);
+  assert.equal(result.outcome, "limited_coverage"); assert.equal(result.workerOutcome, "completed");
+  assert.equal(result.acceptance.status, "rejected"); assert.equal(result.task.record.state, "cancelled");
+  assert.equal(result.task.record.output, null); assert.equal(result.decisions[0]?.action, undefined);
+  const report = JSON.parse(await readFile(resolve(result.directory, "report.json"), "utf8"));
+  assert.equal(report.reports[0].decision, null);
+  assert.equal(result.budget.pools[0]?.spent.costMicrousd, "17");
+}));
+
+test("task cancellation between actor steps denies another adapter dispatch", async () => temporary(async (registry, directory, scenario) => {
+  const { configuration } = configureInference(profile, secret, provider().transport); let calls = 0;
+  const backend: InferenceAdapter = { id: "cancelled-next-step-fixture", mode: "live_model", dataLocation: "local", next: async () => {
+    calls++; const tasks = new TaskStore(directory);
+    try { tasks.cancel(tasks.list()[0]!.spec.id); } finally { tasks.close(); }
+    return { action: { type: "inspect", ref: "budget" }, usage: { inputTokens: 1, outputTokens: 1, costMicrousd: 1 } };
+  } };
+  const result = await executeConfiguredActor(directory, registry, scenario, limits, backend, configuration);
+  assert.equal(calls, 1); assert.equal(result.outcome, "limited_coverage");
+  assert.equal(result.task.record.state, "cancelled"); assert.equal(result.budget.invocations.length, 1);
+  assert.equal(result.budget.pools[0]?.spent.costMicrousd, "1");
+}));
+
+test("concurrent recovery publication is preserved while a cancelled coordinator finishes", async () => temporary(async (registry, directory, scenario) => {
+  scenario.facts[1]!.visibility = "initial";
+  const { configuration } = configureInference(profile, secret, provider().transport);
+  let published = "", directoryOfReport = "";
+  const backend: InferenceAdapter = { id: "publication-race-fixture", mode: "live_model", dataLocation: "local", next: async view => {
+    const tasks = new TaskStore(directory); let runId: string;
+    try { const task = tasks.list()[0]!; runId = task.spec.runId; tasks.cancel(task.spec.id); } finally { tasks.close(); }
+    const recovered = await recoverConfiguredActors(directory, runId); assert.equal(recovered.reports[0]?.status, "created");
+    directoryOfReport = resolve(directory, ".redteam/actor-runs", runId);
+    published = await readFile(resolve(directoryOfReport, "report.json"), "utf8");
+    return localReply(view);
+  } };
+  const result = await executeConfiguredActor(directory, registry, scenario, limits, backend, configuration);
+  assert.equal(result.outcome, "limited_coverage"); assert.equal(result.recoveredReport, true);
+  assert.equal(result.artifacts, 3); assert.equal(result.acceptance.status, "rejected");
+  assert.equal(await readFile(resolve(directoryOfReport, "report.json"), "utf8"), published);
+  const report = JSON.parse(published); assert.deepEqual(report.reports, []); assert.deepEqual(await checkArtifacts(directoryOfReport, report.artifacts), []);
+  const store = new WorkspaceStore(directory); try { assert.equal(store.actorRuns().length, 1); } finally { store.close(); }
+  assert.equal(result.budget.pools[0]?.spent.costMicrousd, "17");
+}));
+
+test("expired ownership cannot publish even when the adapter blocks heartbeat timers", async () => temporary(async (registry, directory, scenario) => {
+  scenario.facts[1]!.visibility = "initial";
+  const { configuration } = configureInference(profile, secret, provider().transport);
+  const backend: InferenceAdapter = { id: "expired-output-fixture", mode: "live_model", dataLocation: "local", next: async view => {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+    return localReply(view);
+  } };
+  const result = await executeConfiguredActor(directory, registry, scenario, limits, backend, configuration, { taskPolicy: { leaseMs: 80, heartbeatMs: 10 } });
+  assert.equal(result.outcome, "limited_coverage"); assert.equal(result.acceptance.status, "rejected");
+  assert.equal(result.task.record.state, "interrupted"); assert.equal(result.task.record.stopReason, "lease_expired");
+  assert.equal(result.task.record.output, null); assert.equal(result.decisions[0]?.action, undefined);
+  assert.equal(result.budget.pools[0]?.spent.costMicrousd, "17");
+}));
+
+test("a healthy long call renews task ownership and keeps one dispatch identity", async () => temporary(async (registry, directory, scenario) => {
+  scenario.facts[1]!.visibility = "initial";
+  const { configuration } = configureInference(profile, secret, provider().transport);
+  const backend: InferenceAdapter = { id: "renewed-lease-fixture", mode: "live_model", dataLocation: "local", next: async view => {
+    await new Promise(resolveReply => setTimeout(resolveReply, 600)); return localReply(view);
+  } };
+  const result = await executeConfiguredActor(directory, registry, scenario, limits, backend, configuration, { taskPolicy: { leaseMs: 250, heartbeatMs: 20 } });
+  assert.equal(result.outcome, "completed"); assert.equal(result.task.record.state, "completed");
+  assert(result.task.events.some(event => event.kind === "lease_extended"));
+  assert.equal(result.task.record.dispatchIntents.length, 1); assert.equal(result.budget.invocations.length, 1);
+}));
+
+test("external cancellation stops an uncooperative adapter and retains uncertain spend", async () => temporary(async (registry, directory, scenario) => {
+  const { configuration } = configureInference(profile, secret, provider().transport);
+  const controller = new AbortController(); let observed: AbortSignal | undefined;
+  const backend: InferenceAdapter = { id: "abort-fixture", mode: "live_model", dataLocation: "local", next: async (_, request) => {
+    observed = request.signal; controller.abort(); return new Promise(() => {});
+  } };
+  const result = await executeConfiguredActor(directory, registry, scenario, limits, backend, configuration, { signal: controller.signal });
+  assert(observed?.aborted); assert.equal(result.actorOutcome, "cancelled");
+  assert.equal(result.task.record.state, "cancelled"); assert.equal(result.task.record.dispatchIntents.length, 1);
+  assert.equal(result.budget.invocations[0]?.state, "uncertain"); assert.equal(result.budget.pools[0]?.held.costMicrousd, "10000");
+}));
+
+test("external task cancellation aborts a stalled call through the ownership heartbeat", async () => temporary(async (registry, directory, scenario) => {
+  const { configuration } = configureInference(profile, secret, provider().transport); let observed: AbortSignal | undefined;
+  const backend: InferenceAdapter = { id: "heartbeat-cancel-fixture", mode: "live_model", dataLocation: "local", next: async (_, request) => {
+    observed = request.signal; const tasks = new TaskStore(directory);
+    try { tasks.cancel(tasks.list()[0]!.spec.id); } finally { tasks.close(); }
+    return new Promise(() => {});
+  } };
+  const started = performance.now();
+  const result = await executeConfiguredActor(directory, registry, scenario, limits, backend, configuration, { taskPolicy: { leaseMs: 500, heartbeatMs: 20 } });
+  assert(performance.now() - started < 1500); assert(observed?.aborted);
+  assert.equal(result.actorOutcome, "cancelled"); assert.equal(result.budget.invocations[0]?.state, "uncertain");
+}));
+
+test("restart recovery preserves a killed worker's manifest, invocation identity, and unknown liability", { timeout: 10000 }, async () => temporary(async (_, directory, scenario) => {
+  const actorUrl = new URL("../src/actor-execution.ts", import.meta.url).href, registryUrl = new URL("../src/research.ts", import.meta.url).href, taskUrl = new URL("../src/tasks.ts", import.meta.url).href;
+  const program = `import {executeConfiguredActor} from ${JSON.stringify(actorUrl)}; import {ResearchRegistry} from ${JSON.stringify(registryUrl)}; import {TaskStore} from ${JSON.stringify(taskUrl)}; const directory=process.argv[1]; const registry=new ResearchRegistry(directory); const adapter={id:"killed-software-fixture",mode:"live_model",dataLocation:"local",next:async()=>{const tasks=new TaskStore(directory); const task=tasks.list()[0]; tasks.close(); process.send({runId:task.spec.runId,taskId:task.spec.id}); return new Promise(()=>{});}}; await executeConfiguredActor(directory,registry,JSON.parse(process.argv[2]),JSON.parse(process.argv[3]),adapter,JSON.parse(process.argv[4]),{taskPolicy:{leaseMs:100,heartbeatMs:10}});`;
+  const child = spawn(process.execPath, ["--input-type=module", "-e", program, directory, JSON.stringify(scenario), JSON.stringify({ ...limits, timeoutMs: 5000 }), JSON.stringify(profile)], { stdio: ["ignore", "ignore", "pipe", "ipc"] });
+  try {
+    const started = await new Promise<{ runId: string; taskId: string }>((resolveStarted, reject) => {
+      child.once("message", message => resolveStarted(message as { runId: string; taskId: string })); child.once("error", reject);
+      child.once("exit", code => reject(new Error(`Worker ended before dispatch: ${code}`)));
+    });
+    const exited = new Promise<void>(resolveExit => child.once("exit", () => resolveExit()));
+    child.kill("SIGKILL"); await exited;
+    await new Promise(resolveExpiry => setTimeout(resolveExpiry, 125));
+    const recovered = await recoverConfiguredActors(directory, started.runId); assert.deepEqual(recovered.taskIds, [started.taskId]);
+    assert.equal(recovered.reports[0]?.status, "created");
+    const tasks = new TaskStore(directory), budget = new BudgetLedger(directory);
+    try {
+      const task = tasks.task(started.taskId), snapshot = budget.snapshot(started.runId);
+      assert.equal(task.state, "interrupted"); assert.equal(task.dispatchIntents.length, 1);
+      assert.equal(snapshot.run.state, "closed"); assert.equal(snapshot.invocations[0]?.state, "uncertain");
+      assert.equal(task.dispatchIntents[0]?.invocationRef, snapshot.invocations[0]?.id);
+      assert.equal(snapshot.pools[0]?.held.costMicrousd, "10000");
+      assert.throws(() => tasks.retryBeforeDispatch(started.taskId, task.fence), /pre-dispatch/);
+      const artifactFiles = (await import("node:fs/promises")).readdir(resolve(directory, ".redteam/actor-runs", started.runId, "artifacts"));
+      assert.equal((await artifactFiles).length, 3);
+      const partial = JSON.parse(await readFile(resolve(directory, ".redteam/actor-runs", started.runId, "report.json"), "utf8"));
+      assert.equal(partial.outcome, "limited_coverage"); assert.deepEqual(partial.reports, []);
+      assert.equal(partial.recovery.acceptedDecisionRecovered, false);
+      assert.deepEqual(await checkArtifacts(resolve(directory, ".redteam/actor-runs", started.runId), partial.artifacts), []);
+    } finally { tasks.close(); budget.close(); }
+  } finally { if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL"); }
 }));
 
 test("unauthorized source processing blocks every fake-provider request and retains a partial report", async () => temporary(async (registry, directory, scenario) => {

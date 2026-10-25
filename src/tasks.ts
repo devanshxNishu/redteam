@@ -70,8 +70,10 @@ export class TaskStore {
     if (!row) throw new Error("Task not found.");
     return JSON.parse(String(row.document)) as TaskRecord;
   }
-  list(runId: string): TaskRecord[] {
-    return this.db.prepare("SELECT document FROM tasks WHERE run_id=? ORDER BY id").all(runId).map(row => JSON.parse(String(row.document)) as TaskRecord);
+  list(runId?: string): TaskRecord[] {
+    const rows = runId === undefined ? this.db.prepare("SELECT document FROM tasks ORDER BY id").all()
+      : this.db.prepare("SELECT document FROM tasks WHERE run_id=? ORDER BY id").all(runId);
+    return rows.map(row => JSON.parse(String(row.document)) as TaskRecord);
   }
   create(spec: TaskSpec): TaskRecord {
     plain(spec, ["id", "runId", "kind", "questionKey", "manifestHash", "maximumAttempts", "deadlineAt"]);
@@ -113,6 +115,9 @@ export class TaskStore {
       task.state = "running"; this.save(task, "started");
     });
   }
+  assertRunning(lease: TaskLease): void {
+    if (this.current(lease).state !== "running") throw new Error("The task is not running under this lease.");
+  }
   heartbeat(lease: TaskLease, milliseconds: number): TaskLease {
     this.duration(milliseconds);
     return this.transaction(() => {
@@ -142,15 +147,16 @@ export class TaskStore {
       task.output = { artifactRef: output.artifactRef, sha256: output.sha256 }; task.state = "sealed"; task.lease = null; this.save(task, "output_sealed");
     });
   }
-  complete(id: string, expectedHash: string): void {
+  complete(id: string, expectedHash: string, expectedFence?: number): void {
     this.transaction(() => {
       const task = this.task(id);
-      if (task.state !== "sealed" || !task.output || task.output.sha256 !== expectedHash) throw new Error("Completion requires the coordinator's expected sealed-output digest.");
+      if (task.state !== "sealed" || !task.output || task.output.sha256 !== expectedHash || (expectedFence !== undefined && task.fence !== expectedFence)
+        || Date.parse(task.spec.deadlineAt) <= this.now()) throw new Error("Completion requires the coordinator's expected sealed-output digest, fence, and remaining time.");
       task.state = "completed"; this.save(task, "completed");
     });
   }
-  fail(lease: TaskLease, reason: "adapter_failed" | "policy_denied" | "invalid_output"): void {
-    if (!["adapter_failed", "policy_denied", "invalid_output"].includes(reason)) throw new Error("Unsupported task failure reason.");
+  fail(lease: TaskLease, reason: "adapter_failed" | "policy_denied" | "invalid_output" | "limit_reached"): void {
+    if (!["adapter_failed", "policy_denied", "invalid_output", "limit_reached"].includes(reason)) throw new Error("Unsupported task failure reason.");
     this.transaction(() => { const task = this.current(lease); task.state = "failed"; task.lease = null; task.stopReason = reason; this.save(task, "failed"); });
   }
   cancel(id: string): void {
@@ -164,7 +170,7 @@ export class TaskStore {
     return this.transaction(() => {
       const recovered: string[] = [];
       for (const task of this.list(runId)) {
-        if (!["queued", "leased", "running"].includes(task.state)) continue;
+        if (!["queued", "leased", "running", "sealed"].includes(task.state)) continue;
         const deadlineExpired = Date.parse(task.spec.deadlineAt) <= this.now();
         if (!deadlineExpired && (!task.lease || Date.parse(task.lease.expiresAt) > this.now())) continue;
         task.state = "interrupted"; task.lease = null; task.stopReason = deadlineExpired ? "deadline_expired" : "lease_expired";

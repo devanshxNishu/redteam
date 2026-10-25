@@ -66,14 +66,16 @@ test("explicit pre-dispatch retry increments the fence and rejects the previous 
   assert.throws(() => store.retryBeforeDispatch("task", replacement.fence), /remaining attempts/);
 }));
 
-test("heartbeat cannot extend beyond the task deadline and recovery preserves sealed output", async () => temporary((store, _, advance) => {
+test("heartbeat respects the deadline and recovery preserves an unpublished sealed output", async () => temporary((store, _, advance) => {
   const lease = store.claim("task", "worker", 100);
   advance(50); const extended = store.heartbeat(lease, 60000);
   assert.equal(Date.parse(extended.expiresAt), 61050);
   advance(59000); const final = store.heartbeat(extended, 60000);
   assert.equal(Date.parse(final.expiresAt), 100000);
   store.start(final); store.seal(final, { artifactRef: "output", sha256: digest });
-  advance(100000); assert.deepEqual(store.recoverExpired("run"), []);
+  advance(100000); assert.throws(() => store.complete("task", digest), /remaining time/);
+  assert.deepEqual(store.recoverExpired("run"), ["task"]);
+  assert.equal(store.task("task").state, "interrupted");
   assert.equal(store.task("task").output?.sha256, digest);
 }));
 
