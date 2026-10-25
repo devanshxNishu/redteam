@@ -48,6 +48,17 @@ export interface RepositoryRunSummary {
   fileCount: number;
   totalBytes: number;
 }
+export interface EngineeringRunSummary {
+  runId: string;
+  snapshotRunId: string;
+  snapshotReportSha256: string;
+  grantId: string;
+  target: string;
+  createdAt: string;
+  directory: string;
+  reportSha256: string;
+  observationCount: number;
+}
 
 export function workspaceDirectory(workspace: string): string {
   const directory = resolve(workspace, ".redteam");
@@ -76,6 +87,7 @@ export class WorkspaceStore {
       CREATE TABLE IF NOT EXISTS coordinator (slot INTEGER PRIMARY KEY CHECK(slot=1), owner TEXT NOT NULL, pid INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS actor_runs (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS repository_runs (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS engineering_runs (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
     `);
   }
 
@@ -203,6 +215,24 @@ export class WorkspaceStore {
   repositoryRun(id: string): RepositoryRunSummary | null {
     const row = this.db.prepare("SELECT document FROM repository_runs WHERE id=?").get(id);
     return row ? JSON.parse(String(row.document)) as RepositoryRunSummary : null;
+  }
+
+  saveEngineeringRun(run: EngineeringRunSummary): void {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      this.db.prepare("INSERT INTO engineering_runs(id, document, created_at) VALUES (?, ?, ?)").run(run.runId, JSON.stringify(run), run.createdAt);
+      this.audit("engineering_observations_saved", run.runId);
+      this.db.exec("COMMIT");
+    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+  }
+
+  engineeringRuns(): EngineeringRunSummary[] {
+    return this.db.prepare("SELECT document FROM engineering_runs ORDER BY created_at DESC").all().map(row => JSON.parse(String(row.document)) as EngineeringRunSummary);
+  }
+
+  engineeringRun(id: string): EngineeringRunSummary | null {
+    const row = this.db.prepare("SELECT document FROM engineering_runs WHERE id=?").get(id);
+    return row ? JSON.parse(String(row.document)) as EngineeringRunSummary : null;
   }
 
   close(): void { this.db.close(); }

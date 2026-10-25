@@ -2,7 +2,7 @@
 
 Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
 
-Version 0.8.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, bounded local repository snapshots, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.9.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -24,7 +24,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.8.0.tgz
+npm install --global ./redteam-0.9.0.tgz
 redteam --help
 ```
 
@@ -80,6 +80,18 @@ redteam code show RUN_ID
 The snapshot copies up to 50 eligible text files under the exact directory grant. It records hashes, skip reasons, and incomplete coverage. Hidden files, common generated and credential paths, symbolic links, hard links, unsupported file types, and oversized files are excluded. Source files remain unchanged.
 
 Captured bytes are owner-only local plaintext. Name exclusions are not a secret detector and do not interpret Git ignore rules. The commands return metadata without source text. Current expiry and revocation govern inspection. Capture runs no app code, shell, test, or model call. A source grant does not authorize external processing. See the [snapshot contract](docs/repository-snapshots.md) for bounds and limitations.
+
+## Record requirement-linked source notes
+
+```sh
+redteam code observations add ./engineering-observations.input.json
+redteam code observations list
+redteam code observations show ENGINEERING_RUN_ID
+```
+
+Start with the example input under `redteam examples`. Replace its placeholders with a saved snapshot ID, captured file hash, line range, supplied requirement, and note. Each citation must resolve to the copied bytes. Registration preserves the input and pins the snapshot and report hashes.
+
+These are operator-supplied, unreviewed source notes. Matching a citation does not verify the note's meaning. Requirements remain supplied and unverified; a null requirement keeps the expectation unknown. Execution stays `not_executed` and defects stay `not_assessed`. Inspection returns supplied text under the current grant, without adding source excerpts. See the [observation contract](docs/engineering-observations.md).
 
 ## Inspect browser evidence
 

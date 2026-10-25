@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { constants } from "node:fs";
-import { lstat, mkdir, open, opendir, realpath } from "node:fs/promises";
+import { lstat, mkdir, opendir, realpath } from "node:fs/promises";
 import { extname, isAbsolute, relative, resolve, sep } from "node:path";
+import { FileBoundaryError, checkedDirectory, checkedParents, boundedBytes } from "./local-files.ts";
 import { authorizeGrant } from "./access.ts";
 import { EvidenceStore, sha256 } from "./evidence.ts";
 import type { Artifact } from "./evidence.ts";
@@ -14,7 +14,6 @@ const excludedDirectories = new Set(["node_modules", "vendor", "dist", "build", 
 const sensitiveName = /secret|credential|password|token|(?:^|[._-])keys?(?:[._-]|$)/i;
 const safeName = (name: string) => name.length <= 240 && !/[\x00-\x1f\x7f-\x9f\\]/u.test(name);
 const inside = (root: string, path: string) => { const rel = relative(root, path); return rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel); };
-class FileBoundaryError extends Error {}
 class CaptureBoundaryError extends Error {}
 
 export interface RepositorySnapshot {
@@ -32,44 +31,6 @@ export interface RepositorySnapshot {
   artifacts: Artifact[];
   boundaries: { codeExecuted: false; externalProcessing: false; testsExecuted: false; atomicRepositoryVersion: false };
   limitations: string[];
-}
-
-async function checkedDirectory(path: string): Promise<void> {
-  const info = await lstat(path);
-  if (!info.isDirectory() || info.isSymbolicLink() || await realpath(path) !== path) throw new FileBoundaryError("A directory is unsafe or has changed.");
-}
-
-async function checkedParents(root: string, path: string): Promise<void> {
-  if (!inside(root, path)) throw new FileBoundaryError("The file is outside its permitted root.");
-  await checkedDirectory(root);
-  const parts = relative(root, path).split(sep).slice(0, -1);
-  let current = root;
-  for (const part of parts) { current = resolve(current, part); await checkedDirectory(current); }
-}
-
-/** No target code, command, parser plugin, or model is loaded. */
-async function boundedBytes(root: string, path: string, limit: number): Promise<Buffer> {
-  await checkedParents(root, path);
-  let file: Awaited<ReturnType<typeof open>> | undefined;
-  try {
-    const before = await lstat(path, { bigint: true });
-    if (!before.isFile() || before.isSymbolicLink() || before.nlink !== 1n || before.size > BigInt(limit)) throw new FileBoundaryError("The file type, link count, or size is outside policy.");
-    file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
-    const opened = await file.stat({ bigint: true });
-    if (!opened.isFile() || opened.dev !== before.dev || opened.ino !== before.ino || opened.nlink !== 1n || opened.size > BigInt(limit)) throw new FileBoundaryError("The file changed before reading.");
-    const bytes = Buffer.alloc(Number(opened.size) + 1);
-    let length = 0;
-    while (length < bytes.length) {
-      const next = await file.read(bytes, length, bytes.length - length, length);
-      if (!next.bytesRead) break;
-      length += next.bytesRead;
-    }
-    const after = await file.stat({ bigint: true }), current = await lstat(path, { bigint: true });
-    await checkedParents(root, path);
-    if (after.size !== opened.size || after.mtimeNs !== opened.mtimeNs || after.ctimeNs !== opened.ctimeNs || after.nlink !== 1n
-      || current.dev !== opened.dev || current.ino !== opened.ino || current.isSymbolicLink() || current.ctimeNs !== opened.ctimeNs || BigInt(length) !== opened.size) throw new FileBoundaryError("The file changed during reading.");
-    return bytes.subarray(0, length);
-  } finally { await file?.close(); }
 }
 
 function permission(store: WorkspaceStore, grantId: string, target: string): AccessGrant {
@@ -204,4 +165,41 @@ export async function readRepositorySnapshot(store: WorkspaceStore, runId: strin
   }
   permission(store, summary.grantId, summary.target);
   return report;
+}
+
+export interface RepositoryCitation {
+  sourcePath: string;
+  fileSha256: string;
+  startLine: number;
+  endLine: number;
+}
+export interface ResolvedRepositoryCitation extends RepositoryCitation {
+  artifactId: string;
+  rangeSha256: string;
+  rangeBytes: number;
+}
+
+/** Resolves bounded line references to saved bytes; it does not interpret those bytes. */
+export async function resolveRepositoryCitations(store: WorkspaceStore, runId: string, references: RepositoryCitation[]): Promise<{ snapshot: RepositorySnapshot; citations: ResolvedRepositoryCitation[] }> {
+  if (!Array.isArray(references) || references.length < 1 || references.length > 50) throw new Error("Supply from one to fifty source citations.");
+  const snapshot = await readRepositorySnapshot(store, runId), summary = store.repositoryRun(runId)!;
+  const citations: ResolvedRepositoryCitation[] = [];
+  for (const reference of references) {
+    if (!reference || typeof reference.sourcePath !== "string" || typeof reference.fileSha256 !== "string" || !/^[a-f0-9]{64}$/.test(reference.fileSha256)
+      || !Number.isSafeInteger(reference.startLine) || !Number.isSafeInteger(reference.endLine) || reference.startLine < 1 || reference.endLine < reference.startLine || reference.endLine - reference.startLine >= 100) throw new Error("Invalid source citation or line range.");
+    const matches = snapshot.files.filter(file => file.sourcePath === reference.sourcePath && file.sha256 === reference.fileSha256);
+    if (matches.length !== 1) throw new Error("The source citation does not resolve to its saved file hash.");
+    const selected = matches[0]!, artifacts = snapshot.artifacts.filter(item => item.id === selected.artifactId && item.sha256 === selected.sha256 && item.bytes === selected.bytes);
+    if (artifacts.length !== 1) throw new Error("The source citation has no unique matching artifact.");
+    permission(store, summary.grantId, summary.target);
+    const bytes = await boundedBytes(summary.directory, resolve(summary.directory, artifacts[0]!.path), repositoryPolicy.maxFileBytes);
+    if (sha256(bytes) !== selected.sha256 || bytes.length !== selected.bytes) throw new Error("The cited repository evidence has changed.");
+    const lines = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes).match(/[^\n]*\n|[^\n]+$/g) ?? [];
+    if (reference.endLine > lines.length) throw new Error("The citation range exceeds its captured file.");
+    const range = Buffer.from(lines.slice(reference.startLine - 1, reference.endLine).join(""));
+    if (range.length > 16_384) throw new Error("A citation range exceeds sixteen KiB.");
+    citations.push({ ...reference, artifactId: selected.artifactId, rangeSha256: sha256(range), rangeBytes: range.length });
+  }
+  permission(store, summary.grantId, summary.target);
+  return { snapshot, citations };
 }

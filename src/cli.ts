@@ -22,6 +22,7 @@ import { TaskStore } from "./tasks.ts";
 import { recoverConfiguredActors } from "./actor-recovery.ts";
 import { diagnoseActorPublication } from "./actor-diagnostics.ts";
 import { captureRepository, authorizedRepositoryRuns, readRepositorySnapshot } from "./repository.ts";
+import { registerEngineeringObservations, authorizedEngineeringRuns, readEngineeringReport } from "./engineering.ts";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspace = resolve(process.cwd());
@@ -37,6 +38,9 @@ redteam access revoke GRANT_ID
 redteam code snapshot --grant GRANT_ID --path DIRECTORY
 redteam code list
 redteam code show RUN_ID
+redteam code observations add FILE
+redteam code observations list
+redteam code observations show RUN_ID
 redteam verify RUN_DIRECTORY
 redteam research demo
 redteam research sources|models
@@ -271,6 +275,18 @@ async function main(): Promise<void> {
   }
   if (command === "code") {
     const [operation, ...rest] = args;
+    if (operation === "observations") {
+      const [action, parameter, ...extra] = rest;
+      if (extra.length || !["add", "list", "show"].includes(action ?? "") || (action === "list" ? parameter !== undefined : !parameter)) throw new Error("Usage: redteam code observations add FILE|list|show RUN_ID");
+      const value = action === "add" ? await readInput(parameter!) : undefined;
+      const store = new WorkspaceStore(workspace);
+      try {
+        if (action === "add") print(await registerEngineeringObservations(store, value));
+        else if (action === "list") print(authorizedEngineeringRuns(store));
+        else print(await readEngineeringReport(store, parameter!));
+      } finally { store.close(); }
+      return;
+    }
     if (operation !== "snapshot" && operation !== "list" && operation !== "show") throw new Error("Usage: redteam code snapshot|list|show. Run redteam --help.");
     const options = operation === "snapshot" ? flags(rest, ["--grant", "--path"]) : {};
     if (operation === "snapshot" && (!options["--grant"] || !options["--path"])) throw new Error("Supply --grant GRANT_ID and --path DIRECTORY.");

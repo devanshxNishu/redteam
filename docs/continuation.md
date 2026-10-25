@@ -145,7 +145,7 @@ Official token-counting and structured-output documentation was fetched during e
 
 Use synthetic fixtures for software verification. Keep them visibly separate from human research. Never promote synthetic fixtures into validated psychology.
 
-## Current milestone: Version 0.8.0
+## Version 0.8.0 verification
 
 B12 bounded local repository capture is implemented. `redteam code snapshot --grant GRANT_ID --path DIRECTORY`, `code list`, and `code show RUN_ID` share existing workspace grants. The exact canonical directory needs `code:read`. The feature copies local text only. It executes no source file, declared package script, test command, shell, or model request. Every report states limited coverage.
 
@@ -163,13 +163,32 @@ Type checking and build passed. The full suite passed 215 tests, zero failures o
 
 A capture is a sequence of file observations, not an atomic Git revision or build. It does not prove a test or defect. Excluded directories have uncounted descendants. The policy does not interpret ignore rules or detect secrets inside allowed source text. Normal reads can change access times. Filesystem operations can exceed the duration target when unresponsive. Checks assume a trusted local operator, not hostile-process or production isolation. Cross-process revocation and writes are not one transaction. Failed/killed captures can leave private uncataloged files, which are preserved and never adopted automatically. Revocation does not erase copied bytes. No capture recovery, cleanup, external processing, or automatic actor access is enabled.
 
+## Current milestone: Version 0.9.0
+
+B13 now records operator-supplied engineering notes and requirements against copied source ranges. This is a citation integrity workflow, not semantic source review, executed testing, or approved findings. The terminal commands are `redteam code observations add FILE`, `list`, and `show RUN_ID`.
+
+Exact files:
+
+- `src/local-files.ts`: extracts the existing bounded no-follow/nonblocking regular-file reader and canonical parent checks from repository capture. Its logic remains shared across snapshots and engineering records.
+- `src/repository.ts`: `resolveRepositoryCitations` checks one to fifty exact saved path/file-hash references, unique artifacts, inclusive one-based line bounds, at most 100 lines and 16,384 bytes per range, and current access. Range hashes preserve UTF-8 byte-order marks, multibyte text, actual LF/CRLF bytes, and a final line without a newline. A trailing LF creates no extra citable EOF line. It returns hashes and metadata, not source excerpts. All fifteen prior repository checks still pass.
+- `src/engineering.ts`: strict, cloned input with up to twenty requirements, twenty observations, five citations per observation, fifty total citations, 1,000-character statements, and 65,536 compact JSON bytes. Unsupported fields, execution/verdict escalation, duplicate identities, unresolved requirements, stale citations, and out-of-range references fail. Supplied requirement provenance stays unverified. Null requirements stay unknown. Every observation is unreviewed, not executed, and not assessed for defects. Original input bytes and the report are exclusively published as private local records. Snapshot/report/input hashes and current permission protect acceptance and inspection.
+- `src/workspace.ts`: immutable engineering catalog, original snapshot report pin, and acceptance audit event. `src/cli.ts`: add/list/show use the same store and access checks. Show intentionally returns supplied text under current permission; it adds no copied source excerpt. No new actor/model tool is enabled.
+- `tests/engineering.test.ts`: eleven checks covering exact UTF-8/BOM and newline ranges, strict fields/types/bounds, unsupported claim escalation, copied input isolation, expectation statuses, hash/citation failures, changed original source evidence, changed report/input bytes, symlinks, changed snapshot pin, unsafe output, expiry/revocation, revocation during input publication, and real CLI commands.
+- `examples/engineering-observations.input.json`: packaged placeholder template. `docs/engineering-observations.md`: packaged input, range/hash, storage, access, interpretation, and failure contract. README, status, backlog, package versions, and web install text use 0.9.0.
+
+Type checking and build passed. The full suite passed 226 tests with zero failures or skips, including eleven new engineering and fifteen existing repository checks. Log: `outputs/test-results-0.9.0.txt`. The focused engineering suite passed all eleven checks, including expiry and strict citation limits.
+
+`outputs/redteam-0.9.0.tgz` is installed under `work/install-final-0.9.0`. `work/verify-installed-0.9.0.mjs` verified compiled help/version, shared grants/capture, two range citations with exact UTF-8 BOM, CRLF, and final-line hashes, supplied and unknown expectations, fixed result labels, original input preservation, private permissions, no added source excerpts, unsupported approval rejection, changed-snapshot denial, and revocation. Results are `outputs/installed-verification-0.9.0.json`; its isolated workspace is recorded there. No target code, test, provider request, real credential, browser, or service ran in this installed check. The full suite retains controlled browser execution checks. Dashboard JavaScript is unchanged; only install-version text changed, so the 0.7.3 browser baseline remains recorded.
+
+The feature does not authenticate requirement provenance, inspect a note's semantic truth, execute source/tests, approve defects, or feed content to a model. Supplied notes can be wrong despite matching citations. Unknown expectations remain unknown. Local plaintext, file access-time changes, trusted-operator assumptions, non-atomic cross-process access/write boundaries, and preserved uncataloged partial files remain explicit. Revocation denies supported retrieval but does not erase copied bytes or backups. No automatic recovery, retry, adoption, cleanup, or actor access is enabled.
+
 ## Next sequence
 
-1. Define B13 engineering observations around a supplied requirement, copied artifact, exact file range, and content hash. Use owned fixture requirements first. Distinguish source declarations from executed tests and observed app behavior. Unknown expectations cannot become defects. Keep local access checks on every supported evidence retrieval path.
-2. A narrow deterministic observation prototype can use the new intake. Do not send source content to the configured provider or stakeholder runtime. Any future model processing needs separate explicit permission and a bounded engineering tool policy. Do not execute app scripts through this path.
-3. Preserve sealed actor outputs, invocation identities, uncataloged repository captures, and unowned `.pending` files. No automatic retry, repair, cleanup, or cost release is authorized by an inspection command.
-4. Add bounded analyst coordination when prerequisites permit. C03 paid concierge demand remains unproven; do not enable broad specialist fan-out or claim the roundtable is complete.
-5. A live API smoke needs explicit configuration, valid credentials, current rates, and processing permission. External execution also needs isolation/access prerequisites. Continue independent work while these inputs are missing.
+1. Implement U15: show repository snapshots and engineering notes in the existing local review view. Add protected list/detail endpoints with current exact-grant checks and hash verification. Keep copied source text out of the initial dashboard response. Make supplied/unverified, unreviewed, not-executed, not-assessed, and unknown expectation labels visible.
+2. Follow the existing actor-report revocation pattern: deny stale links, refresh access state, close and clear an open report on expiry/revocation, and avoid retaining restricted detail in managed caches. Verify the actual installed dashboard at desktop and 390 px, including text escaping, hash failures, and live revocation. Do not conflate listing metadata with a verified report.
+3. Semantic engineering review requires captured requirements, a bounded engineering tool policy, separate external-processing permission where relevant, and independent verification before defect approval. Source/requirement/note text cannot authorize tools. Do not execute app scripts or send content to the stakeholder runtime through this path.
+4. Preserve sealed actor outputs, invocation identities, uncataloged repository/engineering records, and unowned `.pending` files. No automatic repair, replay, retry, cleanup, or cost release is authorized by inspection.
+5. Broad specialist fan-out remains gated by C03 paid concierge demand. Live provider verification needs valid explicit configuration/credentials/current rates and processing permission. External execution needs isolation/access prerequisites. Continue independent work while these inputs are missing.
 
 ## Last substantive fixes
 
@@ -181,7 +200,7 @@ A capture is a sequence of file observations, not an atomic Git revision or buil
 
 The temporary preview service is stopped during turn teardown. Reopen it with `npm run ui` when needed. Runtime data remains in `.redteam/` and is excluded from Git and release archives.
 
-Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), `a999dfb` (normal publication catalog repair), `7f96811` (atomic publication), and `e379e38` (completed-task publication gaps and permission protection). Version 0.7.4 is committed as `cd93137`. The 0.8.0 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.8.0.json` record its final package and checks. `outputs/test-results-0.8.0.txt` records the full suite. Preview services and test browsers are stopped.
+Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), `a999dfb` (normal publication catalog repair), `7f96811` (atomic publication), and `e379e38` (completed-task publication gaps and permission protection). Version 0.7.4 is committed as `cd93137`. Version 0.8.0 is committed as `42d663b`. The 0.9.0 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.9.0.json` record its final package and checks. `outputs/test-results-0.9.0.txt` records the full suite. Preview services and test browsers are stopped.
 
 ## External inputs still required
 

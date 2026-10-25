@@ -1,6 +1,6 @@
 # redteam: Implementation status
 
-Current build: 0.8.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, and bounded local repository snapshots. The provider path is mock-verified; no live API smoke test is recorded.
+Current build: 0.9.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, and requirement-linked source notes. The provider path is mock-verified; no live API smoke test is recorded.
 
 This record separates implemented code from the broader product plan. The browser runner reviews one controlled signup journey. Registered actor models can be used through the configured path, but no independent human behavioral validation is recorded.
 
@@ -14,6 +14,7 @@ This record separates implemented code from the broader product plan. The browse
 | Job lifecycle | Queue, primary run, verifier run, reporting, completion, limited coverage, failure, interruption | One active review; up to eight active or queued jobs |
 | Startup recovery | Marks unfinished jobs interrupted | Does not replay browser actions automatically |
 | Access grants | Exact web origins or canonical directories; capabilities, expiry, and revocation | Local text capture is enabled; external runner and code execution remain unavailable |
+| Engineering notes | Supplied requirements and notes, exact saved-file/range hashes, original input artifact, snapshot pin, private report, current access, and immutable catalog | Citation integrity only; statements/provenance remain unreviewed, execution not performed, defects not assessed |
 | Repository evidence | Exact `code:read` grant, bounded text artifacts, file hashes, exclusion counters, immutable catalog, and permission-checked inspection | Local plaintext, trusted operator, no code/test/model execution, no atomic revision or engineering judgment |
 | Browser sessions | CLI import; encrypted local storage; metadata-only API responses | Local key beside the database; no OS keychain integration |
 | Local API | Bearer session, Host and Origin checks, CSP, no cross-origin API access | Not remote tenant authentication |
@@ -55,7 +56,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 215 passed, zero failed or skipped |
+| Full automated suite | 226 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -86,6 +87,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Atomic file publication | Nine checks passed for flush/close order, storage failures, unsupported links, six competing processes, and real writers killed at three publication boundaries |
 | Evidence store | Six checks passed for artifact integrity, immutable records, serialization failure, final symlinks, and parent-directory escape |
 | Read-only diagnostic | Thirteen checks passed for malformed/unsupported records, privacy, file and inventory bounds, unsafe references, staging, CLI behavior, and unchanged live task/budget/SQLite files |
+| Engineering observations | Eleven checks passed for exact UTF-8/BOM/newline ranges, strict fields/types/bounds, stale references, fixed unreviewed labels, unknown expectations, input/report/source tampering, expiry/revocation, partial publication, snapshot pins, unsafe paths, and CLI commands |
 | Repository snapshot | Fifteen checks passed for exact grants, expiry, revocation during reads/publication, root replacement, source preservation, no execution, private output, exclusions, file/byte/entry/depth/deadline bounds, changed evidence, and CLI behavior |
 | Report withdrawal | API checks passed; a browser check confirmed the open report closes and cached detail is cleared |
 | Local file boundaries | Dangling database symlinks denied before target creation; credential-bearing target URLs rejected |
@@ -93,9 +95,11 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 
 An initial test pass attempt exposed browser shutdown deadlines under load. The implementation now closes contexts explicitly and uses the documented bounded cleanup allowance. The full suite passed after that correction. An installed-build review from before that correction correctly reported limited coverage; it did not report an app defect.
 
-The current installable archive is `outputs/redteam-0.8.0.tgz`. `work/verify-installed-0.8.0.mjs` verified compiled help/version, shared directory grants, two copied source artifacts, exclusions, symlink refusal, exact hashes, private permissions, unchanged source bytes/names/modes/modification times, metadata-only command output, changed-evidence denial, and revocation for listing and inspection. Results are `outputs/installed-verification-0.8.0.json`. No target code, declared test, provider request, real credential, browser, or service was used for this verification. The full suite log is `outputs/test-results-0.8.0.txt`.
+The current installable archive is `outputs/redteam-0.9.0.tgz`. `work/verify-installed-0.9.0.mjs` verified compiled help/version, shared grants and capture, two range citations with exact UTF-8 BOM/CRLF/final-line hashes, supplied and unknown expectations, fixed unreviewed/not-executed/not-assessed labels, original input preservation, private permissions, no added source excerpts, escalation rejection, changed-snapshot denial, and revocation. Results are `outputs/installed-verification-0.9.0.json`. No target code, declared test, provider request, real credential, browser, or service ran in this installed check. The full suite log is `outputs/test-results-0.9.0.txt`.
 
-The 0.7.4 installed checks remain in `outputs/installed-verification-0.7.4.json`. They cover terminal diagnostics, three matching scripted artifacts, malformed/missing/changed publications and evidence, staging preservation, private-content suppression, and unchanged file trees. The dashboard JavaScript is unchanged in 0.8.0; the install version text is updated. Its browser baseline remains the verified 0.7.3 release.
+The 0.8.0 installed checks remain in `outputs/installed-verification-0.8.0.json`. They cover repository capture, metadata inspection, source preservation, private artifacts, hashes, exclusions, and revocation. The current suite also passed all fifteen original snapshot checks after extracting the common bounded local-file reader. Dashboard JavaScript remains unchanged in 0.9.0; only install-version text changed. Its browser baseline remains the verified 0.7.3 release.
+
+The 0.7.4 installed checks remain in `outputs/installed-verification-0.7.4.json`. They cover terminal diagnostics, three matching scripted artifacts, malformed/missing/changed publications and evidence, staging preservation, private-content suppression, and unchanged file trees. Its earlier browser baseline is recorded separately below.
 
 The 0.7.3 installed checks remain in `outputs/installed-verification-0.7.3.json`. They cover completed-task publication-gap recovery, exact seals, concurrent catalog repair, and permission protection for empty legacy catalog references. The new dialog passed desktop/mobile checks, hash verification, live withdrawal closure/cache clearing, and denied retrieval. Screenshots remain under `outputs/preview/`; that temporary browser and service are stopped.
 
@@ -108,7 +112,7 @@ Earlier D1 reports remain under `outputs/runs/`. The dashboard imports recognize
 ## Remaining scope
 
 - Authorized external app execution and production worker isolation.
-- Requirement-linked source-code review and scoped code-test tools; the current snapshot is evidence intake only.
+- Semantic source-code review, executed code-test tools, and independent engineering verification; supplied notes currently receive citation checks only.
 - Verified human research provenance, consent-document review, and representative sampling.
 - Real held-out human evaluation, uncertainty analysis, and independent research review.
 - A verified live provider run, empirical actor calibration, analyst leads, subagents, and the roundtable.
@@ -121,6 +125,6 @@ No real provider calls occurred in the recorded checks. Scripted runs report zer
 
 ## Next milestone
 
-Bounded repository intake now supplies copied, permission-checked source evidence. Next, define a small engineering observation contract that binds supplied requirements to copied file ranges and hashes. Keep source observations, declared scripts, executed checks, supported defects, and unknown coverage distinct. Use owned fixtures first; do not enable broad specialist fan-out. Shared specialist scheduling, browser/tool/infrastructure budgets, production isolation, real stakeholder research, and live provider verification remain open.
+Repository intake and operator-supplied source notes now have explicit integrity and interpretation boundaries. Next, show these existing records in the local dashboard through permission-checked metadata/report APIs. Keep unreviewed labels and unknown expectations visible, deny revoked links, and clear an open report after access changes. Use the existing review view without enabling model processing or broad specialist fan-out. Semantic verification, shared scheduling, all-resource budgets, production isolation, human research, and live provider verification remain open.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
