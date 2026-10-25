@@ -51,7 +51,7 @@ Checked reads use bounded regular single-link files, no-follow opening, canonica
 
 Publication can succeed before a catalog or response fails. Private orphan bytes remain for inspection; the program does not adopt, overwrite or delete them automatically. An intentional second add creates another ID; it is not automatic recovery or a revision to the original. Inspect the catalog before retrying an uncertain write.
 
-Version 0.26.0 adds the protected local brief API below. Explicit web intake is next. Existing exports do not include a brief automatically, and adding a brief does not change existing findings, plans, actions, jobs, actors, grants, or research permissions.
+Version 0.26.0 adds the protected local brief API below. Version 0.27.0 adds explicit web intake below. Existing exports do not include a brief automatically, and adding a brief does not change existing findings, plans, actions, jobs, actors, grants, or research permissions.
 
 
 ## Protected local API (0.26.0)
@@ -67,3 +67,14 @@ One API create can be active per local service, including while its request body
 Invalid/unconfirmed creation returns static 400 `review_brief_not_confirmed`. Unavailable or changed detail returns static 404 `review_brief_unavailable`. Errors do not reflect input, saved content, directories or internal failures. The initial catalog snapshot and final check are not atomic with filesystem changes or client receipt. Copies already delivered cannot be recalled. This intake currently has no source grant/revocation relationship: references are unverified supplied text, not an access right or a copied source.
 
 A committed brief can outlive an unconfirmed response. The service does not automatically retry, delete, adopt or overwrite it. Inspect recent briefs before an intentional retry; another add creates another ID. Mutations, execute/approve actions, arbitrary preview/file loading, downloads and artifact routes are not provided. Terminal preview remains available without starting a service. No full review, model inference, purchase/investment decision, research or commercial validity is added.
+
+
+## Web intake and checked detail (0.27.0)
+
+In Reviews, **Ideas and apps → Add idea or app brief** opens a supplied-input form. Choose Idea or App. Common fields state title, decision, audience, market/language context, assumptions, unknowns and optional evidence entries. Subject fields remain separate. Blank optional fields become explicit `null`; empty assumption/unknown lines are omitted. The form allows at most ten evidence entries, each with label, description and optional unopened reference. It shows questions only after saving, as part of the checked deterministic preview.
+
+Subject switching preserves both drafts inside the open form, but submits only the selected subject. Routine metadata refresh preserves the form. Close, navigation, failed metadata refresh or loss of the current managed view clears it. No draft/brief is stored in local/session storage or a global full-report cache. Submitting locks controls; an unconfirmed or aborted response is never automatically retried. Inspect recent briefs before intentionally creating another record. A commit can succeed after the dialog closes; a late response cannot reopen it or overwrite a newer draft.
+
+The eighth metadata endpoint joins the existing shared refresh generation/abort boundary. Catalog rows are unverified metadata, limited to the current 100-record window. Full detail must pass the protected API reader and the client's SHA-256 check against current catalog identity/title/type/time/input/report hashes. A changed selected pin or failed refresh closes and clears the managed view. Detail is checked again during routine idle polls (ten seconds plus request time; active app jobs use the existing shorter interval). A file-tampered row may remain in the unverified catalog while full retrieval is denied. This is not a new grant/revocation relationship for supplied references.
+
+Detail states intake/not-started limits first, then supplied audience/subject/assumptions/unknowns/evidence, explicit missing fields and six unstarted question tracks. All text uses DOM text/value properties. References are never links or loaded targets. Literal full JSON is collapsed and wraps on mobile. Copies already delivered, browser history, screenshots, OS caches and backups cannot be recalled. Saving or inspecting intake runs no test/model/agent, grants no access, and establishes no consumer reaction, investment decision or commercial validity.

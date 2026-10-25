@@ -2,9 +2,9 @@
 
 Private source repository: [devanshxNishu/redteam](https://github.com/devanshxNishu/redteam). Verified development milestones are pushed to `main`.
 
-Redteam is planned for **ideas and apps** through a web dashboard and terminal CLI. The current build provides controlled app evidence and local record workflows. Terminal idea/app intake is implemented; analytical idea review is next; researched stakeholder predictions and the live roundtable remain gated. See the [active scope](docs/idea-and-app-scope.md).
+Redteam is planned for **ideas and apps** through a web dashboard and terminal CLI. The current build provides controlled app evidence and local record workflows. Web, terminal and protected API idea/app intake are implemented; analytical idea review is next; researched stakeholder predictions and the live roundtable remain gated. See the [active scope](docs/idea-and-app-scope.md) and [next analytical review slices](docs/analytical-review-plan.md).
 
-Version 0.26.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.27.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -27,7 +27,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.26.0.tgz
+npm install --global ./redteam-0.27.0.tgz
 redteam --help
 redteam doctor
 ```
@@ -59,7 +59,7 @@ redteam briefs list
 redteam briefs show BRIEF_ID
 ```
 
-Preview requires no workspace. Add saves a strict immutable brief with supplied claims, assumptions, evidence references and unknowns; show checks the saved hash/contract. Six unstarted tracks ask product, engineering, buyer, commercial, investor and verification questions. This is **intake, not a completed review**. An idea needs no app. App URLs and evidence references remain unopened text; grants and app execution are separate. The protected local brief API also creates/lists/checks records; explicit web intake follows next. See the [terminal brief contract](docs/review-briefs.md).
+Preview requires no workspace. Add saves a strict immutable brief with supplied claims, assumptions, evidence references and unknowns; show checks the saved hash/contract. Six unstarted tracks ask product, engineering, buyer, commercial, investor and verification questions. This is **intake, not a completed review**. An idea needs no app. App URLs and evidence references remain unopened text; grants and app execution are separate. The protected local brief API and Reviews → **Ideas and apps** also save and inspect intake. The web form preserves separate subject fields while open, clears drafts on close/navigation, and displays checked literal detail without following references. See the [terminal brief contract](docs/review-briefs.md).
 
 ## Grant access
 

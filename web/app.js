@@ -12,6 +12,7 @@ let experimentCatalog = null;
 let reportExportCatalog = null;
 let exportSelection = null;
 let outcomeCatalog = null;
+let briefCatalog = null;
 let outcomeSelection = null;
 let comparisonCatalog = null;
 let openedComparison = null;
@@ -136,12 +137,12 @@ async function refresh() {
   refreshController?.abort(); refreshController = new AbortController();
   const signal = refreshController.signal;
   try {
-    const [workspace, catalog, actions, comparisons, experiments, exports, outcomes] = await Promise.all([api("/api/workspace", { signal }), api("/api/code-runs", { signal }), api("/api/actions", { signal }), api("/api/comparisons", { signal }), api("/api/experiments", { signal }), api("/api/report-exports", { signal }), api("/api/outcome-evidence", { signal })]);
+    const [workspace, catalog, actions, comparisons, experiments, exports, outcomes, briefs] = await Promise.all([api("/api/workspace", { signal }), api("/api/code-runs", { signal }), api("/api/actions", { signal }), api("/api/comparisons", { signal }), api("/api/experiments", { signal }), api("/api/report-exports", { signal }), api("/api/outcome-evidence", { signal }), api("/api/review-briefs", { signal })]);
     if (generation !== refreshGeneration) return;
-    data = workspace; codeCatalog = catalog; actionCatalog = actions; comparisonCatalog = comparisons; experimentCatalog = experiments; reportExportCatalog = exports; outcomeCatalog = outcomes;
+    data = workspace; codeCatalog = catalog; actionCatalog = actions; comparisonCatalog = comparisons; experimentCatalog = experiments; reportExportCatalog = exports; outcomeCatalog = outcomes; briefCatalog = briefs;
     $("connection-status").textContent = "Local service connected";
     $("connection-dot").style.background = "#7ba595";
-    render(); renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog(); renderExperimentCatalog(); renderReportExportCatalog(); renderExportOptions(); renderOutcomeCatalog(); renderOutcomeOptions();
+    render(); renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog(); renderExperimentCatalog(); renderReportExportCatalog(); renderExportOptions(); renderOutcomeCatalog(); renderOutcomeOptions(); renderBriefCatalog();
     if (openedCodeRun) {
       if (!codeEntry(openedCodeRun.kind, openedCodeRun.id)) clearCodeState("Code access changed. The record was closed.");
       else {
@@ -150,6 +151,7 @@ async function refresh() {
           const attempt = { generation: detailGeneration, signal: detailController.signal }, current = openedCodeRun;
           try {
             const checked = await api(detailRoute(current.kind, current.id), { signal: AbortSignal.any([signal, attempt.signal]) });
+            if (current.kind === "review-briefs" && !await briefReportMatches(checked, current.id)) throw new Error("The checked brief does not match current metadata.");
             if (generation === refreshGeneration && ownsDetail(attempt) && current.kind === "outcome-selection" && outcomeSelection?.comparisonId) {
               const selected = outcomeSelection.comparisonId;
               try { await api(`/api/comparisons/${selected}`, { signal: AbortSignal.any([signal, attempt.signal]) }); }
@@ -214,6 +216,12 @@ function beginDetail() {
 }
 function ownsDetail(attempt) { return detailGeneration === attempt.generation && !attempt.signal.aborted; }
 function codeEntry(kind, id) {
+  if (kind === "brief-intake") return briefCatalog ? { entry: {}, grant: null } : null;
+  if (kind === "review-briefs") {
+    const entry = briefCatalog?.reviewBriefs.find(item => item.id === id);
+    const pin = openedCodeRun?.kind === kind && openedCodeRun.id === id ? openedCodeRun.briefPin : null;
+    return entry && ["idea", "app"].includes(entry.subjectType) && (!pin || ["id", "title", "subjectType", "createdAt", "inputSha256", "reportSha256"].every(key => pin[key] === entry[key])) ? { entry, grant: null } : null;
+  }
   if (kind === "outcome-selection") {
     const plan = outcomeSelection && outcomeCatalog && outcomePlanAccess(outcomeSelection.planId);
     return plan && (!outcomeSelection.comparisonId || outcomeComparison(outcomeSelection.planId, outcomeSelection.comparisonId)) ? plan : null;
@@ -259,7 +267,7 @@ function renderCodeCatalog() {
   }
 }
 function clearCodeState(message) {
-  codeCatalog = null; actionCatalog = null; comparisonCatalog = null; experimentCatalog = null; reportExportCatalog = null; outcomeCatalog = null; renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog(); renderExperimentCatalog(); renderReportExportCatalog(); renderOutcomeCatalog();
+  codeCatalog = null; actionCatalog = null; comparisonCatalog = null; experimentCatalog = null; reportExportCatalog = null; outcomeCatalog = null; briefCatalog = null; renderBriefCatalog(); renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog(); renderExperimentCatalog(); renderReportExportCatalog(); renderOutcomeCatalog();
   if (openedCodeRun || openedActorRun || openedComparison) { closeDetail(); if (message) toast(message, true); }
 }
 function armCodeExpiry() {
@@ -274,6 +282,7 @@ function armCodeExpiry() {
   }, Math.min(2_147_000_000, Math.max(1, Date.parse(access.grant.expiresAt) - Date.now())));
 }
 function codeSections(kind, report) {
+  if (kind === "review-briefs") return briefSections(report);
   if (kind === "outcome-evidence") return outcomeEvidenceSections(report);
   if (kind === "report-exports") return reportExportSections(report);
   if (kind === "actions") return actionSections(report);
@@ -311,12 +320,14 @@ function codeSections(kind, report) {
 async function showCodeReport(kind, id) {
   const attempt = beginDetail();
   if (!codeEntry(kind, id)) { closeDetail(); toast("Current code access is unavailable.", true); return; }
-  openedCodeRun = { kind, id, pending: true }; armCodeExpiry();
+  openedCodeRun = { kind, id, pending: true }; if (kind === "review-briefs") openedCodeRun.briefPin = { ...codeEntry(kind, id).entry }; armCodeExpiry();
   try {
     const report = await api(detailRoute(kind, id), { signal: attempt.signal });
     if (!ownsDetail(attempt)) return;
+    if (kind === "review-briefs" && !await briefReportMatches(report, id)) throw new Error("The checked brief does not match current metadata.");
+    if (!ownsDetail(attempt)) return;
     if (!codeEntry(kind, id)) { clearCodeState("Code access changed. The record was closed."); return; }
-    $("detail-title").textContent = kind === "outcome-evidence" ? "Linked controlled evidence" : kind === "report-exports" ? "Checked local report export" : kind === "experiments" ? "Frozen experiment plan" : kind === "actions" ? "Tracked follow-up action" : kind === "repositories" ? "Local repository snapshot" : "Engineering source notes";
+    $("detail-title").textContent = kind === "review-briefs" ? "Idea/app review brief" : kind === "outcome-evidence" ? "Linked controlled evidence" : kind === "report-exports" ? "Checked local report export" : kind === "experiments" ? "Frozen experiment plan" : kind === "actions" ? "Tracked follow-up action" : kind === "repositories" ? "Local repository snapshot" : "Engineering source notes";
     $("detail-content").replaceChildren(...codeSections(kind, report));
     openedCodeRun.pending = false; if (kind === "actions") openedCodeRun.revision = report.record.revision;
     if (!$("review-dialog").open) $("review-dialog").showModal(); $("detail-title").focus({ preventScroll: true }); armCodeExpiry();
@@ -325,7 +336,69 @@ async function showCodeReport(kind, id) {
   }
 }
 
-function detailRoute(kind, id) { return kind === "outcome-evidence" ? `/api/outcome-evidence/${id}` : kind === "report-exports" ? `/api/report-exports/${id}` : ["experiments", "outcome-selection"].includes(kind) ? `/api/experiments/${id}` : kind === "actions" ? `/api/actions/${id}` : kind === "browser-source" ? `/api/reviews/${id}` : `/api/code-runs/${kind}/${id}`; }
+function detailRoute(kind, id) { return kind === "review-briefs" ? `/api/review-briefs/${id}` : kind === "outcome-evidence" ? `/api/outcome-evidence/${id}` : kind === "report-exports" ? `/api/report-exports/${id}` : ["experiments", "outcome-selection"].includes(kind) ? `/api/experiments/${id}` : kind === "actions" ? `/api/actions/${id}` : kind === "browser-source" ? `/api/reviews/${id}` : `/api/code-runs/${kind}/${id}`; }
+function renderBriefCatalog() {
+  $("create-review-brief").disabled = !briefCatalog;
+  const rows = (briefCatalog?.reviewBriefs ?? []).filter(item => codeEntry("review-briefs", item.id)).map(item => {
+    const row = node("div", undefined, "grant-item brief-record"); row.dataset.briefId = item.id;
+    const copy = node("div", undefined, "grant-main"); copy.append(node("strong", `${item.subjectType} · ${item.title}`), node("small", `${date(item.createdAt)} · Review not started · Cataloged, unverified`));
+    const inspect = node("button", "Inspect brief →", "small-button"); inspect.addEventListener("click", () => showCodeReport("review-briefs", item.id)); row.append(copy, inspect); return row;
+  });
+  $("review-brief-list").replaceChildren(...(rows.length ? rows : [node("p", briefCatalog ? "No saved idea or app briefs." : "Brief metadata unavailable. Reconnect before adding or inspecting intake.", "empty")]));
+}
+async function briefReportMatches(report, id) {
+  const bytes = new TextEncoder().encode(JSON.stringify(report, null, 2) + "\n"); if (bytes.length > 100000) return false;
+  const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map(value => value.toString(16).padStart(2, "0")).join("");
+  const entry = codeEntry("review-briefs", id)?.entry;
+  return entry && report.id === id && report.kind === "review_brief" && report.reviewStatus === "not_started" && report.state === "intake_saved" && report.input.subjectType === entry.subjectType && report.input.title === entry.title && report.inputSha256 === entry.inputSha256 && report.createdAt === entry.createdAt && digest === entry.reportSha256;
+}
+function briefLabel(key) { return ({ users: "Target users", buyers: "Buyer or payer", market: "Country or market", language: "Language", problem: "Problem", solution: "Proposed solution", alternatives: "Current alternatives", valueProposition: "Value proposition", businessModel: "Business model", distribution: "Distribution", differentiation: "Differentiation", purpose: "App purpose", journey: "Critical journey", expectedBehavior: "Expected result", url: "App URL", suppliedEvidence: "Supplied evidence", product: "Product", engineering: "Engineering", customer_buyer: "Customer and buyer", commercial: "Commercial", investor_preparation: "Investor preparation", verification: "Verification" })[key.split(".").at(-1)] ?? key; }
+function briefSections(report) {
+  const scope = section("Saved intake · review not started"); scope.append(node("p", `${report.input.subjectType} · ${report.input.title}`), node("p", "Input is supplied and unverified. The preview lists analytical questions. Review work and stakeholder decisions have not started."), node("p", `Decision supplied: ${report.input.decision}`));
+  const context = section("Audience · supplied context"); for (const [key, value] of Object.entries(report.input.audience)) context.append(node("h4", briefLabel(key)), node("p", value ?? "Unknown · not supplied"));
+  const subject = section(report.input.subjectType === "idea" ? "Idea · supplied claims" : "App · supplied context, access separate"); for (const [key, value] of Object.entries(report.input[report.input.subjectType])) subject.append(node("h4", briefLabel(key)), node("p", value ?? "Unknown · not supplied"));
+  const claims = section("Assumptions and operator unknowns"); for (const [label, values] of [["Assumptions", report.input.assumptions], ["Unknowns", report.input.unknowns]]) { claims.append(node("h4", label)); for (const value of values.length ? values : ["None supplied; this does not establish certainty."]) claims.append(node("p", value)); }
+  const evidence = section("Supplied evidence references · unopened and unverified"); for (const item of report.input.suppliedEvidence) evidence.append(node("h4", item.label), node("p", item.description), node("p", item.reference ?? "No reference supplied")); if (!report.input.suppliedEvidence.length) evidence.append(node("p", "No evidence supplied."));
+  const preview = section("Scope preview · questions only"); preview.append(node("p", `Missing inputs: ${report.preview.missingInputs.map(briefLabel).join(", ") || "No explicit null fields; supplied claims still need verification."}`)); for (const track of report.preview.tracks) { preview.append(node("h4", `${briefLabel(track.id)} · not started`)); for (const question of track.questions) preview.append(node("p", question)); }
+  const limits = section("Record and limits"); limits.append(node("p", `Brief: ${report.id} · Saved: ${report.createdAt}`), node("code", report.inputSha256, "code-hash")); for (const limitation of report.limitations) limits.append(node("p", limitation)); const raw = node("details"); raw.append(node("summary", "Show literal intake JSON"), node("pre", JSON.stringify(report, null, 2), "export-record-json")); limits.append(raw);
+  return [scope, context, subject, claims, evidence, preview, limits];
+}
+function showBriefIntake() {
+  const attempt = beginDetail(); if (!briefCatalog) { closeDetail(); toast("Brief metadata unavailable.", true); return; }
+  openedCodeRun = { kind: "brief-intake", id: "new", pending: true }; $("detail-title").textContent = "Add review brief";
+  const form = node("form"); form.id = "review-brief-form"; form.noValidate = true;
+  form.append(node("p", "Save supplied context for a review. The preview lists questions to investigate. App access and execution are separate steps. Leave optional fields blank when unknown. Your draft clears when you close or leave this form.", "fine-print"));
+  function field(parent, key, label, max, required = false, multiline = true) { const caption = node("label", label); caption.htmlFor = `brief-${key}`; const control = node(multiline ? "textarea" : "input"); control.id = caption.htmlFor; control.maxLength = max; control.required = required; if (multiline) control.rows = 3; else control.autocomplete = "off"; parent.append(caption, control); return control; }
+  const kindLabel = node("label", "Subject"); kindLabel.htmlFor = "brief-subject"; const kind = node("select"); kind.id = kindLabel.htmlFor; for (const [value, label] of [["idea", "Idea"], ["app", "App"]]) { const option = node("option", label); option.value = value; kind.append(option); } form.append(kindLabel, kind);
+  const title = field(form, "title", "Title · required", 200, true, false), decision = field(form, "decision", "Decision to support · required", 1000, true), audience = {};
+  for (const [key, label, max, multiline] of [["users", "Target users", 1000, true], ["buyers", "Buyer or payer", 1000, true], ["market", "Country or market · supplied context", 200, false], ["language", "Language", 100, false]]) audience[key] = field(form, key, label, max, false, multiline);
+  const subjects = {};
+  for (const [type, fields] of [["idea", [["problem", "Problem · supplied claim", true], ["solution", "Proposed solution", true], ["alternatives", "Current alternatives", false], ["valueProposition", "Value proposition", false], ["businessModel", "Business model", false], ["distribution", "Distribution", false], ["differentiation", "Differentiation", false]]], ["app", [["purpose", "App purpose", true], ["journey", "One critical journey", true], ["expectedBehavior", "Expected result", true], ["url", "App URL · optional, not opened", false]]]]) {
+    const group = node("fieldset", undefined, "export-option-group"); group.append(node("legend", type === "idea" ? "Idea context" : "App context")); const controls = {}; for (const [key, label, required] of fields) controls[key] = field(group, key, label + (required ? " · required" : ""), key === "url" ? 2048 : 2000, required, key !== "url"); subjects[type] = { group, controls }; form.append(group);
+  }
+  const switchSubject = () => { for (const [type, subject] of Object.entries(subjects)) { subject.group.hidden = type !== kind.value; for (const control of Object.values(subject.controls)) control.disabled = subject.group.hidden; } }; kind.addEventListener("change", switchSubject); switchSubject();
+  const assumptions = field(form, "assumptions", "Assumptions · one per line, up to 12", 6012), unknowns = field(form, "unknowns", "Unknowns · one per line, up to 12", 6012), evidence = node("fieldset", undefined, "export-option-group"); evidence.append(node("legend", "Supplied evidence · optional, unverified"), node("p", "Describe the source or claim. References stay as text and are not opened.", "fine-print")); form.append(evidence);
+  const evidenceRows = [], addEvidence = node("button", "Add evidence reference", "small-button"); addEvidence.type = "button";
+  addEvidence.addEventListener("click", () => { if (evidenceRows.length >= 10) return; const index = evidenceRows.length, row = node("div"); const controls = { label: field(row, `evidence-${index}-label`, "Evidence label", 160, false, false), description: field(row, `evidence-${index}-description`, "Supplied description", 1000), reference: field(row, `evidence-${index}-reference`, "Reference · optional", 2048, false, false) }; evidenceRows.push(controls); evidence.insertBefore(row, addEvidence); if (evidenceRows.length === 10) addEvidence.disabled = true; }); evidence.append(addEvidence);
+  const message = node("p", "", "fine-print"); message.id = "brief-form-status"; message.setAttribute("role", "alert"); const save = node("button", "Save supplied brief", "primary"); save.type = "submit"; form.append(message, save);
+  const nullable = control => control.value.trim() ? control.value : null;
+  form.addEventListener("submit", async event => {
+    event.preventDefault(); if (!ownsDetail(attempt) || save.disabled) return;
+    if (!codeEntry("brief-intake", "new")) { closeDetail(); return; }
+    const selected = subjects[kind.value].controls; if (!title.value.trim() || !decision.value.trim() || Object.values(selected).some(control => control.required && !control.value.trim())) { message.textContent = "Complete the title, decision and required subject fields."; return; }
+    const lines = control => control.value.split("\n").filter(line => line.trim()), suppliedEvidence = evidenceRows.map(row => ({ label: row.label.value, description: row.description.value, reference: nullable(row.reference) })).filter(row => row.label.trim() || row.description.trim() || row.reference);
+    if (suppliedEvidence.some(row => !row.label.trim() || !row.description.trim())) { message.textContent = "Each supplied evidence entry needs a label and description, or clear all its fields."; return; }
+    const lists = { assumptions: lines(assumptions), unknowns: lines(unknowns) }; if (Object.values(lists).some(values => values.length > 12 || values.some(value => value.length > 500))) { message.textContent = "Use at most 12 assumptions and 12 unknowns, each at most 500 characters."; return; }
+    const subject = Object.fromEntries(Object.entries(selected).map(([key, control]) => [key, control.required ? control.value : nullable(control)]));
+    if (kind.value === "app" && subject.url) { try { const parsed = new URL(subject.url); if (!/^https?:$/.test(parsed.protocol) || parsed.username || parsed.password) throw new Error(); } catch { message.textContent = "Use an absolute HTTP/HTTPS app URL without embedded credentials, or leave it unknown."; return; } }
+    const payload = { schemaVersion: "1.0", kind: "review_brief_input", subjectType: kind.value, title: title.value, decision: decision.value, audience: Object.fromEntries(Object.entries(audience).map(([key, control]) => [key, nullable(control)])), ...lists, suppliedEvidence, [kind.value]: subject };
+    if (new TextEncoder().encode(JSON.stringify(payload)).length > 65536) { message.textContent = "Reduce the brief to at most 64 KiB of supplied text."; return; }
+    for (const control of form.querySelectorAll("input,textarea,select,button")) control.disabled = true;
+    try { const created = await api("/api/review-briefs", { method: "POST", body: JSON.stringify(payload), signal: attempt.signal }); if (!ownsDetail(attempt)) return; await refresh(); if (!ownsDetail(attempt)) return; await showCodeReport("review-briefs", created.id); }
+    catch (error) { if (ownsDetail(attempt)) { closeDetail(); toast(`Brief creation could not be confirmed. Inspect recent briefs before retrying. ${error.message}`, true); } }
+  });
+  $("detail-content").replaceChildren(form); if (!$("review-dialog").open) $("review-dialog").showModal(); title.focus({ preventScroll: true });
+}
 function renderActionCatalog() {
   const rows = (actionCatalog?.actions ?? []).filter(action => codeEntry("actions", action.id)).map(action => {
     const row = node("div", undefined, "grant-item action-record"); row.dataset.actionId = action.id;
@@ -879,6 +952,7 @@ $("run-actor-demo").addEventListener("click", async () => {
   catch (error) { toast(error.message, true); }
   finally { button.disabled = false; }
 });
+$("create-review-brief").addEventListener("click", showBriefIntake);
 $("close-dialog").addEventListener("click", closeDetail);
 $("review-dialog").addEventListener("cancel", event => { event.preventDefault(); closeDetail(); });
 $("review-dialog").addEventListener("close", () => { if (expectedCloseEvents) expectedCloseEvents--; else if (!$("review-dialog").open) resetDetail(); });
