@@ -8,6 +8,7 @@ import type { ComparisonSummary } from "./comparisons.ts";
 import type { ExperimentPlanSummary } from "./experiments.ts";
 import type { ReportExportSummary } from "./report-export.ts";
 import type { OutcomeEvidenceSummary } from "./outcome-evidence.ts";
+import type { ReviewBriefSummary } from "./review-briefs.ts";
 
 export type GrantCapability = "browser:read" | "browser:interact" | "code:read" | "code:test";
 export interface AccessGrant {
@@ -100,6 +101,7 @@ export class WorkspaceStore {
       CREATE TABLE IF NOT EXISTS experiment_plans (id TEXT PRIMARY KEY, document TEXT NOT NULL, frozen_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS report_exports (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS outcome_evidence (id TEXT PRIMARY KEY, plan_id TEXT NOT NULL, comparison_id TEXT NOT NULL, document TEXT NOT NULL, registered_at TEXT NOT NULL, UNIQUE(plan_id, comparison_id));
+      CREATE TABLE IF NOT EXISTS review_briefs (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
     `);
   }
 
@@ -326,6 +328,25 @@ export class WorkspaceStore {
 
   recentExperimentPlans(): ExperimentPlanSummary[] {
     return this.db.prepare("SELECT document FROM experiment_plans ORDER BY frozen_at DESC, id LIMIT 100").all().map(row => JSON.parse(String(row.document)) as ExperimentPlanSummary);
+  }
+
+  saveReviewBrief(summary: ReviewBriefSummary, authorize: () => undefined): void {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const authorization: unknown = authorize();
+      if (authorization !== undefined) { if (authorization instanceof Promise) void authorization.catch(() => undefined); throw new Error("Brief checks must finish synchronously."); }
+      this.db.prepare("INSERT INTO review_briefs(id, document, created_at) VALUES (?, ?, ?)").run(summary.id, JSON.stringify(summary), summary.createdAt);
+      this.audit("review_brief_saved", summary.id); this.db.exec("COMMIT");
+    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+  }
+
+  reviewBrief(id: string): ReviewBriefSummary | null {
+    const row = this.db.prepare("SELECT document FROM review_briefs WHERE id=?").get(id);
+    return row ? JSON.parse(String(row.document)) as ReviewBriefSummary : null;
+  }
+
+  recentReviewBriefs(): ReviewBriefSummary[] {
+    return this.db.prepare("SELECT document FROM review_briefs ORDER BY created_at DESC, id LIMIT 100").all().map(row => JSON.parse(String(row.document)) as ReviewBriefSummary);
   }
 
   saveReportExport(summary: ReportExportSummary, authorize: () => undefined): void {

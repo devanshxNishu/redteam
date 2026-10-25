@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "review_brief_input",
+  "title": "Proposed app idea",
+  "decision": "Which assumption should we test before building?",
+  "audience": {
+    "users": null,
+    "buyers": null,
+    "market": null,
+    "language": null
+  },
+  "assumptions": [],
+  "suppliedEvidence": [],
+  "unknowns": [
+    "Actual customer demand is unknown."
+  ],
+  "subjectType": "idea",
+  "idea": {
+    "problem": "Describe the problem as a supplied claim.",
+    "solution": "Describe the proposed solution.",
+    "alternatives": null,
+    "valueProposition": null,
+    "businessModel": null,
+    "distribution": null,
+    "differentiation": null
+  }
+}

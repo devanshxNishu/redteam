@@ -26,6 +26,7 @@ import { registerEngineeringObservations, authorizedEngineeringRuns, readEnginee
 import { createTrackedAction, readTrackedAction, updateTrackedAction, authorizedActionSummaries } from "./actions.ts";
 import { createStoredComparison, readStoredComparison, comparisonSummaries } from "./comparisons.ts";
 import { freezeExperimentPlan, readExperimentPlan, experimentPlanSummaries } from "./experiments.ts";
+import { createReviewBrief, previewReviewBrief, readReviewBrief, readReviewBriefInput, reviewBriefSummaries } from "./review-briefs.ts";
 import { createReportExport, readReportExport, reportExportSummaries } from "./report-export.ts";
 import { inspectInstallation } from "./installation.ts";
 import { outcomeEvidenceSummaries, readOutcomeEvidence, registerOutcomeEvidence } from "./outcome-evidence.ts";
@@ -64,6 +65,10 @@ redteam experiments evidence show EVIDENCE_ID
 redteam reports export FILE
 redteam reports list
 redteam reports show EXPORT_ID
+redteam briefs preview FILE
+redteam briefs add FILE
+redteam briefs list
+redteam briefs show BRIEF_ID
 redteam verify RUN_DIRECTORY
 redteam research demo
 redteam research sources|models
@@ -326,6 +331,19 @@ async function main(): Promise<void> {
       if (operation === "snapshot") print(await captureRepository(store, { grantId: options["--grant"]!, target: options["--path"]! }));
       else if (operation === "list") print(authorizedRepositoryRuns(store));
       else print(await readRepositorySnapshot(store, rest[0]!));
+    } finally { store.close(); }
+    return;
+  }
+  if (command === "briefs") {
+    const [operation, parameter, ...extra] = args;
+    if (extra.length || !["preview", "add", "list", "show"].includes(operation ?? "") || (operation === "list" ? parameter !== undefined : !parameter)) throw new Error("Usage: redteam briefs preview FILE|add FILE|list|show BRIEF_ID");
+    const value = operation === "preview" || operation === "add" ? await readReviewBriefInput(parameter!) : undefined;
+    if (operation === "preview") { print(previewReviewBrief(value)); return; }
+    const store = new WorkspaceStore(workspace);
+    try {
+      if (operation === "add") { const summary = await createReviewBrief(store, value); print({ id: summary.id, subjectType: summary.subjectType, title: summary.title, createdAt: summary.createdAt, inputSha256: summary.inputSha256, reportSha256: summary.reportSha256, reviewStatus: "not_started" }); }
+      else if (operation === "list") print({ recentWindow: 100, reviewBriefs: reviewBriefSummaries(store) });
+      else print(await readReviewBrief(store, parameter!));
     } finally { store.close(); }
     return;
   }

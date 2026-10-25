@@ -13,15 +13,15 @@ This document is a development plan. It does not claim that idea review, open ap
 
 An idea does not need an app URL or repository. A future app review can also examine its underlying idea. The system must preserve which conclusions came from supplied context, actual observation, a source, an assumption, or an analytical objection.
 
-## First ready implementation: review brief and scope preview
+## First implementation: review brief and scope preview
 
-Add a strict versioned input with `subjectType` equal to `idea` or `app`. Use separate subject fields so an idea cannot acquire fictional app evidence. The common brief states a title, the decision to support, target users and buyers, market/language when known, and supplied evidence or explicit unknowns. Use bounded plain text and bounded arrays. Reject unknown fields and unsupported subjects.
+Version 0.25.0 implements the [terminal intake contract](review-briefs.md). Protected API and web intake are next. It uses a strict versioned input with `subjectType` equal to `idea` or `app`. Use separate subject fields so an idea cannot acquire fictional app evidence. The common brief states a title, the decision to support, target users and buyers, market/language when known, and supplied evidence or explicit unknowns. Use bounded plain text and bounded arrays. Reject unknown fields and unsupported subjects.
 
 Idea fields state the problem, solution, current alternatives, value proposition, business model, distribution, differentiation, and assumptions. App fields state product purpose, a critical journey, expected behavior, and an optional URL as a supplied reference. Store the exact normalized brief with fixed provenance labels and a version/hash. A future revision creates another immutable brief.
 
 The first scope preview is deterministic. It shows the declared subject, requested decision, supplied coverage, missing inputs, relevant review tracks, and unavailable execution. It performs no market research or tool/model call. It must not label a saved brief as a completed review.
 
-Terminal creation/list/show comes first, followed by protected local API and explicit web intake. The intake must not fetch the URL, open a supplied file, import credentials, grant access, run target code, or start a review automatically. Existing access grants and their separate execution gates remain in force. Supplied text can contain private information; there is no universal detector.
+Terminal preview/add/list/show is implemented first, followed by protected local API and explicit web intake. The intake must not fetch the URL, open a supplied file, import credentials, grant access, run target code, or start a review automatically. Existing access grants and their separate execution gates remain in force. Supplied text can contain private information; there is no universal detector.
 
 ## Review tracks after intake
 

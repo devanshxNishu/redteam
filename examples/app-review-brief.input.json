@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "review_brief_input",
+  "title": "App review intake",
+  "decision": "What must we check in this journey?",
+  "audience": {
+    "users": null,
+    "buyers": null,
+    "market": null,
+    "language": null
+  },
+  "assumptions": [],
+  "suppliedEvidence": [],
+  "unknowns": [
+    "Actual customer demand is unknown."
+  ],
+  "subjectType": "app",
+  "app": {
+    "purpose": "Describe the app purpose.",
+    "journey": "Describe one critical journey.",
+    "expectedBehavior": "State the result that should occur.",
+    "url": null
+  }
+}
