@@ -60,3 +60,10 @@ At this turn's relevant usage read, ordinary usage was allowed with primary6% an
 The OpenAI Docs skill was read/announced earlier. No direct official-docs/key tools were available. Official token-count and Structured Outputs pages were refreshed and relevant count/refusal/incomplete sections inspected. The create-reference page exceeded web retrieval size; its Markdown form had unsupported content type, so unread reference details were not treated as verified. Re-fetch exact primary material needed for transport. No live model/rate/account capability was selected.
 
 Prior verified source pushes:0.30 `b66c2c673b6c8c11fb6958a2ece77cfc02fc2330`,0.31 `774900ebe02bc2b3ac8c12e7d080ac21a3a032c8`; checkpoints `fb32346367a8e0ec9ec4c991e1d9b614605c2de9` and `b209f5b9f443fe0a0fbe010dad7c0f84c080bfa5` were also verified private/exact. Current0.32 result is in ignored proofs and the final push note below after verification.
+
+
+## Final 0.32 push and resume point
+
+Source implementation commit `897f931d23d036e4443bc26148169f47aca36175` was pushed normally. Remote main matched exactly at 2026-10-25T19:35:49.615Z; repository visibility was confirmed private. Full490, focused45, final145-file archive/install/source-byte/SHA512/private-whitelist/credential checks passed. This checkpoint-only follow-up changes no packaged file or runtime source; the final checkpoint main SHA and verification timestamp are written by the GitHub helper to ignored release/latest/GitHub proofs after its push.
+
+There is no incomplete source implementation, active test session, service or browser. No user approval is pending. Resume with `docs/analyst-transport-plan.md`: bounded analyst-specific HTTP through current durable callbacks, then coordinator/exclusive factual publication/analyst recovery. Do not claim HTTP integration, live provider verification, semantic approval or researched behavior from the current callback tests. The broader scope remains unfinished, so the verified ACTIVE30-minute continuation remains enabled. Respect natural limits; no credits or reset credits were used.
