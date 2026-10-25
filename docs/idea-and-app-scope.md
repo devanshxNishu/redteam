@@ -15,7 +15,7 @@ An idea does not need an app URL or repository. A future app review can also exa
 
 ## First implementation: review brief and scope preview
 
-Version 0.25.0 implements the [terminal intake contract](review-briefs.md). Protected API and web intake are next. It uses a strict versioned input with `subjectType` equal to `idea` or `app`. Use separate subject fields so an idea cannot acquire fictional app evidence. The common brief states a title, the decision to support, target users and buyers, market/language when known, and supplied evidence or explicit unknowns. Use bounded plain text and bounded arrays. Reject unknown fields and unsupported subjects.
+Version 0.25.0 implements the [terminal intake contract](review-briefs.md). Version 0.26.0 adds the protected local creation/catalog/detail API. Explicit web intake is next. It uses a strict versioned input with `subjectType` equal to `idea` or `app`. Use separate subject fields so an idea cannot acquire fictional app evidence. The common brief states a title, the decision to support, target users and buyers, market/language when known, and supplied evidence or explicit unknowns. Use bounded plain text and bounded arrays. Reject unknown fields and unsupported subjects.
 
 Idea fields state the problem, solution, current alternatives, value proposition, business model, distribution, differentiation, and assumptions. App fields state product purpose, a critical journey, expected behavior, and an optional URL as a supplied reference. Store the exact normalized brief with fixed provenance labels and a version/hash. A future revision creates another immutable brief.
 

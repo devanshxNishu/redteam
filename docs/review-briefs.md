@@ -51,4 +51,19 @@ Checked reads use bounded regular single-link files, no-follow opening, canonica
 
 Publication can succeed before a catalog or response fails. Private orphan bytes remain for inspection; the program does not adopt, overwrite or delete them automatically. An intentional second add creates another ID; it is not automatic recovery or a revision to the original. Inspect the catalog before retrying an uncertain write.
 
-Protected brief API and explicit web intake are next milestones. Existing exports do not include a brief automatically, and adding a brief does not change existing findings, plans, actions, jobs, actors, grants, or research permissions.
+Version 0.26.0 adds the protected local brief API below. Explicit web intake is next. Existing exports do not include a brief automatically, and adding a brief does not change existing findings, plans, actions, jobs, actors, grants, or research permissions.
+
+
+## Protected local API (0.26.0)
+
+All routes require the existing bearer session, exact local Host/Origin rules, and `Cache-Control: no-store`. This is a single-user loopback service, not a hosted multi-tenant API.
+
+- GET `/api/review-briefs`: at most 100 minimal metadata summaries, with IDs, title, subject type, local time and input/report hashes. Rows are `cataloged_unverified` and `reviewStatus: not_started`. It does not check file bytes or return input, decision, preview, references, or private directories. Invalid catalog storage returns a static denial.
+- POST `/api/review-briefs`: the exact idea/app input contract above. The JSON request must have `application/json`, valid UTF-8, and at most 65,536 bytes including formatting. It returns 201 only after checked saved-file retrieval and final current-catalog/publication binding. Confirmation contains ID, title, subject type, time, hashes, and not-started status. It does not return a private directory or execute a review.
+- GET `/api/review-briefs/BRIEF_ID`: full checked intake and deterministic preview, with fixed provenance/boundaries. Supplied references remain text. A final synchronous check binds every field of the initial private catalog snapshot and the canonical publication hash immediately before delivery.
+
+One API create can be active per local service, including while its request body is incomplete. A competing create receives static 409 `review_brief_busy` and performs no new work. Completion, error or aborted input releases the slot. The byte bound is not a new request-time or shared resource budget; the local HTTP server's existing timeout/connection boundaries still apply.
+
+Invalid/unconfirmed creation returns static 400 `review_brief_not_confirmed`. Unavailable or changed detail returns static 404 `review_brief_unavailable`. Errors do not reflect input, saved content, directories or internal failures. The initial catalog snapshot and final check are not atomic with filesystem changes or client receipt. Copies already delivered cannot be recalled. This intake currently has no source grant/revocation relationship: references are unverified supplied text, not an access right or a copied source.
+
+A committed brief can outlive an unconfirmed response. The service does not automatically retry, delete, adopt or overwrite it. Inspect recent briefs before an intentional retry; another add creates another ID. Mutations, execute/approve actions, arbitrary preview/file loading, downloads and artifact routes are not provided. Terminal preview remains available without starting a service. No full review, model inference, purchase/investment decision, research or commercial validity is added.

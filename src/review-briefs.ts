@@ -113,3 +113,9 @@ export async function readReviewBrief(store: WorkspaceStore, id: string): Promis
   if (summary.title !== input.title || summary.subjectType !== input.subjectType || summary.inputSha256 !== expected.inputSha256 || !isDeepStrictEqual(report, expected) || !isDeepStrictEqual(store.reviewBrief(id), summary)) throw new Error("The brief contract or catalog has changed.");
   return report;
 }
+/** Bind a completely checked read and its initial private catalog snapshot before delivery. */
+export function checkReviewBriefAccess(store: WorkspaceStore, report: ReviewBrief, expected: ReviewBriefSummary): undefined {
+  const current = store.reviewBrief(report.id);
+  if (!current || !isDeepStrictEqual(current, expected) || current.reportSha256 !== sha256(JSON.stringify(report, null, 2) + "\n") || current.id !== report.id || current.createdAt !== report.createdAt || current.inputSha256 !== report.inputSha256 || current.subjectType !== report.input.subjectType || current.title !== report.input.title) throw new Error("The checked brief publication or catalog changed before delivery.");
+  checkSummary(current); return undefined;
+}

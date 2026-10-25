@@ -18,8 +18,9 @@ import { comparisonSummaries, createStoredComparison, readStoredComparison } fro
 import { experimentPlanSummaries, freezeExperimentPlan, readExperimentPlan } from "./experiments.ts";
 import { reportExportSummaries, createReportExport, readReportExport, checkReportExportAccess, reportExportMarkdown } from "./report-export.ts";
 import { outcomeEvidenceSummaries, registerOutcomeEvidence, readOutcomeEvidence, checkOutcomeEvidenceAccess, publicOutcomeEvidence } from "./outcome-evidence.ts";
+import { createReviewBrief, readReviewBrief, checkReviewBriefAccess, reviewBriefSummaries } from "./review-briefs.ts";
 
-async function body(request: IncomingMessage): Promise<Record<string, unknown>> {
+async function body(request: IncomingMessage, strictUTF8 = false): Promise<Record<string, unknown>> {
   if (request.headers["content-type"]?.split(";")[0] !== "application/json") throw new Error("Use application/json.");
   const chunks: Buffer[] = [];
   let bytes = 0;
@@ -29,7 +30,7 @@ async function body(request: IncomingMessage): Promise<Record<string, unknown>> 
     chunks.push(Buffer.from(chunk));
   }
   let result: unknown;
-  try { result = JSON.parse(Buffer.concat(chunks).toString("utf8")); } catch { throw new Error("Invalid JSON request."); }
+  try { const bytes = Buffer.concat(chunks); result = JSON.parse(strictUTF8 ? new TextDecoder("utf-8", { fatal: true }).decode(bytes) : bytes.toString("utf8")); } catch { throw new Error("Invalid JSON request."); }
   if (!result || typeof result !== "object" || Array.isArray(result)) throw new Error("Expected a JSON object.");
   return result as Record<string, unknown>;
 }
@@ -56,6 +57,7 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
   let comparisonActive = false;
   let reportExportActive = false;
   let outcomeEvidenceActive = false;
+  let reviewBriefActive = false;
   let closing = false;
   const server = createServer((request, response) => {
     response.setHeader("Cache-Control", "no-store");
@@ -80,6 +82,29 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
       const supplied = Buffer.from(authorization.startsWith("Bearer ") ? authorization.slice(7) : "");
       const expected = Buffer.from(token);
       if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) { send(response, 401, { error: "A local Redteam session is required." }); return; }
+      if (request.method === "GET" && url.pathname === "/api/review-briefs") {
+        try { send(response, 200, { recentWindow: 100, reviewBriefs: reviewBriefSummaries(store) }); }
+        catch { send(response, 404, { code: "review_brief_unavailable", error: "Review brief catalog unavailable." }); }
+        return;
+      }
+      if (request.method === "POST" && url.pathname === "/api/review-briefs") {
+        if (reviewBriefActive) { send(response, 409, { code: "review_brief_busy", error: "A local review brief creation is already running." }); return; }
+        reviewBriefActive = true;
+        try {
+          const summary = await createReviewBrief(store, await body(request, true)), report = await readReviewBrief(store, summary.id);
+          checkReviewBriefAccess(store, report, summary); send(response, 201, { id: summary.id, createdAt: summary.createdAt, subjectType: summary.subjectType, title: summary.title, inputSha256: summary.inputSha256, reportSha256: summary.reportSha256, reviewStatus: "not_started" });
+        } catch { send(response, 400, { code: "review_brief_not_confirmed", error: "Review brief creation not confirmed. Check the idea/app input; inspect recent records before retrying." }); }
+        finally { reviewBriefActive = false; }
+        return;
+      }
+      const reviewBriefDetail = /^\/api\/review-briefs\/([a-f0-9-]{36})$/.exec(url.pathname);
+      if (request.method === "GET" && reviewBriefDetail) {
+        try {
+          const id = reviewBriefDetail[1]!, summary = store.reviewBrief(id); if (!summary) throw new Error("Unavailable.");
+          const report = await readReviewBrief(store, id); checkReviewBriefAccess(store, report, summary); send(response, 200, report);
+        } catch { send(response, 404, { code: "review_brief_unavailable", error: "Review brief unavailable. Saved integrity or current catalog checks failed." }); }
+        return;
+      }
       if (request.method === "GET" && url.pathname === "/api/report-exports") { send(response, 200, { recentWindow: 100, reportExports: reportExportSummaries(store) }); return; }
       if (request.method === "POST" && url.pathname === "/api/report-exports") {
         if (reportExportActive) { send(response, 409, { code: "report_export_busy", error: "A local report export is already running." }); return; }

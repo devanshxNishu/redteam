@@ -1,6 +1,6 @@
 # redteam: Implementation status
 
-Current build: 0.25.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
+Current build: 0.26.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
 
 This record separates implemented code from the broader product plan. The browser runner reviews one controlled signup journey. Registered actor models can be used through the configured path, but no independent human behavioral validation is recorded.
 
@@ -8,7 +8,7 @@ This record separates implemented code from the broader product plan. The browse
 
 | Area | Current behavior | Boundary |
 |---|---|---|
-| Idea/app terminal intake | Strict supplied brief preview/add/list/show; immutable local input/provenance/hash; deterministic missing-input and six-track question preview | Intake only; not a review, no references opened, grants, execution or stakeholder decisions |
+| Idea/app intake | Terminal preview/add/list/show and protected local API creation/catalog/detail; strict supplied input; immutable local input/provenance/hash; deterministic missing-input and six-track question preview | Intake only; not a review, no references opened, grants, execution or stakeholder decisions |
 | Web dashboard | Overview, reviews, source snapshot/note inspection, findings, evidence, access, models, and terminal instructions | Local single-user service; source notes remain unreviewed |
 | Installable CLI | Compiled JavaScript package; UI startup, review submission, run list, grants, artifact checks | npm archive; not published to a registry |
 | Shared workspace | SQLite jobs, grants, audit events, and one coordinator | `.redteam/` under the current directory |
@@ -61,7 +61,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 408 passed, zero failed or skipped |
+| Full automated suite | 416 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -294,7 +294,7 @@ No real provider calls occurred in the recorded checks. Scripted runs report zer
 
 ## Next milestone
 
-The active subject scope is **ideas and apps only**, as confirmed by the user. The checked evidence-link export is implemented in 0.24.0. I01 strict terminal idea/app briefs and deterministic scope preview are now implemented. Next, add I02 protected brief API, then I03 explicit web intake from `docs/idea-and-app-scope.md`. Saving a brief is not a completed review. Do not fetch supplied URLs/files, grant access, execute tools/models, fabricate app evidence for ideas, or infer demand/investment. Independent human outcomes, external isolation, real research/pilot/provider inputs, C03 paid demand, and broader hierarchy remain open. Continue normal verified GitHub pushes.
+The active subject scope is **ideas and apps only**, as confirmed by the user. The checked evidence-link export is implemented in 0.24.0. I01 strict terminal idea/app briefs and deterministic scope preview are now implemented. I02 now adds the protected brief API. Next, add I03 explicit web intake from `docs/idea-and-app-scope.md`. Saving a brief is not a completed review. Do not fetch supplied URLs/files, grant access, execute tools/models, fabricate app evidence for ideas, or infer demand/investment. Independent human outcomes, external isolation, real research/pilot/provider inputs, C03 paid demand, and broader hierarchy remain open. Continue normal verified GitHub pushes.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
 
@@ -429,3 +429,21 @@ The release helper checks archive whitelist/size/SHA512/every installed source b
 A saved brief is not idea analysis or an app review. Supplied counts do not measure evidence quality. No country psychology, buyer demand, investment outcome/probability, independent validation, commercial demand or broader hierarchy is established. Local plaintext/operator/clock/metadata/filesystem, uncertain writes/orphans, copies and backups remain explicit. An intentional second add creates a new record, not an automatic retry or mutation of the prior record.
 
 Next ready milestone: I02 protected local idea/app brief creation/catalog/detail API. Preserve fixed provenance/no-execution semantics, exact checked publication binding before responses, minimal catalogs, no private directories, one active creation, bounded input, static denials, no uncertain-write retry, session/Host/Origin/no-store, and existing app workflows. I03 explicit web intake follows. External app execution/isolation, research/pilot/provider inputs, C03 paid demand, independent outcomes, calibration and broad hierarchy remain open.
+
+
+## Version 0.26 verification
+
+I02 adds protected local creation, minimal catalogs and checked detail for idea/app briefs. It preserves I01 supplied/unverified provenance and `not_started` semantics. There is no web intake control yet.
+
+- `src/server.ts`: GET/POST `/api/review-briefs` and GET `/api/review-briefs/ID`; existing session/Host/Origin/no-store rules; strict UTF-8 request parsing for this route; 64 KiB body bound; one active create including incomplete input; static 400/404/409; minimal creation confirmation/catalogs; full checked detail; final exact catalog/publication checks. No preview/execute/mutation/download/artifact route, target fetch or grant.
+- `src/review-briefs.ts`: synchronous final guard for a completely checked report and its initial private catalog snapshot, including every private summary field and canonical publication hash. Delivered copies cannot be recalled; this is not atomic with filesystem changes or receipt.
+- `tests/review-briefs-api.test.ts`: eight cases for both subjects and exact provenance/hash/minimal output; session/Origin/forged Host; unsupported/claimed results/body/UTF-8/content type/routes; own-byte/unsafe path tamper and restoration; final detail catalog/hash/directory/title/input-hash races; final creation race; authored post-commit failure preserving one record/bytes without automatic retry; partial-body busy guard; aborted-body release; authored metadata-only 100-row window and static corrupt-catalog denial. No actual behavioral or commercial data is generated.
+- `docs/review-briefs.md`, README/scope/backlog/status/checkpoint/version text describe the API, uncertain writes, current plaintext/operator boundaries and next web intake. The shared body parser retains previous route behavior by default; only brief requests opt into strict UTF-8.
+
+Typecheck, JavaScript syntax, build and full suite passed: **416 tests, zero failures/skips**, `outputs/test-results-0.26.0.txt`. Focused combined terminal/API: 21 passed, `outputs/review-briefs-api-targeted.txt`.
+
+`outputs/redteam-0.26.0.tgz` has 127 files. Final prefix: `work/install-release-0.26.0/node_modules/redteam`. `work/verify-installed-0.26.0.mjs` checks compiled terminal idea/app templates/preview/no-workspace/hash/provenance, CLI writes beside one live coordinator, actual API idea/app creation/minimal confirmation/catalog/checked canonical detail, no-store/session/foreign-Origin/unsupported subject, authored saved-byte denial then restoration, and no new jobs/actors/grants. It also repeats the controlled prospective capture/evidence workflow, five-kind web export/exact native JSON/Markdown, actual old installed 0.23 v1 compatibility, historical action preservation, normal idle source-loss clearing/restoration, no browser storage/errors. Proof: `outputs/installed-verification-0.26.0.json`. All services/browsers stop; no actual provider request, credential, research participant or human outcome. Existing UI changes only archive-version text; visually inspected export baseline remains 0.24.
+
+Archive whitelist/size/SHA512/every installed source byte/credential-pattern checks and normal private GitHub push/exact remote SHA are recorded in ignored release/GitHub proofs. No registry publication. A saved brief or its analytical questions are not a completed review, researched psychology, buying demand, investment decision, funding probability or customer validation.
+
+Next ready milestone: I03 explicit idea/app web intake and literal checked detail using this API. Preserve separate subject fields, draft lifecycle, deliberate submission, no automatic retry/execution, visible fixed boundaries, failed-refresh clearing, managed-view generations/aborts and current catalog/hash checks, desktop/mobile and installed verification. I04 bounded evidence-linked analyst review, external execution/isolation, research, real pilot/provider inputs, paid demand and broad hierarchy remain open.
