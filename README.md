@@ -2,7 +2,7 @@
 
 Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
 
-Version 0.9.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.9.1 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -24,7 +24,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.9.0.tgz
+npm install --global ./redteam-0.9.1.tgz
 redteam --help
 ```
 
@@ -92,6 +92,8 @@ redteam code observations show ENGINEERING_RUN_ID
 Start with the example input under `redteam examples`. Replace its placeholders with a saved snapshot ID, captured file hash, line range, supplied requirement, and note. Each citation must resolve to the copied bytes. Registration preserves the input and pins the snapshot and report hashes.
 
 These are operator-supplied, unreviewed source notes. Matching a citation does not verify the note's meaning. Requirements remain supplied and unverified; a null requirement keeps the expectation unknown. Execution stays `not_executed` and defects stay `not_assessed`. Inspection returns supplied text under the current grant, without adding source excerpts. See the [observation contract](docs/engineering-observations.md).
+
+The local service also provides authenticated GET inspection at `/api/code-runs` and its `repositories/RUN_ID` and `observations/RUN_ID` detail routes. Listings are explicitly unverified catalog summaries; detail requests check current access and saved evidence. Dashboard controls for these records remain unfinished. No source download, capture, or registration action is exposed through these routes.
 
 ## Inspect browser evidence
 

@@ -64,3 +64,15 @@ Failed or killed registrations can leave private uncataloged files. These remain
 This is a trusted local operator workflow. It does not isolate hostile processes, authenticate external provenance, or make cross-process permission checks and file writes atomic. Normal repository snapshot exclusions, bounds, and interpretation limits continue to apply. Source content, requirements, and submitted notes remain untrusted data. None can grant tools or change policy.
 
 No source text or submitted note is sent to a model by this feature. The actor runtime does not receive these records automatically. A future engineering analyst needs a separate tool and processing policy. Executed verification and independent finding review remain later milestones.
+
+## Local inspection API
+
+Version 0.9.1 prepares the API for later dashboard controls. It adds three GET routes behind the existing bearer session, Host/Origin checks, and `no-store` response policy:
+
+- `/api/code-runs` returns authorized repository and engineering catalog summaries.
+- `/api/code-runs/repositories/RUN_ID` verifies current access and saved snapshot integrity before returning snapshot metadata.
+- `/api/code-runs/observations/RUN_ID` verifies current access, the snapshot pin and artifacts, report hash, and original input before returning supplied notes and citation metadata.
+
+Catalog entries have `recordStatus: cataloged_unverified`. Listing does not read every artifact or certify integrity. It omits note statements and storage directories. Detail requests perform the checks. A missing, expired, revoked, unsafe, or changed record returns the same 404 body with code `code_record_unavailable`. Denials do not return source/notes text, parser errors, or filesystem paths.
+
+No copied source excerpts, source artifact download, capture, or note-registration endpoint is provided. The detail response intentionally includes supplied operator text; a future dashboard must render it as text. Current permission applies on every request. A response already delivered cannot be recalled. Dashboard rendering and open-dialog/cache invalidation remain a separate unfinished step; these routes alone do not provide those UI controls.

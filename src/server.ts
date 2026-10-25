@@ -10,6 +10,8 @@ import { checkArtifacts } from "./evidence.ts";
 import { ResearchRegistry } from "./research.ts";
 import { runActorDemo } from "./actor-demo.ts";
 import { readActorReport, authorizedActorRuns } from "./actor-reports.ts";
+import { authorizedRepositoryRuns, readRepositorySnapshot } from "./repository.ts";
+import { authorizedEngineeringRuns, readEngineeringReport } from "./engineering.ts";
 
 async function body(request: IncomingMessage): Promise<Record<string, unknown>> {
   if (request.headers["content-type"]?.split(";")[0] !== "application/json") throw new Error("Use application/json.");
@@ -69,6 +71,21 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
       const supplied = Buffer.from(authorization.startsWith("Bearer ") ? authorization.slice(7) : "");
       const expected = Buffer.from(token);
       if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) { send(response, 401, { error: "A local Redteam session is required." }); return; }
+      if (request.method === "GET" && url.pathname === "/api/code-runs") {
+        const repositoryRuns = authorizedRepositoryRuns(store).map(({ runId, grantId, target, createdAt, fileCount, totalBytes }) => ({ runId, grantId, target, createdAt, fileCount, totalBytes, recordStatus: "cataloged_unverified" }));
+        const engineeringRuns = authorizedEngineeringRuns(store).map(({ runId, snapshotRunId, grantId, target, createdAt, observationCount }) => ({ runId, snapshotRunId, grantId, target, createdAt, observationCount, recordStatus: "cataloged_unverified" }));
+        send(response, 200, { repositoryRuns, engineeringRuns }); return;
+      }
+      const codeDetail = /^\/api\/code-runs\/(repositories|observations)\/([a-f0-9-]{36})$/.exec(url.pathname);
+      if (request.method === "GET" && codeDetail) {
+        try {
+          const report = codeDetail[1] === "repositories" ? await readRepositorySnapshot(store, codeDetail[2]!) : await readEngineeringReport(store, codeDetail[2]!);
+          send(response, 200, report);
+        } catch {
+          send(response, 404, { error: "Code record unavailable. Access or integrity checks failed.", code: "code_record_unavailable" });
+        }
+        return;
+      }
       if (request.method === "GET" && url.pathname === "/api/workspace") {
         const jobs = store.jobs();
         const grants = store.grants().map(grant => ({ ...grant, active: isGrantActive(grant) }));

@@ -163,7 +163,7 @@ Type checking and build passed. The full suite passed 215 tests, zero failures o
 
 A capture is a sequence of file observations, not an atomic Git revision or build. It does not prove a test or defect. Excluded directories have uncounted descendants. The policy does not interpret ignore rules or detect secrets inside allowed source text. Normal reads can change access times. Filesystem operations can exceed the duration target when unresponsive. Checks assume a trusted local operator, not hostile-process or production isolation. Cross-process revocation and writes are not one transaction. Failed/killed captures can leave private uncataloged files, which are preserved and never adopted automatically. Revocation does not erase copied bytes. No capture recovery, cleanup, external processing, or automatic actor access is enabled.
 
-## Current milestone: Version 0.9.0
+## Version 0.9.0 verification
 
 B13 now records operator-supplied engineering notes and requirements against copied source ranges. This is a citation integrity workflow, not semantic source review, executed testing, or approved findings. The terminal commands are `redteam code observations add FILE`, `list`, and `show RUN_ID`.
 
@@ -182,9 +182,25 @@ Type checking and build passed. The full suite passed 226 tests with zero failur
 
 The feature does not authenticate requirement provenance, inspect a note's semantic truth, execute source/tests, approve defects, or feed content to a model. Supplied notes can be wrong despite matching citations. Unknown expectations remain unknown. Local plaintext, file access-time changes, trusted-operator assumptions, non-atomic cross-process access/write boundaries, and preserved uncataloged partial files remain explicit. Revocation denies supported retrieval but does not erase copied bytes or backups. No automatic recovery, retry, adoption, cleanup, or actor access is enabled.
 
+## Current milestone: Version 0.9.1
+
+The API portion of U15 is implemented. Dashboard controls are not yet implemented. This release creates the protected read path needed before UI rendering and cache/permission transitions.
+
+Exact files:
+
+- `src/server.ts`: authenticated GET `/api/code-runs` returns minimal current-authorized catalog summaries without note text or storage directories. Entries are labelled `cataloged_unverified`; listing is not an artifact check. GET `/api/code-runs/repositories/RUN_ID` and `/observations/RUN_ID` use the existing permission-checked, hash-verified readers. Missing, revoked, expired, unsafe, and changed records share a static 404 `code_record_unavailable` body, without filesystem/parser/content details. Existing session, Host, Origin, JSON, and no-store boundaries apply. No source download, capture, or note registration route is added.
+- `tests/code-api.test.ts`: six real-service checks for session/Host/Origin, no-store/nosniff JSON, minimal catalog fields, fixed note statuses, no copied source, dependency tampering, static denials, expiry, revocation before missing-file reads, and absent write/download actions. The HTML-like operator note is JSON data; future UI still needs text rendering and browser verification.
+- `docs/engineering-observations.md`: packaged API contract and explicit unfinished UI boundary. README, status, backlog, package metadata, and web install text use 0.9.1. Dashboard JavaScript is unchanged.
+
+Type checking, build, and all 232 tests passed with zero failures or skips. The focused six API checks also passed. Log: `outputs/test-results-0.9.1.txt`.
+
+`outputs/redteam-0.9.1.tgz` is installed under `work/install-release-0.9.1`. `work/verify-installed-0.9.1.mjs` verified compiled CLI/server, session and Origin denial, no-store minimal unverified catalogs, source-text exclusion, unknown/unreviewed/not-assessed labels, changed dependent evidence denial with a static body, revocation, and absent write endpoints. Results are `outputs/installed-verification-0.9.1.json`; its owned fixture workspace is recorded there. The temporary service is stopped. No real credential, target-code execution, provider call, or browser was used in this installed check. Existing browser fixtures still pass in the full suite. The dashboard browser baseline remains 0.7.3; these new records have no dashboard controls yet.
+
+These APIs cannot recall data already delivered. Client refresh, cached-detail removal, dialog closure on access changes, text escaping, and desktop/mobile verification remain required before U15 is complete. Local trusted-operator and non-atomic cross-process permission/write limits remain. No source execution, model processing, stakeholder validity, or approved engineering finding is added.
+
 ## Next sequence
 
-1. Implement U15: show repository snapshots and engineering notes in the existing local review view. Add protected list/detail endpoints with current exact-grant checks and hash verification. Keep copied source text out of the initial dashboard response. Make supplied/unverified, unreviewed, not-executed, not-assessed, and unknown expectation labels visible.
+1. Finish U15: show repository snapshots and engineering notes in the existing local review view. Use the implemented `/api/code-runs` list and `repositories/RUN_ID` / `observations/RUN_ID` detail GET routes; do not add an unverified raw-file path. Keep copied source text out of the initial dashboard response. Make supplied/unverified, unreviewed, not-executed, not-assessed, and unknown expectation labels visible.
 2. Follow the existing actor-report revocation pattern: deny stale links, refresh access state, close and clear an open report on expiry/revocation, and avoid retaining restricted detail in managed caches. Verify the actual installed dashboard at desktop and 390 px, including text escaping, hash failures, and live revocation. Do not conflate listing metadata with a verified report.
 3. Semantic engineering review requires captured requirements, a bounded engineering tool policy, separate external-processing permission where relevant, and independent verification before defect approval. Source/requirement/note text cannot authorize tools. Do not execute app scripts or send content to the stakeholder runtime through this path.
 4. Preserve sealed actor outputs, invocation identities, uncataloged repository/engineering records, and unowned `.pending` files. No automatic repair, replay, retry, cleanup, or cost release is authorized by inspection.
@@ -200,7 +216,7 @@ The feature does not authenticate requirement provenance, inspect a note's seman
 
 The temporary preview service is stopped during turn teardown. Reopen it with `npm run ui` when needed. Runtime data remains in `.redteam/` and is excluded from Git and release archives.
 
-Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), `a999dfb` (normal publication catalog repair), `7f96811` (atomic publication), and `e379e38` (completed-task publication gaps and permission protection). Version 0.7.4 is committed as `cd93137`. Version 0.8.0 is committed as `42d663b`. The 0.9.0 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.9.0.json` record its final package and checks. `outputs/test-results-0.9.0.txt` records the full suite. Preview services and test browsers are stopped.
+Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), `a999dfb` (normal publication catalog repair), `7f96811` (atomic publication), and `e379e38` (completed-task publication gaps and permission protection). Version 0.7.4 is committed as `cd93137`. Version 0.8.0 is committed as `42d663b`. Version 0.9.0 is committed as `71e2bf4`. The 0.9.1 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.9.1.json` record its final package and checks. `outputs/test-results-0.9.1.txt` records the full suite. Preview services and test browsers are stopped.
 
 ## External inputs still required
 
