@@ -20,6 +20,7 @@ import type { ActorLimits } from "./actor.ts";
 import { BudgetLedger } from "./budget.ts";
 import { TaskStore } from "./tasks.ts";
 import { recoverConfiguredActors } from "./actor-recovery.ts";
+import { diagnoseActorPublication } from "./actor-diagnostics.ts";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspace = resolve(process.cwd());
@@ -44,6 +45,7 @@ redteam research evaluation lock EVALUATION_ID FILE
 redteam research evaluation score EVALUATION_ID
 redteam actors demo
 redteam actors list
+redteam actors diagnose RUN_ID
 redteam actors run --scenario FILE --limits FILE --config FILE
 redteam budgets show RUN_ID
 redteam tasks list [RUN_ID]
@@ -204,6 +206,11 @@ async function main(): Promise<void> {
     return;
   }
   if (command === "actors") {
+    if (args[0] === "diagnose" && args.length === 2) {
+      const diagnostic = await diagnoseActorPublication(workspace, args[1]!); print(diagnostic);
+      if (diagnostic.issues.some(issue => issue.level === "error")) process.exitCode = 1;
+      return;
+    }
     if (args[0] === "run") {
       const options = flags(args.slice(1), ["--scenario", "--limits", "--config"]);
       if (!options["--scenario"] || !options["--limits"] || !options["--config"]) throw new Error("Supply --scenario, --limits, and --config JSON files.");
@@ -225,7 +232,7 @@ async function main(): Promise<void> {
       finally { research?.close(); store.close(); }
       return;
     }
-    if (args.length !== 1 || args[0] !== "demo") throw new Error("Usage: redteam actors demo|list|run");
+    if (args.length !== 1 || args[0] !== "demo") throw new Error("Usage: redteam actors demo|list|run|diagnose RUN_ID");
     const registry = new ResearchRegistry(workspace);
     try {
       const result = await runActorDemo(workspace, registry);

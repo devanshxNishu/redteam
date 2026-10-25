@@ -2,7 +2,7 @@
 
 Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
 
-Version 0.7.3 provides a local workspace, an installable CLI, scoped access grants, browser evidence, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, and factual crash recovery. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.7.4 provides a local workspace, an installable CLI, scoped access grants, browser evidence, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -24,7 +24,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.7.3.tgz
+npm install --global ./redteam-0.7.4.tgz
 redteam --help
 ```
 
@@ -141,6 +141,8 @@ The same recovery command restores a missing catalog entry when a normal report 
 If a completed task has no JSON report, recovery returns `publication_pending` until its frozen finalization deadline. After that deadline, it can publish a factual partial report with the completed task, verified seal, and budget. Its decision is `unavailable`, with reason `publication_missing`; no stakeholder action is reconstructed. Current research permission is required. A delayed coordinator preserves the first valid publication, and no inference request is repeated.
 
 JSON records and byte artifacts saved through the evidence store use private staging files and exclusive publication. Readers see a complete final record, and an existing entry cannot be replaced. Interrupted staging files remain outside the report and are never promoted during recovery. See the [publication contract](docs/evidence-publication.md) for filesystem requirements and the boundary between publication and acceptance.
+
+Use `redteam actors diagnose RUN_ID` to inspect a saved actor publication before repair. It distinguishes missing or unreadable reports, invalid JSON, unsupported identity, and missing or changed artifacts. It prints fixed diagnostic messages, counts, and a report fingerprint; it does not print report content, make inference calls, open workspace databases, or change stored records. Error-level findings return exit code 1. Hash matches do not authorize report access or validate stakeholder behavior. See [report diagnostics](docs/report-diagnostics.md).
 
 The adapter is an authored software fixture. It makes no live model calls and does not predict demand or funding. The runtime enforces information access, observed references, decision consistency, step and read limits, context and output size, usage receipts, timeouts, and cancellation. Unknown usage remains visible when a call ends without a receipt.
 

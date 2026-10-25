@@ -53,9 +53,12 @@ redteam tasks list [RUN_ID]
 redteam tasks show TASK_ID
 redteam tasks cancel TASK_ID
 redteam tasks recover RUN_ID
+redteam actors diagnose RUN_ID
 ```
 
 Cancellation is observed by the running coordinator's heartbeat and abort signal. A provider may still charge for an already dispatched request. Its unresolved liability remains held.
+
+Use the separate actor diagnostic before considering repair of an unreadable final report. It checks saved publication syntax, identity, and recorded artifact hashes without opening the stores or executing recovery. Its result does not assess current task/budget state or authorize a decision. See [report diagnostics](report-diagnostics.md).
 
 New configured runs recover expired configured tasks without retrying them. Explicit recovery uses the same path. It closes affected budget runs and marks in-flight usage uncertain. When a terminal configured task has no published report, recovery verifies its frozen manifest and any sealed bytes, then publishes a factual partial report with no accepted actor decision. Unsealed candidate files are excluded. Research withdrawal still restricts recovered report access.
 

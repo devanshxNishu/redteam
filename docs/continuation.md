@@ -104,7 +104,7 @@ Contract: `docs/evidence-publication.md`, also included in the package. README, 
 
 Local macOS supports the tested hard-link and directory-sync operations. Node documents storage-dependent flush behavior. There is no tested power-loss, network-filesystem, Windows, or hostile-operator guarantee. Orphan `.pending` files are left private and are never promoted or automatically removed; another writer might still own them. Legacy truncated final files remain refused without overwrite. A completed task without saved JSON is still unavailable. No broader hierarchy or psychological claim has been enabled.
 
-## Current milestone: Version 0.7.3
+## Version 0.7.3 verification
 
 Completed-task publication-gap recovery is implemented. During the task's frozen finalization window, `recoverConfiguredActors` returns `unavailable` with `publication_pending` and changes no task or budget. After the deadline, it verifies the pinned manifest/model/scenario/deadline and exact sealed bytes under current research permission. It can then publish `limited_coverage` with an empty actor-result list, recovery reason `publication_missing`, and acceptance `{ status: "unavailable", reason: "publication_missing" }`. The task remains completed. No stakeholder action is reconstructed or published from its seal, and no provider request is replayed.
 
@@ -124,14 +124,31 @@ Installed desktop and 390 px browser checks passed the new dialog, explicit unav
 
 README, package metadata, status, backlog, `docs/task-state.md`, `docs/evidence-publication.md`, `docs/live-inference.md`, and `docs/budget-ledger.md` describe the current boundary. Catalogs and report APIs remain permission checked. Legacy invalid final files and unowned staging files are preserved. Broader hierarchy, external target tools, real human research, live provider verification, and commercial gates remain open.
 
+## Current milestone: Version 0.7.4
+
+Bounded terminal actor publication diagnostics are implemented. `redteam actors diagnose RUN_ID` inspects the saved report and its recorded artifact hashes. It distinguishes absent/unreadable/unsafe/oversized files, invalid UTF-8 JSON, unsupported report identity/structure, missing/changed artifacts, invalid/duplicate references, and bounded staging inventory. Unparseable final JSON is not assumed to be a crash: its cause remains unknown. Existing bytes remain preserved.
+
+Exact files:
+
+- `src/actor-diagnostics.ts`: direct bounded reads, canonical directory checks, regular-file/no-follow checks, fixed allocations, change detection during reads, static issue codes/actions, artifact indices/counts, staging counts, and a report fingerprint. It prints no note, actor/source/model content, owner/path values, or parser error body. It does not construct any store, evaluate research permission or decision acceptance, execute recovery, open a database, or replay inference.
+- `src/cli.ts`: `actors diagnose RUN_ID`, help, and nonzero exit for error-level findings. Exit zero can still contain warnings and is not an app-test verdict.
+- `tests/actor-diagnostics.test.ts`: 13 checks. File-tree bytes/names/modes/modification times remain unchanged; a live-store check also preserves expired task state, in-flight liability, database/WAL/shared-memory bytes. Store queries occur outside the file comparison because those queries can update SQLite shared-memory read marks. CLI checks confirm no state creation in an empty workspace and no private fixture text in diagnostic output.
+- `docs/report-diagnostics.md`: scope, bounds, issue meanings, error codes, privacy, SQLite rationale, and limitations; included in the package. README, task contract, package metadata, and `web/index.html` use 0.7.4.
+
+Type checking and build passed. The full suite passed 200 tests with zero failures or skips. The focused diagnostic suite passed all 13 checks. Log: `outputs/test-results-0.7.4.txt`.
+
+The archive is `outputs/redteam-0.7.4.tgz`. `work/verify-installed-0.7.4.mjs` passed compiled CLI help/version, an actual scripted demo with three matching artifacts, absent state, invalid JSON/fingerprint, missing and changed artifacts, staging preservation, private-content suppression, and error exit codes. Complete file-tree comparisons around each diagnostic checked content, names, permissions, and modification times. No task or budget database was created. Results are `outputs/installed-verification-0.7.4.json`; its isolated workspace is recorded there. No provider request, real key, browser, or service was used in this terminal verification. Dashboard behavior remains the 0.7.3 verified baseline; the only web change is install-version text.
+
+Bounds: two million bytes per file, twenty artifact references, one hundred report entries, one hundred entries per directory inventory. Normal read access can update filesystem access times. Hash checks rely on the saved metadata, do not authenticate it, and do not assess research permission, acceptance, psychology, or current task/budget state. Staging files are counted without parsing, promoting, or deleting them. The inspection assumes a trusted local operator and is not a hostile-process sandbox. Existing recovery semantics remain unchanged.
+
 Official token-counting and structured-output documentation was fetched during earlier integration. Cached copies are `work/openai-token-counting.md` and `work/openai-structured-outputs.md`. Verify current official API details before changing provider behavior. Do not reuse desktop authentication or invent rates.
 
 Use synthetic fixtures for software verification. Keep them visibly separate from human research. Never promote synthetic fixtures into validated psychology.
 
 ## Next sequence
 
-1. Add bounded, actionable diagnostics for legacy invalid final publications. Current recovery preserves and refuses them with `missing_or_invalid_records`. Distinguish missing/changed records from an incomplete final JSON file without exposing content, overwriting files, rejudging decisions, or clearing liability. Prefer a read-only inspection path before any repair action.
-2. Continue independent evidence/tool work under the existing access and isolation prerequisites. Keep uncertainty explicit, preserve sealed outputs and invocation identities, and do not automatically delete `.pending` files. Do not broaden specialist dispatch before its prerequisites.
+1. Define and prototype the B12 local repository snapshot under an exact existing `code:read` directory grant. Start with owned synthetic repositories. Enforce canonical containment, expiry/revocation before reads and publication, conservative file exclusions and byte/file/depth bounds, local evidence hashes, and explicit incomplete coverage. Execute no source code, test command, shell tool, or external model call. Grants alone must not authorize external model processing. Keep production isolation limits explicit.
+2. Use that snapshot to support future engineering observations only when a captured requirement or rule supports the claim. Do not label declared scripts or incomplete inspection as verified tests or app defects. Preserve sealed outputs, invocation identities, and unowned `.pending` files; no automatic repair or cleanup is enabled by diagnostics.
 3. Add bounded analyst task coordination when prerequisites permit. The commercial hierarchy gate remains unproven; do not enable broad specialist fan-out or claim the roundtable is complete.
 4. A live API smoke test needs explicit model configuration, valid credentials, current rates, and processing permission. Do not reuse desktop authentication or invent pricing. Continue independent work if these inputs are missing.
 5. Continue external runner work after isolation and access prerequisites are met.
@@ -146,7 +163,7 @@ Use synthetic fixtures for software verification. Keep them visibly separate fro
 
 The temporary preview service is stopped during turn teardown. Reopen it with `npm run ui` when needed. Runtime data remains in `.redteam/` and is excluded from Git and release archives.
 
-Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), `a999dfb` (normal publication catalog repair), and `7f96811` (atomic publication). The 0.7.3 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.7.3.json` record its final package and checks. `outputs/test-results-0.7.3.txt` records the full suite. Preview services and test browsers are stopped.
+Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), `a999dfb` (normal publication catalog repair), `7f96811` (atomic publication), and `e379e38` (completed-task publication gaps and permission protection). The 0.7.4 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.7.4.json` record its final package and checks. `outputs/test-results-0.7.4.txt` records the full suite. Preview services and test browsers are stopped.
 
 ## External inputs still required
 

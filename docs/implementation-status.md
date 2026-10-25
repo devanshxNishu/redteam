@@ -1,6 +1,6 @@
 # redteam: Implementation status
 
-Current build: 0.7.3, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, partial crash reports, and verified catalog restoration. Completed tasks with missing original reports now produce factual partial evidence after their finalization deadline. The provider path is mock-verified; no live API smoke test is recorded.
+Current build: 0.7.4, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, and bounded terminal report diagnostics. The provider path is mock-verified; no live API smoke test is recorded.
 
 This record separates implemented code from the broader product plan. The browser runner reviews one controlled signup journey. Registered actor models can be used through the configured path, but no independent human behavioral validation is recorded.
 
@@ -39,6 +39,7 @@ This record separates implemented code from the broader product plan. The browse
 | Task control | List/show/cancel/recover commands; SIGINT/SIGTERM cancellation; stale outputs rejected | Local trusted coordinator and clock; database contention can affect latency |
 | Interrupted reports | Factual partial evidence; saved normal reports can regain a missing catalog entry after task, sealed-byte, artifact, and permission checks | No inference replay or decision promotion from an unpublished seal |
 | Missing publication | A completed task stays pending through its frozen deadline; afterward a permitted partial report preserves its task, seal, and budget with the decision unavailable | First valid JSON wins; no reconstructed action, task downgrade, or unknown-cost release |
+| Report diagnostics | `redteam actors diagnose RUN_ID` distinguishes missing/unreadable publications, invalid JSON/identity, and missing/changed/unsafe artifacts; returns fixed guidance and a fingerprint | Does not open databases, change records, print report content, authorize research access, or accept decisions |
 | Consumer and investor demo | Scripted rejection and conditional investment, with reasons, conditions, gaps, and evidence | Authored software fixtures; not behavioral predictions |
 | Shared actor reports | Scripted and configured run catalog, report detail, permission checks, and artifact verification | Not durable live-agent task orchestration |
 
@@ -53,7 +54,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 187 passed, zero failed or skipped |
+| Full automated suite | 200 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -68,7 +69,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Decision resolution | Four tests passed for version resolution, identity, scope, references, withdrawal, and denied validation claims |
 | Vault integrity | Record-bound authentication, modified ciphertext rejection, and missing-key behavior passed |
 | Registry dashboard | Actual source counts and draft model cards passed desktop and mobile browser checks |
-| Packaged installation | Installed 0.7.3 CLI, injected original-publication stop, pending deadline, completed-task partial recovery, exact seal, unchanged closed budget/task, concurrent catalog repair, and artifact checks passed |
+| Packaged installation | Installed 0.7.4 CLI, scripted demo, matching hashes, absent state, invalid JSON/fingerprint, missing/changed evidence, staging preservation, private-content suppression, unchanged file tree, and error exit codes passed |
 | Packaged web service | Installed 0.7.3 publication-gap dialog passed desktop and 390 px checks, unavailable-decision text, artifact verification, live withdrawal closure/cache clearing, and restricted retrieval; earlier completed/interrupted dialogs remain verified on 0.7.0 |
 | Actor runtime checks | Eighteen tests passed, including coordinator constraint omission, state escalation, evidence substitution, hidden states, unknown barriers, and positive-action requirements |
 | Actor demo evidence | Consumer and investor reports saved; three artifacts passed hash checks |
@@ -83,13 +84,16 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Normal publication recovery | Twelve added checks passed, including concurrent repair, byte preservation, changed decisions/fences/events/budgets, missing/duplicate artifacts, absent publication, rejection, and withdrawal |
 | Atomic file publication | Nine checks passed for flush/close order, storage failures, unsupported links, six competing processes, and real writers killed at three publication boundaries |
 | Evidence store | Six checks passed for artifact integrity, immutable records, serialization failure, final symlinks, and parent-directory escape |
+| Read-only diagnostic | Thirteen checks passed for malformed/unsupported records, privacy, file and inventory bounds, unsafe references, staging, CLI behavior, and unchanged live task/budget/SQLite files |
 | Report withdrawal | API checks passed; a browser check confirmed the open report closes and cached detail is cleared |
 | Local file boundaries | Dangling database symlinks denied before target creation; credential-bearing target URLs rejected |
 | Pinned Chromium download | Earlier cache-lock failure; installed Chrome fallback verified |
 
 An initial test pass attempt exposed browser shutdown deadlines under load. The implementation now closes contexts explicitly and uses the documented bounded cleanup allowance. The full suite passed after that correction. An installed-build review from before that correction correctly reported limited coverage; it did not report an app defect.
 
-The current installable archive is `outputs/redteam-0.7.3.tgz`. `work/verify-installed-0.7.3.mjs` injected a stop before the original JSON write of an actual configured fake-provider run. It verified four fake transport requests, a pending finalization window, a later four-artifact factual partial report, the unchanged completed task and closed budget, the exact original seal, no recovered actor decision, concurrent catalog repair, and hash checks. The installed dashboard displayed the distinction at desktop and 390 px, had no overflow or uncaught errors, and closed/cleared the open report after live withdrawal. It also checked an older catalog with empty model references: the independently hashed manifest still enforced restriction and denied retrieval. Results are `outputs/installed-verification-0.7.3.json`; screenshots are under `outputs/preview/`. No live provider request or real key was used. The temporary browser and service are stopped.
+The current installable archive is `outputs/redteam-0.7.4.tgz`. `work/verify-installed-0.7.4.mjs` verified compiled help/version, an actual scripted demo, three matching artifacts, absent workspace state, invalid final JSON and its fingerprint, missing/changed evidence, staging preservation, private-content suppression, and exit codes. Complete file-tree comparisons around each diagnostic checked bytes, names, modes, and modification times. No task or budget database was created by inspection. Results are `outputs/installed-verification-0.7.4.json`. No provider request, real credential, browser, or service was used for this terminal change.
+
+The 0.7.3 installed checks remain in `outputs/installed-verification-0.7.3.json`. They cover completed-task publication-gap recovery, exact seals, concurrent catalog repair, and permission protection for empty legacy catalog references. The new dialog passed desktop/mobile checks, hash verification, live withdrawal closure/cache clearing, and denied retrieval. Screenshots remain under `outputs/preview/`; that temporary browser and service are stopped.
 
 The earlier 0.7.2 installed checks remain in `outputs/installed-verification-0.7.2.json`. They cover compiled exclusive publication and both real-browser signup fixtures with seven valid artifacts each. The current full suite also passed the fixture runner checks.
 
@@ -113,6 +117,6 @@ No real provider calls occurred in the recorded checks. Scripted runs report zer
 
 ## Next milestone
 
-Configured ownership, partial crash reports, saved-publication catalog repair, atomic JSON/byte publication, and completed-task publication-gap reports are implemented. Next, make legacy invalid-publication diagnostics actionable without overwriting their files or promoting their contents. Shared specialist scheduling, browser/tool/infrastructure budgets, and production isolation remain open. Broader hierarchy still depends on commercial evidence. Live provider and human evaluation require their actual external inputs.
+Report diagnostics now make invalid-publication inspection actionable while preserving its files and contents. Next, define and prototype a bounded local repository snapshot under an exact `code:read` grant, starting with owned fixtures. Keep it local and exclude code execution and external model processing. This supports future engineering evidence without enabling the broader hierarchy. Shared specialist scheduling, browser/tool/infrastructure budgets, production isolation, real stakeholder research, and live provider verification remain open.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
