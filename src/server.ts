@@ -17,6 +17,7 @@ import { authorizedActionSummaries, createTrackedAction, readTrackedAction, upda
 import { comparisonSummaries, createStoredComparison, readStoredComparison } from "./comparisons.ts";
 import { experimentPlanSummaries, freezeExperimentPlan, readExperimentPlan } from "./experiments.ts";
 import { reportExportSummaries, createReportExport, readReportExport, checkReportExportAccess, reportExportMarkdown } from "./report-export.ts";
+import { outcomeEvidenceSummaries, registerOutcomeEvidence, readOutcomeEvidence, checkOutcomeEvidenceAccess, publicOutcomeEvidence } from "./outcome-evidence.ts";
 
 async function body(request: IncomingMessage): Promise<Record<string, unknown>> {
   if (request.headers["content-type"]?.split(";")[0] !== "application/json") throw new Error("Use application/json.");
@@ -54,6 +55,7 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
   let actorDemoActive: Promise<unknown> | null = null;
   let comparisonActive = false;
   let reportExportActive = false;
+  let outcomeEvidenceActive = false;
   let closing = false;
   const server = createServer((request, response) => {
     response.setHeader("Cache-Control", "no-store");
@@ -97,6 +99,23 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
             response.writeHead(200, { "Content-Type": format === "json" ? "application/json; charset=utf-8" : "text/markdown; charset=utf-8", "Content-Disposition": `attachment; filename="redteam-report-${id}.${format}"`, "Content-Length": content.length, "X-Content-SHA256": sha256(content) }); response.end(content);
           } else { checkReportExportAccess(store, id); send(response, 200, report); }
         } catch { send(response, 404, { code: "report_export_unavailable", error: "Report export unavailable. Current source or saved integrity checks failed." }); }
+        return;
+      }
+      if (request.method === "GET" && url.pathname === "/api/outcome-evidence") { send(response, 200, { recentWindow: 100, outcomeEvidence: outcomeEvidenceSummaries(store) }); return; }
+      if (request.method === "POST" && url.pathname === "/api/outcome-evidence") {
+        if (outcomeEvidenceActive) { send(response, 409, { code: "outcome_evidence_busy", error: "A local evidence registration is already running." }); return; }
+        outcomeEvidenceActive = true;
+        try {
+          const summary = await registerOutcomeEvidence(store, await body(request)), report = await readOutcomeEvidence(store, summary.id), projected = publicOutcomeEvidence(report);
+          checkOutcomeEvidenceAccess(store, report); send(response, 201, projected);
+        } catch { send(response, 400, { code: "outcome_evidence_not_confirmed", error: "Evidence registration not confirmed. Inspect recent records before retrying; check the supplied IDs, source integrity, and planned window." }); }
+        finally { outcomeEvidenceActive = false; }
+        return;
+      }
+      const outcomeEvidenceDetail = /^\/api\/outcome-evidence\/([a-f0-9-]{36})$/.exec(url.pathname);
+      if (request.method === "GET" && outcomeEvidenceDetail) {
+        try { const report = await readOutcomeEvidence(store, outcomeEvidenceDetail[1]!), projected = publicOutcomeEvidence(report); checkOutcomeEvidenceAccess(store, report); send(response, 200, projected); }
+        catch { send(response, 404, { code: "outcome_evidence_unavailable", error: "Evidence link unavailable. Current source, history, clock, or saved integrity checks failed." }); }
         return;
       }
       if (request.method === "GET" && url.pathname === "/api/experiments") { send(response, 200, { recentWindow: 100, experimentPlans: experimentPlanSummaries(store) }); return; }

@@ -40,7 +40,7 @@ The immutable report has `state: evidence_registered`. It copies the factual con
 
 A comparison result does not evaluate the supplied metric, success rule, intended sample count, population, selection, or hypothesis. The original plan still says `not_collected` and `not_started_by_tracking`; registration does not rewrite it. The action receives no automatic completion or verification. No inference, source test, participant recruitment, purchase, investment, funding decision, behavioral prediction, commercial validation, or independent human outcome is established.
 
-Current controlled browser evidence uses no external target grant. Saved job availability, full checked source bytes, plan/comparison catalogs, and historical action pins govern access. An interrupted/failed/limited job hides a managed list entry and denies full reads. No external app, source-note outcome, actor/research data, arbitrary participant/result file, or broader hierarchy is enabled. There is no new API, dashboard, or report-export kind in this release.
+Current controlled browser evidence uses no external target grant. Saved job availability, full checked source bytes, plan/comparison catalogs, and historical action pins govern access. An interrupted/failed/limited job hides a managed list entry and denies full reads. No external app, source-note outcome, actor/research data, arbitrary participant/result file, or broader hierarchy is enabled. Version 0.22.0 adds the protected local API below. There is no new dashboard or report-export kind.
 
 ## Local storage and uncertain results
 
@@ -53,3 +53,17 @@ An error after file publication can leave private orphan bytes. Inspect records 
 ## Verification boundary
 
 A real positive test freezes a plan before a separate later actual browser capture. Other positive mechanics and negative cases use explicitly authored local-clock plan fixtures over copied real capture bytes; they are software consistency tests, not new prospective studies or human evidence. Checks cover wrong sources/windows, future/observation times, source-note exclusion, limited/not-comparable sources, forged comparison verdicts, publication/artifact/history changes, unsafe paths, current availability, insertion races, duplicate concurrency, atomic audit, orphan preservation, fixed labels, later action updates, and terminal commands. The installed archive separately repeats the actual freeze-then-capture workflow without mocked time.
+
+## Protected local API (0.22.0)
+
+- `GET /api/outcome-evidence` returns the minimal recent catalog with unverified labels.
+- `POST /api/outcome-evidence` accepts the same strict input and returns a checked public report with status 201.
+- `GET /api/outcome-evidence/ID` returns the same checked public projection.
+
+The existing ephemeral bearer session, exact local Host/Origin, no-store, nosniff, and bounded JSON body rules apply. One active registration is allowed per service; another receives 409. Creation failures return static 400 with instructions to inspect records before retrying. A saved record may exist after that response. An unavailable detail returns static 404 without paths, notes or raw error content. Unknown mutations, approvals, artifact routes, and downloads remain unavailable.
+
+The whitelist preserves supplied input, fixed assessment, factual observation, local alignment, minimal source IDs/report hashes, action version identifiers, artifact IDs/owners/hashes/sizes/types, and limitations. It omits directories, targets/grants, source catalog fingerprints, private history pins, artifact paths, browser bytes, code, research/actor data, sessions, and credentials. A supplied note may itself contain private text; no universal secret detector is claimed.
+
+Full asynchronous file/source verification precedes response projection. A final synchronous guard binds the response to the exact canonical saved publication hash and selected source identities, then rechecks current completed jobs, source catalogs, historical action prefix, and local time immediately before headers/bytes. It opens no arbitrary path afterward. This is not an atomic transaction with the filesystem or external receipt. Delivered copies cannot be recalled.
+
+Eight API checks cover confirmed projection, private field exclusion, session/Origin/actual forged-Host rules, static errors, unsupported routes/input, later legitimate action updates, history and artifact changes, limited/unavailable sources, current-source and publication-catalog changes injected after a full read, uncertain committed creation, and a real partial-body concurrent request receiving 409. These are owned local software fixtures. The installed archive separately verifies API behavior over genuinely frozen plans and later actual browser captures.

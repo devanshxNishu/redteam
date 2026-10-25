@@ -4,7 +4,7 @@ Private source repository: [devanshxNishu/redteam](https://github.com/devanshxNi
 
 Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
 
-Version 0.21.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.22.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -27,7 +27,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.21.0.tgz
+npm install --global ./redteam-0.22.0.tgz
 redteam --help
 redteam doctor
 ```
@@ -153,7 +153,7 @@ redteam experiments evidence list
 redteam experiments evidence show EVIDENCE_ID
 ```
 
-The record preserves source hashes, historical action lineage, local time alignment, and the factual comparison verdict. It performs no work and adjudicates no hypothesis, sample adequacy, independent outcome, or causal effect. Plans and action declarations stay unchanged. This terminal-only controlled-fixture slice prepares U06; human outcome tracking remains open. See [the contract](docs/outcome-evidence.md).
+The record preserves source hashes, historical action lineage, local time alignment, and the factual comparison verdict. It performs no work and adjudicates no hypothesis, sample adequacy, independent outcome, or causal effect. Plans and action declarations stay unchanged. The terminal and protected local API support this controlled-fixture slice. It prepares U06; human outcome tracking remains open. The API returns whitelisted IDs, hashes, fixed labels and supplied notes; internal paths/history pins remain private. See [the contract](docs/outcome-evidence.md).
 
 ## Development checks
 

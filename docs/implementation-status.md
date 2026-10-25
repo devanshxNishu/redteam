@@ -60,7 +60,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 367 passed, zero failed or skipped |
+| Full automated suite | 375 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -293,7 +293,7 @@ No real provider calls occurred in the recorded checks. Scripted runs report zer
 
 ## Next milestone
 
-The local action/plan/comparison/export workflows, U16 preflight, and terminal-only controlled outcome evidence linking are implemented. Next, expose protected creation/catalog/whitelisted detail from `docs/outcome-evidence-api-plan.md`. Preserve complete source/time lineage, current availability, fixed unadjudicated labels, and final response guards. Keep internal paths/pins out of API output. Independent human outcomes, arbitrary releases, semantic review, scheduling/isolation, real research/pilot/provider inputs, and paid demand remain open. Continue verified pushes to the private GitHub repository.
+The local action/plan/comparison/export workflows, U16 preflight, and controlled outcome evidence terminal/API are implemented. Next, implement explicit web selection, registration and checked detail from `docs/outcome-evidence-dashboard-plan.md`. Preserve full source/time lineage, fixed unadjudicated labels, current-source filtering, safe text, shared dialog ownership, and late-response guards. Add no download, export kind, independent human outcome claim, or action/plan promotion. Real research/pilot/provider inputs, external execution/isolation, C03 paid demand, and broader hierarchy remain open. Continue normal verified pushes to the private GitHub repository.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
 
@@ -342,3 +342,22 @@ Type checking, build, and the full suite passed: 367 tests, zero failures or ski
 The dashboard only changes archive-version text. All browser regressions pass; its visually inspected installed 0.19.0 desktop/mobile export baseline remains recorded. A linked comparison verdict does not approve a supplied hypothesis, success rule, sample, planned intervention, independent outcome, human behavior, commercial demand, or causal effect. The original plan remains uncollected and the action is never automatically completed. Local operator/clock/metadata/filesystem and publication/response uncertainty remain explicit. Controlled local fixture source access uses no target grant; saved source availability and checked lineage govern reads.
 
 Next ready milestone: protected minimal catalog, strict creation, and whitelisted checked detail in `docs/outcome-evidence-api-plan.md`, with final synchronous source guards and static denials. No new dashboard, artifact download, report-export kind, arbitrary outcome upload, independent human adjudication, or broad hierarchy is enabled yet. Continue normal verified GitHub pushes.
+
+## Version 0.22 verification
+
+Controlled outcome evidence now has protected local API creation, minimal catalog, and whitelisted checked detail. The existing exact-source/window/immutable-lineage and fixed unadjudicated contract remains unchanged. Session/Host/Origin/no-store and bounded-body rules apply; one active creation receives the work and another receives 409. Unavailable detail uses static 404. An unconfirmed create uses static 400 with inspect-records guidance because a record may already be committed. No automatic retry or state promotion occurs.
+
+Exact files:
+
+- `src/outcome-evidence.ts`: an explicit public projection omits private directories, target/grant data, catalog fingerprints, history pins, and artifact paths. A final synchronous guard binds the checked canonical publication hash and selected source identities to current catalog/job/history/time state. It supplements the full asynchronous source/file reader.
+- `src/server.ts`: GET/POST `/api/outcome-evidence`, GET `/api/outcome-evidence/ID`, one active registration, checked projection before response, immediate final source guard, no-store, and static 400/404/409 messages. Unsupported mutation/approval/download/artifact routes remain unavailable.
+- `tests/outcome-evidence.test.ts`: eight added API checks (31 total in this file) cover exact public fields and fixed labels, session/Origin/actual forged Host, strict inputs/unknown routes/static errors, legitimate later action revisions, historical/own/source tamper, unavailable/limited sources, source change and publication-catalog change injected after a complete read, uncertain committed creation, and an actual partial HTTP body holding the active-create slot while another receives 409.
+- `docs/outcome-evidence.md`, README, package metadata, status/backlog/continuation document API scope and delivered-copy/uncertain-response limits. `docs/outcome-evidence-dashboard-plan.md` is repository-only next work.
+
+Type checking, build, and the full suite passed: 375 tests, zero failures or skips. Log: `outputs/test-results-0.22.0.txt`. Focused 31-check log: `outputs/outcome-evidence-api-targeted.txt`. Existing browser/dashboard/source/action/plan/comparison/export/actor and storage regressions pass.
+
+`outputs/redteam-0.22.0.tgz` contains 121 files and is installed into an isolated prefix. `work/verify-installed-0.22.0.mjs` verifies compiled CLI/template/contract and doctor/no-store, actual broken/fixed captures with a genuinely frozen plan before the candidate and no mocked time, fourteen checked source artifacts, exact finding/requirement lineage, protected API creation and public detail/catalog, two checked link artifacts, omitted private fields/paths, fixed unadjudicated labels, unsupported routes/claims, session/Origin/no-store boundaries, sequential duplicate rejection without another directory, source/action/jobs/actors preservation, historical readability after a real terminal action update, and API/CLI denial under authored source-job unavailability with successful checked retrieval after restoration. Results: `outputs/installed-verification-0.22.0.json`. Capture browsers and temporary service stopped; no real credential, provider request, participant research, or human outcome was used.
+
+The dashboard only changes archive-version text. All browser regressions pass; its visually inspected installed 0.19.0 desktop/mobile export baseline remains recorded separately. The API establishes no independent human outcome, researched psychology, hypothesis/sample/intervention/protocol approval, causal effect, demand, buying/investment/funding outcome, or production isolation. Current sources and local operator/clock/metadata/filesystem boundaries remain explicit; delivered bytes cannot be recalled and final response checks are not atomic with filesystem changes or receipt.
+
+Next ready milestone: `docs/outcome-evidence-dashboard-plan.md` adds explicit web selection, registration, minimal catalog, and checked literal detail under shared managed-view guards. Preserve the existing contract and four report-export kinds. Independent human outcomes, external execution/isolation, real research/pilot/provider inputs, C03 paid demand, and broad hierarchy remain open. Continue normal verified GitHub pushes.

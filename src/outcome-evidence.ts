@@ -103,6 +103,25 @@ export async function registerOutcomeEvidence(store: WorkspaceStore, value: unkn
 export function outcomeEvidenceSummaries(store: WorkspaceStore) {
   return store.recentOutcomeEvidence().flatMap(summary => { try { checkSources(store, summary.sources); return [{ id: summary.id, registeredAt: summary.registeredAt, planId: summary.planId, comparisonId: summary.comparisonId, verdict: summary.verdict, recordStatus: "cataloged_unverified" as const }]; } catch { return []; } });
 }
+/** Final synchronous guard after a complete checked read; not a replacement for file verification. */
+export function checkOutcomeEvidenceAccess(store: WorkspaceStore, report: OutcomeEvidenceReport): undefined {
+  const id = report.id;
+  if (!uuid.test(id)) throw new Error("Supply an outcome evidence UUID."); const summary = store.outcomeEvidence(id); if (!summary) throw new Error("Outcome evidence not found.");
+  if (summary.reportSha256 !== sha256(JSON.stringify(report, null, 2) + "\n") || summary.planId !== report.input.planId || summary.comparisonId !== report.input.comparisonId || summary.registeredAt !== report.registeredAt || summary.verdict !== report.observation.verdict || !isDeepStrictEqual(summary.sources, report.sources)) throw new Error("The checked outcome evidence catalog changed before delivery.");
+  checkSources(store, report.sources); if (Date.now() < time(report.registeredAt)) throw new Error("The record is ahead of the current local clock."); return undefined;
+}
+/** Whitelist for a report returned by readOutcomeEvidence; never spread private source pins. */
+export function publicOutcomeEvidence(report: OutcomeEvidenceReport) {
+  const publicReviewPin = (pin: FixtureEvidencePin) => ({ reviewId: pin.reviewId, evidenceRunId: pin.evidenceRunId, reportSha256: pin.reportSha256 });
+  const version = report.sources.actionVersion, origin = version.origin;
+  return {
+    schemaVersion: report.schemaVersion, kind: report.kind, policyVersion: report.policyVersion, id: report.id, registeredAt: report.registeredAt,
+    input: { ...report.input }, state: report.state, execution: report.execution, assessment: { ...report.assessment }, observation: { ...report.observation },
+    alignment: { ...report.alignment, candidateExecutions: report.alignment.candidateExecutions.map(item => ({ id: item.id, startedAt: item.startedAt, finishedAt: item.finishedAt })) },
+    sources: { plan: { id: report.sources.plan.id, reportSha256: report.sources.plan.reportSha256 }, comparison: { id: report.sources.comparison.id, reportSha256: report.sources.comparison.reportSha256, baseline: publicReviewPin(report.sources.comparison.baseline), candidate: publicReviewPin(report.sources.comparison.candidate) }, actionVersion: { id: version.id, revision: version.revision, sha256: version.sha256, origin: { kind: origin.kind, runId: origin.runId, itemId: origin.itemId, evidenceRunId: origin.evidenceRunId, reportSha256: origin.reportSha256 } } },
+    artifacts: report.artifacts.map(item => ({ id: item.id, owner: item.owner, mediaType: item.mediaType, bytes: item.bytes, sha256: item.sha256 })), limitations: [...report.limitations],
+  };
+}
 export async function readOutcomeEvidence(store: WorkspaceStore, id: string): Promise<OutcomeEvidenceReport> {
   if (!uuid.test(id)) throw new Error("Supply an outcome evidence UUID."); const summary = store.outcomeEvidence(id); if (!summary) throw new Error("Outcome evidence not found."); checkSources(store, summary.sources);
   const state = await realpath(store.directory), root = resolve(state, "outcome-evidence", id); if (summary.directory !== root) throw new Error("The outcome evidence directory does not match its catalog.");
