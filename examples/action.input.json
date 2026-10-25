@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "action_input",
+  "origin": {
+    "kind": "engineering_observation",
+    "runId": "00000000-0000-0000-0000-000000000000",
+    "itemId": "OBS-1"
+  },
+  "title": "Replace with a bounded follow-up action",
+  "owner": "Local operator label",
+  "nextStep": "Replace with the next step to track.",
+  "validationMethod": "Replace with a separate method to check the result."
+}

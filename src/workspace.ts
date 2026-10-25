@@ -2,6 +2,8 @@ import { DatabaseSync } from "node:sqlite";
 import { chmodSync, lstatSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { randomUUID } from "node:crypto";
+import type { ActionRecord, ActionEvent } from "./domain/actions.ts";
+import { ActionConflictError } from "./domain/actions.ts";
 
 export type GrantCapability = "browser:read" | "browser:interact" | "code:read" | "code:test";
 export interface AccessGrant {
@@ -88,6 +90,8 @@ export class WorkspaceStore {
       CREATE TABLE IF NOT EXISTS actor_runs (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS repository_runs (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS engineering_runs (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS actions (id TEXT PRIMARY KEY, revision INTEGER NOT NULL, document TEXT NOT NULL, updated_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS action_events (action_id TEXT NOT NULL, revision INTEGER NOT NULL, document TEXT NOT NULL, PRIMARY KEY(action_id, revision));
     `);
   }
 
@@ -233,6 +237,49 @@ export class WorkspaceStore {
   engineeringRun(id: string): EngineeringRunSummary | null {
     const row = this.db.prepare("SELECT document FROM engineering_runs WHERE id=?").get(id);
     return row ? JSON.parse(String(row.document)) as EngineeringRunSummary : null;
+  }
+
+  action(id: string): ActionRecord | null {
+    const row = this.db.prepare("SELECT document FROM actions WHERE id=?").get(id);
+    return row ? JSON.parse(String(row.document)) as ActionRecord : null;
+  }
+
+  recentActions(): ActionRecord[] {
+    return this.db.prepare("SELECT document FROM actions ORDER BY updated_at DESC, id LIMIT 100").all().map(row => JSON.parse(String(row.document)) as ActionRecord);
+  }
+
+  actionEvents(id: string): ActionEvent[] {
+    return this.db.prepare("SELECT document FROM action_events WHERE action_id=? ORDER BY revision LIMIT 100").all(id).map(row => JSON.parse(String(row.document)) as ActionEvent);
+  }
+
+  actionSnapshot(id: string): { record: ActionRecord | null; events: ActionEvent[] } {
+    this.db.exec("BEGIN");
+    try {
+      const result = { record: this.action(id), events: this.actionEvents(id) };
+      this.db.exec("COMMIT"); return result;
+    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+  }
+
+  saveAction(action: ActionRecord, expectedRevision: number, note: string, authorize: () => undefined): void {
+    if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 || expectedRevision >= 100 || action.revision !== expectedRevision + 1) throw new Error("Action revisions must increase by one within the supported bound.");
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const authorization: unknown = authorize();
+      if (authorization !== undefined) {
+        if (authorization instanceof Promise) void authorization.catch(() => undefined);
+        throw new Error("Action write permission checks must finish synchronously.");
+      }
+      if (expectedRevision === 0) {
+        this.db.prepare("INSERT INTO actions(id, revision, document, updated_at) VALUES (?, ?, ?, ?)").run(action.id, action.revision, JSON.stringify(action), action.updatedAt);
+      } else {
+        const result = this.db.prepare("UPDATE actions SET revision=?, document=?, updated_at=? WHERE id=? AND revision=?").run(action.revision, JSON.stringify(action), action.updatedAt, action.id, expectedRevision);
+        if (result.changes !== 1) throw new ActionConflictError("The action changed. Read its current revision before updating.");
+      }
+      const event: ActionEvent = { actionId: action.id, revision: action.revision, at: action.updatedAt, operation: expectedRevision === 0 ? "created" : "updated", note, after: action };
+      this.db.prepare("INSERT INTO action_events(action_id, revision, document) VALUES (?, ?, ?)").run(action.id, action.revision, JSON.stringify(event));
+      this.audit(expectedRevision === 0 ? "action_created" : "action_updated", action.id);
+      this.db.exec("COMMIT");
+    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
   }
 
   close(): void { this.db.close(); }

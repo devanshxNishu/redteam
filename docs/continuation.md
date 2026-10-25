@@ -204,7 +204,7 @@ The account check reported ordinary usage allowed with 99% of the five-hour wind
 
 `docs/dashboard-code-review-plan.md` records the inspected DOM, API, and refresh integration points, exact rendering labels, request-generation guards, expiry timers, fresh detail integrity checks, fail-closed network handling, and installed browser verification cases. The plan was prepared from the current `web/app.js` and `web/index.html`; no product source was changed. The verified product remains 0.9.1 at commit `42bbc97`, with 232 passing tests and its existing release archive. No tests were rerun for this documentation-only preparation. No service or browser was started. U15 dashboard controls are still unfinished.
 
-## Current milestone: Version 0.10.0
+## Version 0.10.0 verification
 
 U15 local dashboard inspection is implemented. Reviews now lists repository snapshots and engineering notes, with unverified catalog labels and protected detail retrieval. Supplied requirements, unknown expectations, unreviewed notes, not-executed checks, and not-assessed defects stay explicit. Copied source text and download controls remain absent.
 
@@ -223,13 +223,32 @@ Screenshots `outputs/preview/code-notes-desktop-0.10.0.png`, `code-notes-mobile-
 
 Idle polls wait ten seconds after refresh, with five-second client request timeouts. Known expiry has a local timer. Delivered responses, unmanaged browser history/screenshots, and OS caches cannot be recalled. This is not instant remote revocation, production tenant authentication, worker isolation, semantic code verification, stakeholder research, or approved findings. Partial records and unknown inference liability remain preserved.
 
+## Current milestone: Version 0.11.0
+
+U04 scoped action storage, terminal, and API are implemented. The action dashboard remains unfinished. Records link an owner label, title, next step, validation method, and declared progress to an existing engineering observation or controlled browser finding. Creating/updating a record performs no external task, message, code, test, model call, or budget cancellation.
+
+Exact files:
+
+- `src/domain/actions.ts`: input/origin/record/event types, supported declaration statuses, and typed revision conflicts. `completed_declared` never changes `not_independently_verified` or `not_performed_by_tracking`.
+- `src/actions.ts`: strict cloned 16 KiB input, owner/step/method limits, supplied provenance, source report/evidence pins, current source permission/integrity, exact history checks, and updates capped at 100 revisions. Engineering origins inherit the original grant and snapshot chain. Browser origins read bounded controlled-fixture reports/artifacts under exact workspace roots; canonical aliases are normalized and symlink directories rejected. `origin.runId` is the workspace review/job ID for browser findings; computed `origin.evidenceRunId` pins the report's separate evidence UUID. The installed check caught this queued-ID distinction and the regression test now uses distinct IDs.
+- `src/workspace.ts`: action/current-state and append-only event tables. Expected revisions, event append, and workspace audit commit together. Current source permission is checked synchronously inside the write transaction; async authorization callbacks are rejected. A read transaction supplies a consistent state/history pair. Listings use a bounded recent-100 window and an unverified catalog label, without re-reading every source artifact.
+- `src/cli.ts`: `actions add FILE`, `list`, `show ACTION_ID`, and `update ACTION_ID FILE`. `src/server.ts`: authenticated GET/POST `/api/actions`, GET/PATCH `/api/actions/ACTION_ID`, static unavailable detail, and 409 revision conflicts. No action UI is present yet; the code dashboard remains the 0.10.0 behavior with updated install text.
+- `tests/actions.test.ts`: ten checks for strict fields, source pins, fixed declaration labels, note/hash failures, expiry/revocation, synchronous transaction permission, competing terminal processes, history disagreement, no-op updates, an actual broken-fixture finding with distinct job/evidence IDs, and HTTP permission/conflict behavior.
+- `docs/actions.md` and placeholder `examples/action.input.json` / `action.update.json` are packaged. README, status, backlog, package metadata, and install text use 0.11.0.
+
+Type checking and build passed. The full suite passed 243 tests, zero failures or skips. All ten focused action checks passed, including the real browser source setup. Log: `outputs/test-results-0.11.0.txt`.
+
+`outputs/redteam-0.11.0.tgz` is installed under `work/install-release-0.11.0`. `work/verify-installed-0.11.0.mjs` verified compiled CLI/API, source-note and actual queued browser-finding plans, seven fixture artifacts, distinct review/evidence IDs, two competing processes with one successful update, exact history, declared completion without verification promotion, stale HTTP 409, current source revocation, dependent title/history denial, and an unrelated permitted fixture action. Tracking started no additional review. Results are `outputs/installed-verification-0.11.0.json`; its owned fixture workspace is recorded there. The service and review browsers are stopped. No real credential or provider request occurred. Current full-suite browser regression passes; installed action UI verification is not claimed.
+
+Owner labels are not external assignment. Plans, progress, and completion remain operator declarations. Source hash checks do not authenticate external provenance or prove fixes/outcomes. Current-source reads and file/database writes are not one filesystem transaction. Local trusted-operator, plaintext/journal/backup, clock, and managed-view limits remain. No automatic recovery, replay, cleanup, or unknown-cost release is enabled.
+
 ## Next sequence
 
-1. Define and implement U04 scoped action records. Start with an operator-supplied owner, next step, validation method, progress, and exact originating browser finding or engineering note. Treat progress as a declaration; do not claim execution, independent validation, product improvement, research outcomes, or business impact from a status change.
-2. Dependent actions must retain current source access and immutable origin identity. A revoked source must restrict dependent metadata/detail and managed views. Do not enable external messaging, task assignment to another person/app, code execution, or model processing by creating an action.
-3. Use owned synthetic findings/notes and verify terminal plus web inspection. Preserve the current code dashboard's request ownership, expiry, integrity rechecks, and browser regression coverage.
-4. Semantic engineering review needs a bounded tool/processing policy and independent verification. Broad specialist fan-out still depends on C03. Live providers need explicit configuration, credentials, current rates, and processing permission; external execution needs isolation. Continue independent work while inputs are absent.
-5. Preserve sealed actor outputs, invocation identities, uncataloged source/note records, and unowned staging files. No automatic adoption, replay, retry, repair, cleanup, or unknown-cost release is enabled by inspection or action tracking.
+1. Finish U04's dashboard workflow. Add source-linked plan creation from an engineering observation or browser finding, plus recent action inspection and declared updates. For browser findings, send the workspace review/job ID (`job.id`), not the report's evidence run UUID. Keep the computed evidence pin server-owned.
+2. Use the current action API. Handle 409 by requiring a fresh read and deliberate operator update; do not retry a write automatically. Show owner labels, validation method, revision/history, declared completion, and not-independently-verified status. No messaging or real assignment is implied.
+3. Inherit current source access and integrity checks for action views. Engineering actions follow the parent engineering run's original grant. Apply known expiry, refresh checks, request ownership, text rendering, dialog clearing, and stale-response protections. Preserve existing source/actor/browser views and prove desktop/390 px behavior in the installed package.
+4. After action UI, consider U05 bounded release comparison under captured requirements and build/scope identity. Keep independently observed results separate from declared progress. Do not use action status as a measured product, purchase, investment, or research outcome.
+5. Broad specialist fan-out remains gated by C03. Live providers need explicit configuration/credentials/rates and processing permission. External app execution needs isolation/access prerequisites. Continue independent work without fabricating research or commercial evidence.
 
 ## Last substantive fixes
 
@@ -241,7 +260,7 @@ Idle polls wait ten seconds after refresh, with five-second client request timeo
 
 The temporary preview service is stopped during turn teardown. Reopen it with `npm run ui` when needed. Runtime data remains in `.redteam/` and is excluded from Git and release archives.
 
-Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), `a999dfb` (normal publication catalog repair), `7f96811` (atomic publication), and `e379e38` (completed-task publication gaps and permission protection). Version 0.7.4 is committed as `cd93137`. Version 0.8.0 is committed as `42d663b`. Version 0.9.0 is committed as `71e2bf4`. Version 0.9.1 is committed as `42bbc97`; documentation preparation is `733838c`. The 0.10.0 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.10.0.json` record its final package and checks. `outputs/test-results-0.10.0.txt` records the full suite. Preview services and test browsers are stopped.
+Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), `a999dfb` (normal publication catalog repair), `7f96811` (atomic publication), and `e379e38` (completed-task publication gaps and permission protection). Version 0.7.4 is committed as `cd93137`. Version 0.8.0 is committed as `42d663b`. Version 0.9.0 is committed as `71e2bf4`. Version 0.9.1 is committed as `42bbc97`; documentation preparation is `733838c`. Version 0.10.0 is committed as `313b1c1`. The 0.11.0 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.11.0.json` record its final package and checks. `outputs/test-results-0.11.0.txt` records the full suite. Preview services and test browsers are stopped.
 
 ## External inputs still required
 

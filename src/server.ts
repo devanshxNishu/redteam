@@ -12,6 +12,8 @@ import { runActorDemo } from "./actor-demo.ts";
 import { readActorReport, authorizedActorRuns } from "./actor-reports.ts";
 import { authorizedRepositoryRuns, readRepositorySnapshot } from "./repository.ts";
 import { authorizedEngineeringRuns, readEngineeringReport } from "./engineering.ts";
+import { ActionConflictError } from "./domain/actions.ts";
+import { authorizedActionSummaries, createTrackedAction, readTrackedAction, updateTrackedAction } from "./actions.ts";
 
 async function body(request: IncomingMessage): Promise<Record<string, unknown>> {
   if (request.headers["content-type"]?.split(";")[0] !== "application/json") throw new Error("Use application/json.");
@@ -71,6 +73,15 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
       const supplied = Buffer.from(authorization.startsWith("Bearer ") ? authorization.slice(7) : "");
       const expected = Buffer.from(token);
       if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) { send(response, 401, { error: "A local Redteam session is required." }); return; }
+      if (request.method === "GET" && url.pathname === "/api/actions") { send(response, 200, { recentWindow: 100, actions: authorizedActionSummaries(store) }); return; }
+      if (request.method === "POST" && url.pathname === "/api/actions") { send(response, 201, await createTrackedAction(store, await body(request))); return; }
+      const actionDetail = /^\/api\/actions\/([a-f0-9-]{36})$/.exec(url.pathname);
+      if (request.method === "GET" && actionDetail) {
+        try { send(response, 200, await readTrackedAction(store, actionDetail[1]!)); }
+        catch (error) { if (error instanceof ActionConflictError) send(response, 409, { code: "action_revision_changed", error: "The action changed during inspection. Read it again." }); else send(response, 404, { code: "action_unavailable", error: "Action unavailable. Current source access or integrity checks failed." }); }
+        return;
+      }
+      if (request.method === "PATCH" && actionDetail) { send(response, 200, await updateTrackedAction(store, actionDetail[1]!, await body(request))); return; }
       if (request.method === "GET" && url.pathname === "/api/code-runs") {
         const repositoryRuns = authorizedRepositoryRuns(store).map(({ runId, grantId, target, createdAt, fileCount, totalBytes }) => ({ runId, grantId, target, createdAt, fileCount, totalBytes, recordStatus: "cataloged_unverified" }));
         const engineeringRuns = authorizedEngineeringRuns(store).map(({ runId, snapshotRunId, grantId, target, createdAt, observationCount }) => ({ runId, snapshotRunId, grantId, target, createdAt, observationCount, recordStatus: "cataloged_unverified" }));
@@ -151,7 +162,7 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
       }
       send(response, 404, { error: "Route not found." });
     })().catch(error => {
-      if (!response.headersSent) send(response, 400, { error: error instanceof Error ? error.message : "Request failed." });
+      if (!response.headersSent) send(response, error instanceof ActionConflictError ? 409 : 400, { error: error instanceof Error ? error.message : "Request failed." });
       else response.destroy();
     });
   });

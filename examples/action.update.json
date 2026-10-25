@@ -1,0 +1,7 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "action_update",
+  "expectedRevision": 1,
+  "status": "in_progress",
+  "note": "Operator declaration. No external action is performed by tracking."
+}

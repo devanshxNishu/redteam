@@ -23,6 +23,7 @@ import { recoverConfiguredActors } from "./actor-recovery.ts";
 import { diagnoseActorPublication } from "./actor-diagnostics.ts";
 import { captureRepository, authorizedRepositoryRuns, readRepositorySnapshot } from "./repository.ts";
 import { registerEngineeringObservations, authorizedEngineeringRuns, readEngineeringReport } from "./engineering.ts";
+import { createTrackedAction, readTrackedAction, updateTrackedAction, authorizedActionSummaries } from "./actions.ts";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspace = resolve(process.cwd());
@@ -41,6 +42,10 @@ redteam code show RUN_ID
 redteam code observations add FILE
 redteam code observations list
 redteam code observations show RUN_ID
+redteam actions add FILE
+redteam actions list
+redteam actions show ACTION_ID
+redteam actions update ACTION_ID FILE
 redteam verify RUN_DIRECTORY
 redteam research demo
 redteam research sources|models
@@ -296,6 +301,19 @@ async function main(): Promise<void> {
       if (operation === "snapshot") print(await captureRepository(store, { grantId: options["--grant"]!, target: options["--path"]! }));
       else if (operation === "list") print(authorizedRepositoryRuns(store));
       else print(await readRepositorySnapshot(store, rest[0]!));
+    } finally { store.close(); }
+    return;
+  }
+  if (command === "actions") {
+    const [operation, id, file, ...extra] = args;
+    if (extra.length || !["add", "list", "show", "update"].includes(operation ?? "") || (operation === "list" ? id !== undefined : !id) || (operation === "update" ? !file : file !== undefined)) throw new Error("Usage: redteam actions add FILE|list|show ACTION_ID|update ACTION_ID FILE");
+    const value = operation === "add" ? await readInput(id!) : operation === "update" ? await readInput(file!) : undefined;
+    const store = new WorkspaceStore(workspace);
+    try {
+      if (operation === "add") print(await createTrackedAction(store, value));
+      else if (operation === "list") print({ recentWindow: 100, actions: authorizedActionSummaries(store) });
+      else if (operation === "show") print(await readTrackedAction(store, id!));
+      else print(await updateTrackedAction(store, id!, value));
     } finally { store.close(); }
     return;
   }
