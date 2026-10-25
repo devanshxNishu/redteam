@@ -4,7 +4,7 @@ Private source repository: [devanshxNishu/redteam](https://github.com/devanshxNi
 
 Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
 
-Version 0.19.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.20.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -13,6 +13,7 @@ Use Node.js 24.12 or later and npm:
 ```sh
 npm install
 npm run browser:install
+npm run redteam -- doctor
 npm run ui
 ```
 
@@ -26,11 +27,12 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.19.0.tgz
+npm install --global ./redteam-0.20.0.tgz
 redteam --help
+redteam doctor
 ```
 
-The package contains compiled JavaScript, dashboard assets, and the fixture. It does not require TypeScript execution after installation. Registry publication is not required.
+The package contains compiled JavaScript, dashboard assets, and the fixture. `redteam doctor` checks runtime, package assets, exact pinned browser candidates, and directory boundaries without creating stores or running tools. It prints static setup advice and current capability limits; file preflight does not prove a successful launch. See [installation preflight](docs/installation-preflight.md). It does not require TypeScript execution after installation. Registry publication is not required.
 
 From the directory where you want to keep your review data:
 

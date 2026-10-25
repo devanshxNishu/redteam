@@ -60,7 +60,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 332 passed, zero failed or skipped |
+| Full automated suite | 344 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -287,13 +287,13 @@ Next ready milestone: implement U16 read-only local installation preflight and s
 - Country adaptation, consumer buying models, and investor decision models.
 - Validated purchase, conversion, investment, or population predictions.
 - Hosted tenant authentication, durable distributed workers, analyst task leases, and integration of shared parent budgets with a specialist scheduler.
-- Installation/scope preflight, arbitrary release matching, independent outcome tracking, and commercial demand evidence.
+- Arbitrary release matching, independent outcome tracking, and commercial demand evidence.
 
 No real provider calls occurred in the recorded checks. Scripted runs report zero model spend. Configured runs retain rate-based estimates and unknown-usage markers. Infrastructure cost is not calculated.
 
 ## Next milestone
 
-The scoped U04/U05/U08 action/plan/comparison/export workflows now work through web, terminal, and API. Implement U16 read-only local installation preflight and scope limits from `docs/installation-check-plan.md`. Check pinned headless-browser discovery against the local driver; metadata presence is not a launch. Preserve fresh workspace contents, avoid private runtime/credential/research reads, and perform no automatic repair, install, browser/model call, or database creation. Actor/research export, U06 independent outcomes, arbitrary releases, semantic review, scheduling/isolation, real research/pilot/provider inputs, and paid demand remain open. Continue committing and pushing verified milestones to the private GitHub repository.
+The scoped U04/U05/U08 action/plan/comparison/export workflows and U16 read-only installation preflight are implemented. Next, build the terminal-only controlled outcome evidence link from `docs/outcome-evidence-plan.md`. Preserve full plan/action/comparison/review lineage, current rights and integrity, local-clock limits, and fixed unadjudicated labels. Do not change frozen plans or infer human/causal/commercial validation. U06 independent outcomes, arbitrary releases, semantic review, scheduling/isolation, real research/pilot/provider inputs, and paid demand remain open. Continue committing and pushing verified milestones to the private GitHub repository.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
 
@@ -302,3 +302,22 @@ App review, grounded scenarios, and validated prediction retain separate release
 October 25, 04:14 UTC: product source remains 0.9.1 (`42bbc97`), with its recorded 232 passing tests. `docs/dashboard-code-review-plan.md` now specifies the remaining U15 UI and race/access verification work. This is a documentation-only checkpoint; no new product verification is claimed. Usage was 99% used, with a reported natural reset at 04:33:09 UTC. Scheduled continuation remains active. No credits or reset credits were used.
 
 The natural five-hour usage reset was observed on the 04:44 UTC continuation (0% used). No credits or reset credits were used. Product development resumed within the same chat and checkout.
+
+## Version 0.20 verification
+
+U16 adds read-only terminal installation preflight with `redteam doctor`. It checks the declared stable Node range, bounded trusted package/driver metadata, source or compiled assets, the exact pinned Chromium headless-shell candidate, and workspace/state directory boundaries. Explicit cache settings and initial-directory precedence match the pinned driver. A fixed macOS Chrome file is only a fallback hint after a missing shell; no launch, signing, libraries, write access, or runtime success is inferred. Unsupported metadata/host overrides and missing/unsafe files return static issue codes and attention exits. Absolute runtime locations and unrelated environment/private content are omitted. No store, key, session, research, SQLite content, target source, service, browser, or provider is opened by this command; no repair/install/write occurs.
+
+Exact files:
+
+- `src/installation.ts`: versioned report, strict stable-version comparison, pinned shell/cache/platform discovery without driver import or environment mutation, bounded metadata and safe asset-parent checks, metadata/access states, static guidance, and explicit capability/effect limits.
+- `src/cli.ts`: strict no-argument doctor command, help, JSON output, and attention exit 1 before any store/service branch.
+- `tests/installation.test.ts`: 12 checks covering five cache modes against the actual pinned driver in isolated processes, authored platform/Rosetta layouts, source/compiled fixtures, complete fresh/private tree preservation, invalid SQLite/credential sentinel exclusion, absent/nonexecutable/unsafe candidates, unsafe assets/state paths, bounded/unsupported metadata, unsupported runtime/host settings, and CLI arguments/exit/no-store behavior. These preflight checks launch no browser.
+- `docs/installation-preflight.md`, README, package metadata, and terminal install text document separate setup and runtime checks. `docs/outcome-evidence-plan.md` specifies the next repository-only slice.
+
+Type checking, build, and the full suite passed: 344 tests, zero failures or skips. Log: `outputs/test-results-0.20.0.txt`. Focused log: `outputs/installation-targeted.txt`. Existing browser/dashboard/source/action/plan/comparison/export/actor and storage regressions all pass.
+
+`outputs/redteam-0.20.0.tgz` contains 117 files and is installed in an isolated prefix. `work/verify-installed-0.20.0.mjs` verifies compiled help/version/contract, fresh and private-invalid-SQLite workspace preservation, strict arguments, explicit-cache metadata-only candidates, nonexecutable attention exit, omitted absolute/private markers, and scope limits. A separate actual fixed signup review produced zero findings, seven valid artifacts, distinct job/evidence IDs, and fresh primary/verifier datasets. Both executions used installed Chrome 155.0.8059.86. The doctor reported `mac_chrome_fallback_hint` and never claimed that it launched a browser. Results: `outputs/installed-verification-0.20.0.json`. Review browsers closed; no persistent service, real credential, or provider request was used.
+
+The only web change adds the doctor command and 0.20.0 archive text to installation instructions. All dashboard regressions pass; the visually inspected 0.19.0 installed desktop/mobile export baseline remains recorded separately. Installation readiness establishes no researched psychology, human/population validity, purchase/investment/funding/customer demand, commercial validation, or production isolation. Local operator/clock/filesystem/metadata and later-operation races remain explicit.
+
+Next ready milestone: the terminal-only controlled outcome evidence link in `docs/outcome-evidence-plan.md`. Keep full source/time lineage and fixed unadjudicated labels. U06 independent human outcome tracking is not complete. External execution/isolation, real research/pilot/provider inputs, C03 paid demand, and broader hierarchy remain open. Continue normal verified pushes to the private GitHub repository.
