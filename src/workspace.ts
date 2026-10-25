@@ -38,6 +38,16 @@ export interface ActorRunSummary {
   artifacts: number;
   modelVersions?: { id: string; version: string }[];
 }
+export interface RepositoryRunSummary {
+  runId: string;
+  grantId: string;
+  target: string;
+  createdAt: string;
+  directory: string;
+  reportSha256: string;
+  fileCount: number;
+  totalBytes: number;
+}
 
 export function workspaceDirectory(workspace: string): string {
   const directory = resolve(workspace, ".redteam");
@@ -65,6 +75,7 @@ export class WorkspaceStore {
       CREATE TABLE IF NOT EXISTS audit (id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, action TEXT NOT NULL, entity TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS coordinator (slot INTEGER PRIMARY KEY CHECK(slot=1), owner TEXT NOT NULL, pid INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS actor_runs (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS repository_runs (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
     `);
   }
 
@@ -174,6 +185,24 @@ export class WorkspaceStore {
   actorRun(id: string): ActorRunSummary | null {
     const row = this.db.prepare("SELECT document FROM actor_runs WHERE id=?").get(id);
     return row ? JSON.parse(String(row.document)) as ActorRunSummary : null;
+  }
+
+  saveRepositoryRun(run: RepositoryRunSummary): void {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      this.db.prepare("INSERT INTO repository_runs(id, document, created_at) VALUES (?, ?, ?)").run(run.runId, JSON.stringify(run), run.createdAt);
+      this.audit("repository_snapshot_saved", run.runId);
+      this.db.exec("COMMIT");
+    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+  }
+
+  repositoryRuns(): RepositoryRunSummary[] {
+    return this.db.prepare("SELECT document FROM repository_runs ORDER BY created_at DESC").all().map(row => JSON.parse(String(row.document)) as RepositoryRunSummary);
+  }
+
+  repositoryRun(id: string): RepositoryRunSummary | null {
+    const row = this.db.prepare("SELECT document FROM repository_runs WHERE id=?").get(id);
+    return row ? JSON.parse(String(row.document)) as RepositoryRunSummary : null;
   }
 
   close(): void { this.db.close(); }

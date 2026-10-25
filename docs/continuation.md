@@ -124,7 +124,7 @@ Installed desktop and 390 px browser checks passed the new dialog, explicit unav
 
 README, package metadata, status, backlog, `docs/task-state.md`, `docs/evidence-publication.md`, `docs/live-inference.md`, and `docs/budget-ledger.md` describe the current boundary. Catalogs and report APIs remain permission checked. Legacy invalid final files and unowned staging files are preserved. Broader hierarchy, external target tools, real human research, live provider verification, and commercial gates remain open.
 
-## Current milestone: Version 0.7.4
+## Version 0.7.4 verification
 
 Bounded terminal actor publication diagnostics are implemented. `redteam actors diagnose RUN_ID` inspects the saved report and its recorded artifact hashes. It distinguishes absent/unreadable/unsafe/oversized files, invalid UTF-8 JSON, unsupported report identity/structure, missing/changed artifacts, invalid/duplicate references, and bounded staging inventory. Unparseable final JSON is not assumed to be a crash: its cause remains unknown. Existing bytes remain preserved.
 
@@ -145,13 +145,31 @@ Official token-counting and structured-output documentation was fetched during e
 
 Use synthetic fixtures for software verification. Keep them visibly separate from human research. Never promote synthetic fixtures into validated psychology.
 
+## Current milestone: Version 0.8.0
+
+B12 bounded local repository capture is implemented. `redteam code snapshot --grant GRANT_ID --path DIRECTORY`, `code list`, and `code show RUN_ID` share existing workspace grants. The exact canonical directory needs `code:read`. The feature copies local text only. It executes no source file, declared package script, test command, shell, or model request. Every report states limited coverage.
+
+Exact files:
+
+- `src/repository.ts`: fixed `local-text-v1` policy; 50 files, 65,536 bytes per file, 262,144 total source bytes, 500 examined entries, depth six, and a ten-second deadline checked between filesystem operations. It skips hidden/sensitive/generated names, unsupported extensions, invalid UTF-8, NUL text, symbolic links, multiple-hard-link files, and nonregular files. It checks canonical parents, root identity, file identity/size/times, and current permission during capture and before acceptance. Bounded source bytes remain local, owner-only plaintext artifacts. Metadata records paths, hashes, mappings, collection interval, skip counters, and incomplete coverage.
+- `src/workspace.ts`: immutable repository catalog entries with the grant, target, run directory, and report hash; an audit event records acceptance. Existing stores gain the new table through normal schema setup.
+- `src/cli.ts`: capture/list/show commands. Output contains metadata without copied source text. Inspection requires current exact access and verifies the report and all copied artifacts. Revocation and expiry hide listings and deny inspection.
+- `tests/repository.test.ts`: 15 checks. Owned fixtures include an executable source sentinel and declared scripts; neither executes. The checks cover exact capabilities/targets, expired and revoked grants, revocation during traversal and artifact publication, changed grant target, actual root replacement, source preservation, private permissions, exclusions/links, bounds/deadline, changed report/evidence, later source changes, and actual CLI behavior.
+- `docs/repository-snapshots.md`: packaged contract, policy, local storage, error behavior, exclusions, access, and interpretation. README, status, backlog, package metadata, and web install text use 0.8.0.
+
+Type checking and build passed. The full suite passed 215 tests, zero failures or skips. The focused repository suite passed all 15 checks. Log: `outputs/test-results-0.8.0.txt`.
+
+`outputs/redteam-0.8.0.tgz` is installed under `work/install-verified-0.8.0`. `work/verify-installed-0.8.0.mjs` verified compiled help/version, a shared grant, two copied text artifacts, exclusions/symlink refusal, hashes, owner-only permissions, unchanged source bytes/names/modes/modification times, metadata-only output, changed-evidence denial, and revocation for listing and inspection. Results are `outputs/installed-verification-0.8.0.json`; its isolated workspace is recorded there. No target code, test, provider request, real credential, browser, or service ran in the installed check. The current full suite retains the real controlled-browser checks. Dashboard JavaScript is unchanged; its verified 0.7.3 browser baseline remains applicable. The web edit changes install-version text only.
+
+A capture is a sequence of file observations, not an atomic Git revision or build. It does not prove a test or defect. Excluded directories have uncounted descendants. The policy does not interpret ignore rules or detect secrets inside allowed source text. Normal reads can change access times. Filesystem operations can exceed the duration target when unresponsive. Checks assume a trusted local operator, not hostile-process or production isolation. Cross-process revocation and writes are not one transaction. Failed/killed captures can leave private uncataloged files, which are preserved and never adopted automatically. Revocation does not erase copied bytes. No capture recovery, cleanup, external processing, or automatic actor access is enabled.
+
 ## Next sequence
 
-1. Define and prototype the B12 local repository snapshot under an exact existing `code:read` directory grant. Start with owned synthetic repositories. Enforce canonical containment, expiry/revocation before reads and publication, conservative file exclusions and byte/file/depth bounds, local evidence hashes, and explicit incomplete coverage. Execute no source code, test command, shell tool, or external model call. Grants alone must not authorize external model processing. Keep production isolation limits explicit.
-2. Use that snapshot to support future engineering observations only when a captured requirement or rule supports the claim. Do not label declared scripts or incomplete inspection as verified tests or app defects. Preserve sealed outputs, invocation identities, and unowned `.pending` files; no automatic repair or cleanup is enabled by diagnostics.
-3. Add bounded analyst task coordination when prerequisites permit. The commercial hierarchy gate remains unproven; do not enable broad specialist fan-out or claim the roundtable is complete.
-4. A live API smoke test needs explicit model configuration, valid credentials, current rates, and processing permission. Do not reuse desktop authentication or invent pricing. Continue independent work if these inputs are missing.
-5. Continue external runner work after isolation and access prerequisites are met.
+1. Define B13 engineering observations around a supplied requirement, copied artifact, exact file range, and content hash. Use owned fixture requirements first. Distinguish source declarations from executed tests and observed app behavior. Unknown expectations cannot become defects. Keep local access checks on every supported evidence retrieval path.
+2. A narrow deterministic observation prototype can use the new intake. Do not send source content to the configured provider or stakeholder runtime. Any future model processing needs separate explicit permission and a bounded engineering tool policy. Do not execute app scripts through this path.
+3. Preserve sealed actor outputs, invocation identities, uncataloged repository captures, and unowned `.pending` files. No automatic retry, repair, cleanup, or cost release is authorized by an inspection command.
+4. Add bounded analyst coordination when prerequisites permit. C03 paid concierge demand remains unproven; do not enable broad specialist fan-out or claim the roundtable is complete.
+5. A live API smoke needs explicit configuration, valid credentials, current rates, and processing permission. External execution also needs isolation/access prerequisites. Continue independent work while these inputs are missing.
 
 ## Last substantive fixes
 
@@ -163,7 +181,7 @@ Use synthetic fixtures for software verification. Keep them visibly separate fro
 
 The temporary preview service is stopped during turn teardown. Reopen it with `npm run ui` when needed. Runtime data remains in `.redteam/` and is excluded from Git and release archives.
 
-Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), `a999dfb` (normal publication catalog repair), `7f96811` (atomic publication), and `e379e38` (completed-task publication gaps and permission protection). The 0.7.4 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.7.4.json` record its final package and checks. `outputs/test-results-0.7.4.txt` records the full suite. Preview services and test browsers are stopped.
+Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), `a999dfb` (normal publication catalog repair), `7f96811` (atomic publication), and `e379e38` (completed-task publication gaps and permission protection). Version 0.7.4 is committed as `cd93137`. The 0.8.0 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.8.0.json` record its final package and checks. `outputs/test-results-0.8.0.txt` records the full suite. Preview services and test browsers are stopped.
 
 ## External inputs still required
 

@@ -21,6 +21,7 @@ import { BudgetLedger } from "./budget.ts";
 import { TaskStore } from "./tasks.ts";
 import { recoverConfiguredActors } from "./actor-recovery.ts";
 import { diagnoseActorPublication } from "./actor-diagnostics.ts";
+import { captureRepository, authorizedRepositoryRuns, readRepositorySnapshot } from "./repository.ts";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspace = resolve(process.cwd());
@@ -33,6 +34,9 @@ redteam access grant --target ORIGIN [--name NAME] [--allow browser:read,browser
 redteam access grant --path DIRECTORY [--name NAME] [--allow code:read,code:test]
 redteam access list
 redteam access revoke GRANT_ID
+redteam code snapshot --grant GRANT_ID --path DIRECTORY
+redteam code list
+redteam code show RUN_ID
 redteam verify RUN_DIRECTORY
 redteam research demo
 redteam research sources|models
@@ -57,7 +61,7 @@ redteam --version
 redteam examples
 
 State is saved in .redteam under the current directory.
-The browser runner currently supports the controlled signup demo. External access grants are stored for a future runner; they do not execute external actions.`;
+The browser runner supports the controlled signup demo. Code snapshots copy bounded permitted local text only. Grants do not start actions, run source code, or authorize external model processing.`;
 
 function flags(args: string[], allowed: string[]): Record<string, string> {
   const result: Record<string, string> = {};
@@ -262,6 +266,20 @@ async function main(): Promise<void> {
           ...(storageState !== undefined ? { storageState } : {}),
         }));
       } else throw new Error("Usage: redteam access grant|list|revoke. Run redteam --help.");
+    } finally { store.close(); }
+    return;
+  }
+  if (command === "code") {
+    const [operation, ...rest] = args;
+    if (operation !== "snapshot" && operation !== "list" && operation !== "show") throw new Error("Usage: redteam code snapshot|list|show. Run redteam --help.");
+    const options = operation === "snapshot" ? flags(rest, ["--grant", "--path"]) : {};
+    if (operation === "snapshot" && (!options["--grant"] || !options["--path"])) throw new Error("Supply --grant GRANT_ID and --path DIRECTORY.");
+    if ((operation === "list" && rest.length) || (operation === "show" && rest.length !== 1)) throw new Error("Usage: redteam code list|show RUN_ID");
+    const store = new WorkspaceStore(workspace);
+    try {
+      if (operation === "snapshot") print(await captureRepository(store, { grantId: options["--grant"]!, target: options["--path"]! }));
+      else if (operation === "list") print(authorizedRepositoryRuns(store));
+      else print(await readRepositorySnapshot(store, rest[0]!));
     } finally { store.close(); }
     return;
   }

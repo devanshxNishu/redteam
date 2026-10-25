@@ -1,6 +1,6 @@
 {
   "name": "redteam",
-  "version": "0.7.4",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "description": "Evidence-first app review and researched stakeholder decision simulations.",
@@ -25,7 +25,8 @@
     "docs/budget-ledger.md",
     "docs/task-state.md",
     "docs/evidence-publication.md",
-    "docs/report-diagnostics.md"
+    "docs/report-diagnostics.md",
+    "docs/repository-snapshots.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

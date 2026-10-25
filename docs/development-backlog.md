@@ -18,7 +18,7 @@ Research protocol → human observations → candidate model → controlled acto
 
 The coordinator and roundtable connect these paths after the evidence path works.
 
-Implementation checkpoint, 0.7.4: fixture browser evidence, registry/evaluation controls, bounded actor mechanics, coordinator constraints, durable inference reservations, and one fenced configured actor are implemented. The full 200-test suite passes. Atomic publication and factual recovery preserve the first valid JSON and never infer acceptance from an unpublished seal. Bounded terminal diagnostics identify invalid publications and changed evidence without printing report content, opening stores, changing records, or replaying calls. Research permission still governs report retrieval. Shared specialist scheduling, all-resource budgets, production isolation, human research, predictive validation, paid demand, and broad hierarchy gates remain open. See `docs/implementation-status.md` for exact coverage.
+Implementation checkpoint, 0.8.0: fixture browser evidence, registry/evaluation controls, bounded actor mechanics, coordinator constraints, durable inference reservations, and one fenced configured actor are implemented. The full 215-test suite passes. Atomic publication and factual recovery preserve the first valid JSON and never infer acceptance from an unpublished seal. Bounded diagnostics preserve invalid files. B12 local repository snapshots now capture bounded text under exact grants, with private artifacts, hashes, exclusion counters, source preservation, and current expiry/revocation checks. No source code, test command, or model is executed by capture. Research permission still governs actor report retrieval. Shared specialist scheduling, all-resource budgets, production isolation, human research, predictive validation, paid demand, and broad hierarchy gates remain open. See `docs/implementation-status.md` for exact coverage.
 
 ## 2. Priority definitions
 
@@ -62,6 +62,7 @@ Broad hierarchy development depends on C03. A narrow prototype and human-assiste
 | B10 | P0 | Independently verify a material finding | B09 | Verification records steps, expected result, actual result, and counterevidence |
 | B11 | P0 | Generate the first decision brief | B10 | Every material conclusion has evidence or explicit uncertainty |
 | B12 | P1 | Define a bounded local repository snapshot | B05, B08 | An exact `code:read` grant controls local fixture reads; exclusions, bounds, file hashes, expiry, revocation, and containment are checked; no code or model is executed |
+| B13 | P1 | Define requirement-linked engineering observations | B12, B09 | Supplied requirements and copied file ranges resolve to hashes; source declarations, executed results, supported defects, and unknowns remain distinct; no test execution or broad hierarchy is implied |
 
 The first demonstration ends at B11. It uses one app journey and one verified finding.
 

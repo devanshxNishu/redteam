@@ -2,7 +2,7 @@
 
 Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
 
-Version 0.7.4 provides a local workspace, an installable CLI, scoped access grants, browser evidence, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.8.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, bounded local repository snapshots, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -24,7 +24,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.7.4.tgz
+npm install --global ./redteam-0.8.0.tgz
 redteam --help
 ```
 
@@ -66,7 +66,20 @@ Redteam checks the imported cookie domains and storage origins. It encrypts stor
 
 The key is stored beside the database under `.redteam/`. This protects against accidental plaintext disclosure; it does not protect against someone who can read the entire local account. Keep the source session file private and manage it separately.
 
-**Access grants are implemented; external app execution and code tools are not enabled yet.** Creating a grant does not start an external review. The current runner accepts the controlled local fixture only.
+Creating a grant does not start a review. The browser runner accepts the controlled local fixture only. External app execution and source-code test tools remain unavailable.
+
+## Capture local source evidence
+
+```sh
+redteam access grant --path ./my-app --allow code:read
+redteam code snapshot --grant GRANT_ID --path ./my-app
+redteam code list
+redteam code show RUN_ID
+```
+
+The snapshot copies up to 50 eligible text files under the exact directory grant. It records hashes, skip reasons, and incomplete coverage. Hidden files, common generated and credential paths, symbolic links, hard links, unsupported file types, and oversized files are excluded. Source files remain unchanged.
+
+Captured bytes are owner-only local plaintext. Name exclusions are not a secret detector and do not interpret Git ignore rules. The commands return metadata without source text. Current expiry and revocation govern inspection. Capture runs no app code, shell, test, or model call. A source grant does not authorize external processing. See the [snapshot contract](docs/repository-snapshots.md) for bounds and limitations.
 
 ## Inspect browser evidence
 
