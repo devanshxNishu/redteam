@@ -1,4 +1,5 @@
 import { TaskStore } from "./tasks.ts";
+import { resolve } from "node:path";
 import type { TaskLease, TaskRecord, SealedTaskOutput } from "./tasks.ts";
 
 export interface AnalystTaskPolicy { leaseMs: number; heartbeatMs: number }
@@ -36,6 +37,7 @@ export class AnalystTask {
   readonly signal: AbortSignal;
   private readonly controller = new AbortController();
   private readonly store: TaskStore;
+  private readonly workspace: string;
   private readonly lease: TaskLease;
   private readonly checkSource: () => unknown;
   private phase: "running" | "sealed" | "completed" | "stopped" | "closed" = "running";
@@ -52,9 +54,10 @@ export class AnalystTask {
       || typeof checkSource !== "function") throw new AnalystTaskPolicyError("Invalid analyst task identity or deadline.");
     // Copy authority inputs before invoking the coordinator callback.
     const pinned = { ...input };
+    this.workspace = resolve(workspace);
     sourceAuthority(checkSource);
     this.checkSource = checkSource;
-    this.store = new TaskStore(workspace);
+    this.store = new TaskStore(this.workspace);
     try {
       this.store.create({ id: pinned.taskId, runId: pinned.runId, kind: "analyst", questionKey: pinned.questionKey, manifestHash: pinned.manifestHash, maximumAttempts: 1, deadlineAt: pinned.deadlineAt });
       this.lease = this.store.claim(pinned.taskId, pinned.owner, policy.leaseMs);
@@ -74,6 +77,9 @@ export class AnalystTask {
   private authority(): void {
     if (this.signal.aborted || this.phase === "closed" || this.phase === "stopped") throw new AnalystTaskPolicyError("Analyst task authority is no longer valid.");
     sourceAuthority(this.checkSource);
+  }
+  assertWorkspace(workspace: string): void {
+    if (resolve(workspace) !== this.workspace) throw new AnalystTaskPolicyError("Analyst task belongs to a different workspace.");
   }
   assertActive(): void {
     try {

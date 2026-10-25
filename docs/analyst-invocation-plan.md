@@ -1,6 +1,6 @@
 # Next analyst slice: durable phase invocation control
 
-After 0.31.0, add an analyst-specific coordinator primitive over the generic BudgetLedger and isolated AnalystTask. Do not cast packet/generation data into actor views or actions. HTTP transport and analytical publication/recovery remain later integration.
+Implemented in 0.32.0 as `AnalystInvocations`; see `docs/analyst-invocations.md`. The slice adds an analyst-specific coordinator primitive over the generic BudgetLedger and isolated AnalystTask. Do not cast packet/generation data into actor views or actions. HTTP transport and analytical publication/recovery remain later integration.
 
 Require a freshly prepared manifest and a matching active one-attempt analyst task, including run/task IDs, question key, exact manifest digest and deadline. Create one budget run with the manifest's derived cap and separate count/generation maxima. Never adopt or reopen an existing run. Use deterministic per-run phase invocation IDs, one count followed by at most one generation, no concurrent duplicates or replay.
 
@@ -14,5 +14,5 @@ Test actual stores with authored callbacks: exact task/manifest/cap binding, sou
 
 Official primary sources were refreshed with the OpenAI Docs workflow. The token-count guide describes `POST /v1/responses/input_tokens` and its returned count; it is not used here as a cost receipt. Structured Outputs documents refusal/incomplete cases and possible mistakes. These guides support later transport design, not live compatibility or current pricing. The create-reference page exceeded the web retrieval size; its Markdown form was unsupported. No unverified reference content was used.
 
-- https://developers.openai.com/api/docs/guides/token-counting
-- https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses
+- [Token counting guide](https://developers.openai.com/api/docs/guides/token-counting)
+- [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses)

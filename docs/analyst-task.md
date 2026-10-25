@@ -14,6 +14,7 @@ The callback receives no new tool. Keep the handle, task store, owner/fence and 
 
 ## Operations
 
+- `assertWorkspace(workspace)` checks the handle's resolved workspace identity. The path is pinned before invoking the source callback.
 - `assertActive()` checks source authority and the current running owner, fence, lease and deadline. Source checks run before the final lease check, so a callback that cancels ownership cannot still authorize work.
 - `beforeDispatch(invocationRef)` records intent under that lease. Repeating the same identity in the same attempt is idempotent. An intent is not a provider request, a reservation or permission to replay a request.
 - `seal({artifactRef, sha256})` stores one opaque artifact reference and digest. It opens no artifact. The later coordinator must verify candidate bytes and response/source identity first.
