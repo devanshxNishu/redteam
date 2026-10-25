@@ -75,7 +75,7 @@ Exact implementation files:
 
 Contracts are `docs/task-state.md`, `docs/budget-ledger.md`, and `docs/live-inference.md`. The default demo remains a script. No live API key, live model smoke test, real participant research, or behavioral validation is recorded.
 
-## Current milestone: Version 0.7.1
+## Version 0.7.1 verification
 
 Normal publication catalog repair is implemented in `src/actor-recovery.ts`. It scans completed configured tasks as well as failed, cancelled, and interrupted ones. A saved normal report must match the durable task record and full transition history, frozen manifest, unique bounded artifact identities/paths, budget/task evidence snapshots, and original sealed worker bytes under the completed fence. The pinned model must remain permitted in the recorded scope. An accepted simulation is restored exactly; a rejected publication stays rejected. A missing Markdown presentation does not prevent JSON publication restoration. No report, artifact, task, budget, or provider request is changed by catalog repair. Report-time budget evidence remains valid after a later receipt updates the ledger.
 
@@ -87,14 +87,31 @@ Package metadata, README, and `web/index.html` use 0.7.1. Contracts and status a
 
 Recovery returns `research_restricted` without catalog insertion when current research permission blocks normal restoration. Missing or invalid records return `missing_or_invalid_records`. In particular, a completed task with no JSON publication stays completed and unavailable; no accepted decision is constructed from its seal. Existing files remain untouched. These stores and hashes assume a trusted local coordinator/operator.
 
+## Current milestone: Version 0.7.2
+
+`src/publication.ts` adds private staging writes, file flush/close, an exclusive hard link to the final name, staging cleanup, and directory flush. It preserves `EEXIST` and never replaces or removes a final record. Unsupported link or directory-sync operations return errors. An error after the final link can leave a complete published file; callers must inspect it rather than replace it. `src/evidence.ts` uses this path for `writeRecord` JSON and `addBytes` artifacts. It rejects unsupported JSON serialization before writing and checks canonical parent containment. Browser captures registered from external tools, Markdown presentations, and appended events keep their existing paths.
+
+Exact checks:
+
+- `tests/publication.test.ts`: nine checks. Real filesystem flush/close order and permissions; injected write/file-sync/directory-sync/link failures; six competing processes; real writers killed during staging, after file flush, and after publication.
+- `tests/evidence.test.ts`: six checks, including serialization failure, final dangling symlinks, and escaped parent directories.
+- `tests/configured-actor.test.ts`: 31 checks. New checks kill actual coordinators before/after the actual JSON write and confirm staging files are excluded. A post-publication crash restores the exact accepted simulation; a pre-publication crash remains unavailable. Task, inference identities, and budget are unchanged by recovery.
+- Type checking and build passed. The full suite passed 175 tests, zero failures or skips. The focused publication/evidence/configured/recovery suite passed 52 checks. Log: `outputs/test-results-0.7.2.txt`.
+
+The archive is `outputs/redteam-0.7.2.tgz`. `work/verify-installed-0.7.2.mjs` passed against an isolated installed package. It verified compiled exclusive publication, no staging names after successful writes, fake-transport actor execution (four requests, four artifacts, 360 micro-USD configured estimate), exact catalog restoration, concurrent recovery, withdrawal denial, scripted actors, and task/budget commands. Installed real-browser broken and fixed fixture reviews produced the expected one/zero findings and seven valid artifacts each. Results: `outputs/installed-verification-0.7.2.json`. Browser processes closed; no persistent service was started. No live provider request or real API key was used.
+
+Contract: `docs/evidence-publication.md`, also included in the package. README, package metadata, `web/index.html`, task contract, backlog, and implementation status describe 0.7.2. Earlier dashboard layout verification remains the 0.7.0 baseline; this release only changes the install command's version text in the web assets.
+
+Local macOS supports the tested hard-link and directory-sync operations. Node documents storage-dependent flush behavior. There is no tested power-loss, network-filesystem, Windows, or hostile-operator guarantee. Orphan `.pending` files are left private and are never promoted or automatically removed; another writer might still own them. Legacy truncated final files remain refused without overwrite. A completed task without saved JSON is still unavailable. No broader hierarchy or psychological claim has been enabled.
+
 Official token-counting and structured-output documentation was fetched during earlier integration. Cached copies are `work/openai-token-counting.md` and `work/openai-structured-outputs.md`. Verify current official API details before changing provider behavior. Do not reuse desktop authentication or invent rates.
 
 Use synthetic fixtures for software verification. Keep them visibly separate from human research. Never promote synthetic fixtures into validated psychology.
 
 ## Next sequence
 
-1. Make JSON report publication atomic and preserve its no-overwrite rule. A process ending during `writeRecord` can currently leave an incomplete final JSON file that recovery correctly refuses. Test interrupted and concurrent publication without replaying inference or changing recorded acceptance.
-2. Cover remaining interruption points, including task completion before JSON publication. Current behavior is conservative `unavailable`; design a factual report that states publication uncertainty before changing that boundary. Keep original seals and uncertain invocation identities unchanged. Do not broaden to specialist dispatch before its prerequisites.
+1. Cover task completion before JSON publication with a factual partial report that states publication uncertainty. Current behavior is conservative `unavailable`. Preserve the completed task and original sealed bytes, but do not infer a published accepted decision or replay inference. Keep a distinct recovery reason and test current research restrictions and races with a delayed coordinator before changing the boundary.
+2. Cover remaining interruption points and inspect legacy incomplete final records without overwriting them. Keep uncertain invocation identities unchanged. Do not automatically delete `.pending` files or broaden specialist dispatch before its prerequisites.
 3. Add bounded analyst task coordination when prerequisites permit. The commercial hierarchy gate remains unproven; do not enable broad specialist fan-out or claim the roundtable is complete.
 4. A live API smoke test needs explicit model configuration, valid credentials, current rates, and processing permission. Do not reuse desktop authentication or invent pricing. Continue independent work if these inputs are missing.
 5. Continue external runner work after isolation and access prerequisites are met.
@@ -109,7 +126,7 @@ Use synthetic fixtures for software verification. Keep them visibly separate fro
 
 The temporary preview service is stopped during turn teardown. Reopen it with `npm run ui` when needed. Runtime data remains in `.redteam/` and is excluded from Git and release archives.
 
-Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), and `3da6b62` (guarded actor integration and factual recovery). The 0.7.1 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.7.1.json` record its final package and checks. `outputs/test-results-0.7.1.txt` records the full suite. Preview services and test browsers are stopped.
+Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), and `a999dfb` (normal publication catalog repair). The 0.7.2 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.7.2.json` record its final package and checks. `outputs/test-results-0.7.2.txt` records the full suite. Preview services and test browsers are stopped.
 
 ## External inputs still required
 

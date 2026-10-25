@@ -70,3 +70,5 @@ Recovery returns `unavailable` with `research_restricted` when current research 
 Global worker counts, hierarchy depth, child permissions, parent budgets, phase visibility, independent verification, and the commercial gate remain prerequisites for specialist orchestration. Passing these state-store tests does not enable the roundtable.
 
 The prototype assumes a trusted local coordinator and clock. SQLite lock waits can delay local operations. Production isolation and distributed-clock behavior remain open.
+
+JSON publication now uses a flushed private staging file and an exclusive final link. Process interruption cannot expose a partially written final JSON record through that path. Publication still does not establish acceptance, and a completed task without a saved JSON report remains unavailable. See the [evidence publication contract](evidence-publication.md) for filesystem requirements and error boundaries.

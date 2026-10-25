@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -143,6 +143,58 @@ test("recovery restores an existing rejected publication without promoting its w
     assert.equal((await readActorReport(store, directory, result.runId, registry)).acceptance?.status, "rejected");
     assert.deepEqual(await readFile(file), before); assert.equal(fake.requests(), 2);
   } finally { store.close(); }
+}));
+
+for (const phase of ["before", "after"] as const) test(`killed configured coordinator ${phase} atomic JSON publication preserves the acceptance boundary`, { timeout: 15000 }, async () => temporary(async (registry, directory, scenario) => {
+  const executionUrl = new URL("../src/actor-execution.ts", import.meta.url).href, evidenceUrl = new URL("../src/evidence.ts", import.meta.url).href, registryUrl = new URL("../src/research.ts", import.meta.url).href;
+  // The hook pauses the actual EvidenceStore call, without replacing publication.
+  const program = `import { executeConfiguredActor } from ${JSON.stringify(executionUrl)}; import { EvidenceStore } from ${JSON.stringify(evidenceUrl)}; import { ResearchRegistry } from ${JSON.stringify(registryUrl)};
+    const registry=new ResearchRegistry(process.argv[1]), scenario=JSON.parse(process.argv[2]), phase=process.argv[3], keepalive=setInterval(()=>{},1000);let calls=0;
+    const original=EvidenceStore.prototype.writeRecord;
+    EvidenceStore.prototype.writeRecord=async function(name,value){if(name!=="report.json")return original.call(this,name,value);if(phase==="after")await original.call(this,name,value);process.send({runId:value.runId,taskId:value.task.record.spec.id,calls,phase});await new Promise(()=>{});};
+    const adapter={id:"killed-publication-fixture",mode:"live_model",dataLocation:"local",next:async view=>{calls++;return{action:calls===1?{type:"inspect",ref:"budget"}:{type:"decide",decision:{action:"reject",evidenceRefs:["budget"],constraints:view.constraints,rationale:"Authored fixture exceeds its declared budget",missingInformation:[],limitations:["Not human research"],changeConditions:["Different synthetic scenario"]}},usage:{inputTokens:7,outputTokens:3,costMicrousd:17}};}};
+    try{await executeConfiguredActor(process.argv[1],registry,scenario,${JSON.stringify(limits)},adapter,${JSON.stringify(profile)});}catch(error){process.send({error:error.message});}finally{registry.close();clearInterval(keepalive);}`;
+  const child = spawn(process.execPath, ["--input-type=module", "-e", program, directory, JSON.stringify(scenario), phase], { stdio: ["ignore", "ignore", "pipe", "ipc"], env: { ...process.env, OPENAI_API_KEY: "" } });
+  try {
+    const message = await new Promise<{ runId: string; taskId: string; calls: number; error?: string }>((done, reject) => {
+      const timer = setTimeout(() => reject(new Error("Configured publication fixture did not reach its checkpoint")), 5000);
+      child.once("message", value => { clearTimeout(timer); done(value as { runId: string; taskId: string; calls: number }); });
+      child.once("error", error => { clearTimeout(timer); reject(error); });
+      child.once("exit", code => { clearTimeout(timer); reject(new Error(`Publication fixture exited early: ${code}`)); });
+    });
+    assert.equal(message.error, undefined); assert.equal(message.calls, 2);
+    const reportFile = resolve(directory, ".redteam/actor-runs", message.runId, "report.json");
+    const original = phase === "after" ? await readFile(reportFile) : null;
+    const stopped = new Promise<void>(done => child.once("exit", () => done())); child.kill("SIGKILL"); await stopped;
+    const tasks = new TaskStore(directory), store = new WorkspaceStore(directory), ledger = new BudgetLedger(directory);
+    try {
+      assert.equal(tasks.task(message.taskId).state, "completed"); assert.equal(store.actorRun(message.runId), null);
+      const budgetBefore = ledger.snapshot(message.runId); assert.equal(budgetBefore.pools[0]?.spent.costMicrousd, "34");
+      const recovery = await recoverConfiguredActors(directory, message.runId); assert.deepEqual(recovery.taskIds, []);
+      if (phase === "after") {
+        assert.equal(recovery.reports[0]?.status, "existing"); assert.deepEqual(await readFile(reportFile), original);
+        const report = await readActorReport(store, directory, message.runId, registry);
+        assert.equal(report.acceptance?.status, "accepted"); assert.equal(report.reports[0]?.decision?.action, "reject");
+        assert.deepEqual(await checkArtifacts(resolve(reportFile, ".."), report.artifacts), []);
+      } else {
+        assert.equal(recovery.reports[0]?.status, "unavailable"); assert.equal(store.actorRun(message.runId), null);
+        await assert.rejects(readFile(reportFile), /ENOENT/);
+      }
+      assert.deepEqual(ledger.snapshot(message.runId), budgetBefore); assert.equal(tasks.task(message.taskId).dispatchIntents.length, 2);
+    } finally { tasks.close(); store.close(); ledger.close(); }
+  } finally { if (child.exitCode === null && child.signalCode === null) { const stopped = new Promise<void>(done => child.once("exit", () => done())); child.kill("SIGKILL"); await stopped; } }
+}));
+
+test("abandoned staging bytes are never promoted or removed during publication recovery", async () => temporary(async (registry, directory, scenario) => {
+  const fake = provider(), { adapter, configuration } = configureInference(profile, secret, fake.transport);
+  const result = await executeConfiguredActor(directory, registry, scenario, limits, adapter, configuration);
+  const pending = resolve(result.directory, ".redteam-publish-interrupted.pending"), artifactPending = resolve(result.directory, "artifacts/.redteam-publish-interrupted.pending");
+  await writeFile(pending, '{"partial":'); await writeFile(artifactPending, '{"unaccepted":'); removeCatalogEntry(directory, result.runId);
+  assert.equal((await recoverConfiguredActors(directory, result.runId)).reports[0]?.status, "existing");
+  assert.equal(await readFile(pending, "utf8"), '{"partial":'); assert.equal(await readFile(artifactPending, "utf8"), '{"unaccepted":');
+  assert((await readdir(result.directory)).includes(".redteam-publish-interrupted.pending")); assert.equal(fake.requests(), 4);
+  const store = new WorkspaceStore(directory);
+  try { assert.equal((await readActorReport(store, directory, result.runId, registry)).artifacts.length, 4); } finally { store.close(); }
 }));
 
 test("configured fake-provider execution saves receipts, model versions, and verifiable private artifacts", async () => temporary(async (registry, directory, scenario) => {

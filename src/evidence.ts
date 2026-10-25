@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
-import { appendFile, mkdir, readFile, realpath, stat, writeFile } from "node:fs/promises";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { appendFile, mkdir, readFile, realpath, stat } from "node:fs/promises";
+import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { publishExclusive } from "./publication.ts";
 
 export interface Artifact {
   id: string;
@@ -58,7 +59,16 @@ export class EvidenceStore {
   }
 
   async writeRecord(name: string, value: unknown): Promise<void> {
-    await writeFile(containedPath(this.root, name), JSON.stringify(value, null, 2) + "\n", { flag: "wx", mode: 0o600 });
+    const document = JSON.stringify(value, null, 2);
+    if (document === undefined) throw new Error("A record requires a JSON-serializable value.");
+    await this.publish(name, Buffer.from(document + "\n"));
+  }
+
+  private async publish(name: string, bytes: Buffer): Promise<void> {
+    const destination = containedPath(this.root, name), root = await realpath(this.root), parent = await realpath(dirname(destination));
+    const rel = relative(root, parent);
+    if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) throw new Error("Publication directory escapes the run.");
+    await publishExclusive(resolve(parent, basename(destination)), bytes);
   }
 
   async recordEvent(value: unknown): Promise<void> {
@@ -72,7 +82,7 @@ export class EvidenceStore {
 
   async addBytes(owner: string, bytes: Buffer, extension: string, mediaType: string): Promise<Artifact> {
     const path = this.newArtifactPath(extension);
-    await writeFile(containedPath(this.root, path), bytes, { flag: "wx", mode: 0o600 });
+    await this.publish(path, bytes);
     return this.register(owner, path, mediaType);
   }
 

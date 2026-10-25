@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { EvidenceStore, checkArtifacts } from "../src/evidence.ts";
@@ -39,5 +39,37 @@ test("sealed run records cannot be overwritten", async () => {
     await store.writeRecord("manifest.json", { version: 1 });
     await assert.rejects(() => store.writeRecord("manifest.json", { version: 2 }), /EEXIST/);
     assert.equal(JSON.parse(await readFile(resolve(store.root, "manifest.json"), "utf8")).version, 1);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("record serialization failure creates neither a final record nor a staging file", async () => {
+  const directory = await mkdtemp(resolve(tmpdir(), "redteam-record-input-"));
+  try {
+    const store = await EvidenceStore.create(directory, "run-one"), circular = { self: {} }; circular.self = circular;
+    await assert.rejects(store.writeRecord("report.json", circular), /circular/i);
+    await assert.rejects(store.writeRecord("report.json", undefined), /JSON-serializable/);
+    assert.deepEqual(await readdir(store.root), ["artifacts"]);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("record publication refuses final symlinks, including a dangling target", async () => {
+  const directory = await mkdtemp(resolve(tmpdir(), "redteam-record-link-"));
+  try {
+    const store = await EvidenceStore.create(directory, "run-one"), outside = resolve(directory, "outside.json"), final = resolve(store.root, "report.json");
+    await symlink(outside, final); await assert.rejects(store.writeRecord("report.json", { fixture: true }), { code: "EEXIST" });
+    await assert.rejects(readFile(outside), /ENOENT/);
+    await writeFile(outside, "unchanged"); await assert.rejects(store.writeRecord("report.json", { fixture: true }), { code: "EEXIST" });
+    assert.equal(await readFile(outside, "utf8"), "unchanged"); assert.deepEqual((await readdir(store.root)).sort(), ["artifacts", "report.json"]);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+
+test("publication denies a parent directory symlink that escapes the run", async () => {
+  const directory = await mkdtemp(resolve(tmpdir(), "redteam-record-parent-"));
+  try {
+    const store = await EvidenceStore.create(directory, "run-one");
+    await symlink(directory, resolve(store.root, "escape")); await rm(resolve(store.root, "artifacts"), { recursive: true }); await symlink(directory, resolve(store.root, "artifacts"));
+    await assert.rejects(store.writeRecord("escape/outside.json", { fixture: true }), /escapes/);
+    await assert.rejects(store.addBytes("fixture", Buffer.from("fixture"), "json", "application/json"), /escapes/);
+    assert.deepEqual((await readdir(directory)).sort(), ["run-one"]); assert.deepEqual(store.artifacts, []);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });

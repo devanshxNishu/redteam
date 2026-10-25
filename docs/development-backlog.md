@@ -18,7 +18,7 @@ Research protocol → human observations → candidate model → controlled acto
 
 The coordinator and roundtable connect these paths after the evidence path works.
 
-Implementation checkpoint, 0.7.1: fixture browser evidence, registry/evaluation controls, bounded actor mechanics, coordinator constraints, durable inference reservations, and one fenced configured actor are implemented. The full 160-test suite passes. Crash recovery publishes factual partial evidence and restores a saved normal publication's catalog entry after exact evidence and permission checks. It never retries uncertain calls or infers acceptance from an unpublished seal. Shared specialist scheduling, all-resource budgets, production isolation, human research, predictive validation, paid demand, and broad hierarchy gates remain open. See `docs/implementation-status.md` for exact coverage.
+Implementation checkpoint, 0.7.2: fixture browser evidence, registry/evaluation controls, bounded actor mechanics, coordinator constraints, durable inference reservations, and one fenced configured actor are implemented. The full 175-test suite passes. JSON records and evidence-store byte artifacts publish atomically with no replacement. Crash recovery publishes factual partial evidence and restores a saved normal publication's catalog entry after exact evidence and permission checks. It never retries uncertain calls or infers acceptance from an unpublished seal. Shared specialist scheduling, all-resource budgets, production isolation, human research, predictive validation, paid demand, and broad hierarchy gates remain open. See `docs/implementation-status.md` for exact coverage.
 
 ## 2. Priority definitions
 
