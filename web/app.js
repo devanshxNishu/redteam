@@ -9,6 +9,8 @@ let openedCodeRun = null;
 let codeCatalog = null;
 let actionCatalog = null;
 let experimentCatalog = null;
+let reportExportCatalog = null;
+let exportSelection = null;
 let comparisonCatalog = null;
 let openedComparison = null;
 let detailGeneration = 0;
@@ -132,12 +134,12 @@ async function refresh() {
   refreshController?.abort(); refreshController = new AbortController();
   const signal = refreshController.signal;
   try {
-    const [workspace, catalog, actions, comparisons, experiments] = await Promise.all([api("/api/workspace", { signal }), api("/api/code-runs", { signal }), api("/api/actions", { signal }), api("/api/comparisons", { signal }), api("/api/experiments", { signal })]);
+    const [workspace, catalog, actions, comparisons, experiments, exports] = await Promise.all([api("/api/workspace", { signal }), api("/api/code-runs", { signal }), api("/api/actions", { signal }), api("/api/comparisons", { signal }), api("/api/experiments", { signal }), api("/api/report-exports", { signal })]);
     if (generation !== refreshGeneration) return;
-    data = workspace; codeCatalog = catalog; actionCatalog = actions; comparisonCatalog = comparisons; experimentCatalog = experiments;
+    data = workspace; codeCatalog = catalog; actionCatalog = actions; comparisonCatalog = comparisons; experimentCatalog = experiments; reportExportCatalog = exports;
     $("connection-status").textContent = "Local service connected";
     $("connection-dot").style.background = "#7ba595";
-    render(); renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog(); renderExperimentCatalog();
+    render(); renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog(); renderExperimentCatalog(); renderReportExportCatalog(); renderExportOptions();
     if (openedCodeRun) {
       if (!codeEntry(openedCodeRun.kind, openedCodeRun.id)) clearCodeState("Code access changed. The record was closed.");
       else {
@@ -188,7 +190,7 @@ function resetDetail() {
   detailGeneration++;
   detailController?.abort(); detailController = null;
   clearTimeout(expiryTimer);
-  openedActorRun = null; openedCodeRun = null; openedComparison = null;
+  openedActorRun = null; openedCodeRun = null; openedComparison = null; exportSelection = null;
   for (const url of imageUrls.splice(0)) URL.revokeObjectURL(url);
   $("detail-content").replaceChildren();
   $("detail-title").textContent = "Review";
@@ -205,6 +207,14 @@ function beginDetail() {
 }
 function ownsDetail(attempt) { return detailGeneration === attempt.generation && !attempt.signal.aborted; }
 function codeEntry(kind, id) {
+  if (kind === "export-selection") {
+    const scope = exportSelection && reportExportCatalog && exportAccess(exportSelection.items);
+    return scope ? { entry: exportSelection, grant: scope.grant } : null;
+  }
+  if (kind === "report-exports") {
+    const entry = reportExportCatalog?.reportExports.find(item => item.id === id), scope = entry && exportAccess(entry.sources);
+    return scope ? { entry, grant: scope.grant } : null;
+  }
   if (kind === "browser-source") { const job = data?.jobs.find(item => item.id === id && ["completed", "limited_coverage"].includes(item.status)); return job ? { entry: job, grant: null } : null; }
   if (kind === "experiments") {
     const plan = experimentCatalog?.experimentPlans.find(item => item.id === id);
@@ -234,7 +244,7 @@ function renderCodeCatalog() {
   }
 }
 function clearCodeState(message) {
-  codeCatalog = null; actionCatalog = null; comparisonCatalog = null; experimentCatalog = null; renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog(); renderExperimentCatalog();
+  codeCatalog = null; actionCatalog = null; comparisonCatalog = null; experimentCatalog = null; reportExportCatalog = null; renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog(); renderExperimentCatalog(); renderReportExportCatalog();
   if (openedCodeRun || openedActorRun || openedComparison) { closeDetail(); if (message) toast(message, true); }
 }
 function armCodeExpiry() {
@@ -249,6 +259,7 @@ function armCodeExpiry() {
   }, Math.min(2_147_000_000, Math.max(1, Date.parse(access.grant.expiresAt) - Date.now())));
 }
 function codeSections(kind, report) {
+  if (kind === "report-exports") return reportExportSections(report);
   if (kind === "actions") return actionSections(report);
   if (kind === "experiments") return experimentSections(report);
   const scope = section(kind === "repositories" ? "Captured source scope" : "Operator-supplied notes");
@@ -289,7 +300,7 @@ async function showCodeReport(kind, id) {
     const report = await api(detailRoute(kind, id), { signal: attempt.signal });
     if (!ownsDetail(attempt)) return;
     if (!codeEntry(kind, id)) { clearCodeState("Code access changed. The record was closed."); return; }
-    $("detail-title").textContent = kind === "experiments" ? "Frozen experiment plan" : kind === "actions" ? "Tracked follow-up action" : kind === "repositories" ? "Local repository snapshot" : "Engineering source notes";
+    $("detail-title").textContent = kind === "report-exports" ? "Checked local report export" : kind === "experiments" ? "Frozen experiment plan" : kind === "actions" ? "Tracked follow-up action" : kind === "repositories" ? "Local repository snapshot" : "Engineering source notes";
     $("detail-content").replaceChildren(...codeSections(kind, report));
     openedCodeRun.pending = false; if (kind === "actions") openedCodeRun.revision = report.record.revision;
     if (!$("review-dialog").open) $("review-dialog").showModal(); $("detail-title").focus({ preventScroll: true }); armCodeExpiry();
@@ -298,7 +309,7 @@ async function showCodeReport(kind, id) {
   }
 }
 
-function detailRoute(kind, id) { return kind === "experiments" ? `/api/experiments/${id}` : kind === "actions" ? `/api/actions/${id}` : kind === "browser-source" ? `/api/reviews/${id}` : `/api/code-runs/${kind}/${id}`; }
+function detailRoute(kind, id) { return kind === "report-exports" ? `/api/report-exports/${id}` : kind === "experiments" ? `/api/experiments/${id}` : kind === "actions" ? `/api/actions/${id}` : kind === "browser-source" ? `/api/reviews/${id}` : `/api/code-runs/${kind}/${id}`; }
 function renderActionCatalog() {
   const rows = (actionCatalog?.actions ?? []).filter(action => codeEntry("actions", action.id)).map(action => {
     const row = node("div", undefined, "grant-item action-record"); row.dataset.actionId = action.id;
@@ -529,6 +540,124 @@ function showExperimentForm(record) {
   });
   $("detail-content").replaceChildren(form); if (!$("review-dialog").open) $("review-dialog").showModal(); fields.title.focus({ preventScroll: true });
 }
+
+function exportSourceAccess(source) {
+  if (source.kind === "comparison") { const entry = comparisonEntry(source.id); return entry ? { entry, grant: null } : null; }
+  const kind = { review: "browser-source", action: "actions", experiment: "experiments" }[source.kind];
+  return kind ? codeEntry(kind, source.id) : null;
+}
+function exportAccess(items) {
+  let grant = null;
+  for (const item of items) {
+    const access = exportSourceAccess(item); if (!access) return null;
+    if (access.grant && (!grant || Date.parse(access.grant.expiresAt) < Date.parse(grant.expiresAt))) grant = access.grant;
+  }
+  return { grant };
+}
+function exportOptions() {
+  return [
+    ...(data?.jobs ?? []).map(item => ({ kind: "review", id: item.id, label: `${jobTitle(item)} · ${item.id.slice(0, 8)}` })),
+    ...(actionCatalog?.actions ?? []).map(item => ({ kind: "action", id: item.id, label: `${item.title} · revision ${item.revision} · ${item.id.slice(0, 8)}` })),
+    ...(experimentCatalog?.experimentPlans ?? []).map(item => ({ kind: "experiment", id: item.id, label: `${item.title} · outcome not collected · ${item.id.slice(0, 8)}` })),
+    ...(comparisonCatalog?.comparisons ?? []).map(item => ({ kind: "comparison", id: item.id, label: `${comparisonLabel(item.verdict)} · ${item.id.slice(0, 8)}` })),
+  ].filter(item => exportSourceAccess(item));
+}
+function renderReportExportCatalog() {
+  $("create-report-export").disabled = !reportExportCatalog || !exportOptions().length;
+  const rows = (reportExportCatalog?.reportExports ?? []).filter(item => codeEntry("report-exports", item.id)).map(item => {
+    const row = node("div", undefined, "grant-item report-export-record"); row.dataset.reportExportId = item.id;
+    const copy = node("div", undefined, "grant-main"); copy.append(node("strong", item.title), node("p", `${item.records} selected records · ${date(item.createdAt)}`), node("small", "Cataloged, unverified · Current source access required"));
+    const inspect = node("button", "Inspect report export →", "small-button"); inspect.addEventListener("click", () => showCodeReport("report-exports", item.id)); row.append(copy, inspect); return row;
+  });
+  $("report-export-list").replaceChildren(...(rows.length ? rows : [node("p", reportExportCatalog ? "No permitted recent report exports. Select checked local records to create a bundle." : "Current report export access cannot be established.", "empty")]));
+}
+function renderExportOptions() {
+  if (openedCodeRun?.kind !== "export-selection" || !exportSelection || !$("export-options")) return;
+  const generation = detailGeneration, key = item => `${item.kind}:${item.id}`, selected = new Set(exportSelection.items.map(key)), options = exportOptions(), groups = [];
+  for (const [kind, title] of [["review", "Controlled review results"], ["action", "Operator-declared actions"], ["experiment", "Supplied experiment plans"], ["comparison", "Saved controlled comparisons"]]) {
+    const eligible = options.filter(item => item.kind === kind), shown = eligible.filter((item, index) => index < 25 || selected.has(key(item))), group = node("fieldset", undefined, "export-option-group");
+    group.append(node("legend", title), node("p", "Up to 25 recent available options, plus selected records still in the current catalog. Source integrity is checked before export.", "fine-print"));
+    for (const option of shown) {
+      const label = node("label", undefined, "export-option"), input = node("input"); input.type = "checkbox"; input.value = key(option); input.checked = selected.has(key(option)); input.disabled = !!exportSelection.saving; input.dataset.exportKind = kind; input.dataset.exportId = option.id;
+      input.addEventListener("change", () => {
+        if (generation !== detailGeneration || openedCodeRun?.kind !== "export-selection" || !exportSelection || exportSelection.saving) return;
+        const next = exportSelection.items.filter(item => key(item) !== key(option)); if (input.checked) next.push({ kind, id: option.id });
+        if (next.length > 10 || next.filter(item => item.kind === "review").length > 5) { input.checked = false; $("export-form-status").textContent = "Choose at most ten records, including no more than five reviews."; return; }
+        exportSelection.items = next; $("export-selection-count").textContent = `${next.length} selected · maximum 10 records and 5 reviews`; armCodeExpiry();
+      });
+      label.append(input, node("span", option.label)); group.append(label);
+    }
+    if (!shown.length) group.append(node("p", "No currently available records of this kind.", "empty")); groups.push(group);
+  }
+  $("export-options").replaceChildren(...groups);
+}
+function showReportExportForm() {
+  const attempt = beginDetail();
+  if (!reportExportCatalog || !exportOptions().length) { closeDetail(); toast("No currently available local records to export.", true); return; }
+  exportSelection = { items: [] }; openedCodeRun = { kind: "export-selection", id: "selection", pending: true }; armCodeExpiry();
+  $("detail-title").textContent = "Select local records for export";
+  const form = node("form"); form.id = "report-export-form";
+  form.append(node("p", "Select one to ten local records. Supplied text is included. Source permissions and saved bytes are checked before export. No raw code, research, session, or credential store is copied automatically. Downloaded copies cannot be recalled.", "fine-print"));
+  const label = node("label", "Report title · operator supplied"); label.htmlFor = "export-title";
+  const title = node("input"); title.id = "export-title"; title.required = true; title.maxLength = 200; title.autocomplete = "off";
+  const count = node("p", "0 selected · maximum 10 records and 5 reviews", "fine-print"); count.id = "export-selection-count";
+  const options = node("div"); options.id = "export-options";
+  const message = node("p", "", "fine-print"); message.id = "export-form-status"; message.setAttribute("role", "alert");
+  const save = node("button", "Create checked report export", "primary"); save.type = "submit";
+  form.append(label, title, count, options, message, save);
+  form.addEventListener("submit", async event => {
+    event.preventDefault(); if (!ownsDetail(attempt) || save.disabled) return;
+    if (!title.value.trim() || /[\x00-\x1f\x7f-\x9f]/u.test(title.value) || !exportSelection.items.length) { message.textContent = "Supply a title without control characters and select at least one record."; return; }
+    if (!codeEntry("export-selection", "selection")) { clearCodeState("A selected source is unavailable. The export form was closed."); return; }
+    const payload = { schemaVersion: "1.0", kind: "report_export_input", title: title.value, items: exportSelection.items.map(item => ({ ...item })) };
+    exportSelection.saving = true; save.disabled = true; title.disabled = true; for (const input of options.querySelectorAll("input")) input.disabled = true;
+    try {
+      const result = await api("/api/report-exports", { method: "POST", body: JSON.stringify(payload), signal: attempt.signal });
+      if (!ownsDetail(attempt)) return;
+      await refresh(); if (!ownsDetail(attempt)) return;
+      await showCodeReport("report-exports", result.id);
+    } catch (error) { if (ownsDetail(attempt)) { closeDetail(); toast(`Export could not be confirmed. Read recent exports before retrying. ${error.message}`, true); } }
+    finally { if (ownsDetail(attempt)) { exportSelection.saving = false; save.disabled = false; title.disabled = false; for (const input of options.querySelectorAll("input")) input.disabled = false; } }
+  });
+  $("detail-content").replaceChildren(form); renderExportOptions(); if (!$("review-dialog").open) $("review-dialog").showModal(); title.focus({ preventScroll: true });
+}
+function reportExportSections(report) {
+  const id = report.id, summary = section(report.title);
+  summary.append(node("p", `${report.records.length} selected local records · Created: ${report.createdAt}`), node("p", "Saved source and export hashes checked for this request. Recorded claims and operator declarations are not independently adjudicated or promoted."), node("p", "No test, model, intervention, recruitment, or outcome collection occurs. Downloaded copies cannot be recalled after source access changes."));
+  const sources = section("Selected source references");
+  for (const source of report.sourceRefs) sources.append(node("p", `${source.kind}: ${source.id}${source.actionRevision ? ` · action revision ${source.actionRevision}` : ""}`), node("code", source.hash, "code-hash"));
+  const records = section("Recorded bodies · supplied labels preserved");
+  for (const record of report.records) { const details = node("details"); details.append(node("summary", `${record.kind} · ${record.id}`), node("pre", JSON.stringify(record.body, null, 2), "export-record-json")); records.append(details); }
+  const limits = section("Export limits"); for (const limitation of report.limitations) limits.append(node("p", limitation));
+  limits.append(node("p", "Managed detail checks current source rights and saved bytes during refresh. Known expiry clears it locally. Already delivered or saved copies remain outside managed revocation."));
+  const actions = node("div", undefined, "detail-actions export-download-actions");
+  for (const [format, label] of [["json", "Download checked JSON"], ["md", "Download checked Markdown"]]) { const button = node("button", label, "primary report-download"); button.addEventListener("click", () => downloadReportExport(id, format)); actions.append(button); }
+  return [summary, sources, records, limits, actions];
+}
+async function downloadReportExport(id, format) {
+  if (openedCodeRun?.kind !== "report-exports" || openedCodeRun.id !== id || openedCodeRun.downloading || !codeEntry("report-exports", id)) return;
+  const attempt = { generation: detailGeneration, signal: detailController.signal }, current = openedCodeRun;
+  const allowed = () => ownsDetail(attempt) && openedCodeRun === current && !!codeEntry("report-exports", id);
+  current.downloading = true; const buttons = [...document.querySelectorAll(".report-download")]; for (const button of buttons) button.disabled = true;
+  try {
+    const response = await fetch(`/api/report-exports/${id}/download.${format}`, { cache: "no-store", headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.any([attempt.signal, AbortSignal.timeout(10000)]) });
+    if (!response.ok) throw new Error("Current source or saved integrity checks failed.");
+    const length = Number(response.headers.get("content-length")), hash = response.headers.get("x-content-sha256");
+    if (!Number.isSafeInteger(length) || length <= 0 || length > 2200000 || !/^[a-f0-9]{64}$/.test(hash ?? "") || !response.body) throw new Error("Download integrity metadata is unavailable.");
+    const reader = response.body.getReader(), chunks = []; let total = 0;
+    for (;;) { const next = await reader.read(); if (!allowed()) { await reader.cancel(); return; } if (next.done) break; total += next.value.length; if (total > length || total > 2200000) { await reader.cancel(); throw new Error("Download exceeds its declared size."); } chunks.push(next.value); }
+    if (total !== length) throw new Error("Download length changed.");
+    const bytes = new Uint8Array(total); let offset = 0; for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+    const digest = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map(value => value.toString(16).padStart(2, "0")).join("");
+    if (digest !== hash) throw new Error("Download hash did not match."); if (!allowed()) return;
+    const url = URL.createObjectURL(new Blob([bytes], { type: format === "json" ? "application/json" : "text/markdown" })); imageUrls.push(url);
+    const link = node("a"); link.href = url; link.download = `redteam-report-${id}.${format}`; link.hidden = true; document.body.append(link); link.click(); link.remove();
+    setTimeout(() => { const index = imageUrls.indexOf(url); if (index !== -1) imageUrls.splice(index, 1); URL.revokeObjectURL(url); }, 1000);
+    toast("Download requested. Already saved copies cannot be recalled.");
+  } catch (error) { if (ownsDetail(attempt)) { closeDetail(); toast(`Download unavailable. ${error.message}`, true); } }
+  finally { if (ownsDetail(attempt)) { current.downloading = false; for (const button of buttons) button.disabled = false; } }
+}
+$("create-report-export").addEventListener("click", showReportExportForm);
 
 function section(title) { const element = node("section", undefined, "detail-section"); element.append(node("h3", title)); return element; }
 async function showActorReport(id) {

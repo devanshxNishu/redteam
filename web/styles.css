@@ -13,3 +13,5 @@ textarea{width:100%;padding:12px;border:1px solid #dbe0da;border-radius:5px;back
 #comparison-form .primary{margin-top:18px}.comparison-record .grant-main strong{overflow-wrap:anywhere}#comparison-form select{max-width:100%}
 
 #experiment-form .primary{margin-top:18px}#experiment-form .small-button{margin-top:10px;white-space:normal}#experiment-form input{max-width:100%;min-width:0}.experiment-record .grant-main strong{overflow-wrap:anywhere}
+
+.export-option-group{border:1px solid #e3e8dd;border-radius:6px;margin:18px 0;padding:14px;min-width:0}.export-option-group legend{font-size:12px;font-weight:600;color:#607053;padding:0 6px}.export-option{display:flex;align-items:flex-start;gap:10px;line-height:1.8;overflow-wrap:anywhere;margin:15px 0}.export-option input{width:16px;flex:0 0 16px;margin-top:3px}.export-option span{min-width:0}.export-record-json{white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font-size:10px;max-width:100%}.report-export-record .grant-main strong{overflow-wrap:anywhere}#report-export-form>.primary{margin-top:18px}.export-download-actions{flex-wrap:wrap}.export-download-actions .primary{white-space:normal}
