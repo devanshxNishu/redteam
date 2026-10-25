@@ -53,4 +53,11 @@ Missing external inputs: actual provider configuration/key/permitted processing 
 - Source/cached managed-view data must clear on permission/source failure and old async replies cannot restore it. API/download copies already delivered cannot be recalled. Use literal DOM text; do not render supplied HTML or Markdown.
 - Compile/pack/install final docs into a **new prefix**; same-version npm caches can retain old docs. Compare every installed manifest file, whitelist/private exclusion and SHA-512. Commit ready explicit files; normal push and remote SHA verification follow successful meaningful checks. Continue the next ready work while usage remains available.
 
-The last relevant usage read allowed ordinary usage with primary90% and secondary23% used. Historical only; no credits/reset credits used. Respect natural resets and check again only when relevant.
+The final relevant usage read allowed ordinary usage with primary98% and secondary25% used; natural primary reset is 2026-10-25 16:17:18 UTC (21:47:18 Asia/Kolkata). No credits/reset credits used. Recurring continuation was viewed successfully; saved automation status was checked before this checkpoint. Respect natural limits and check once when relevant after waking.
+
+
+## Final continuation preparation (October 25, 2026)
+
+Verified 0.29.0 is committed and pushed; exact source/remote SHA is in ignored release/GitHub proofs. The working tree contains no incomplete source implementation. `docs/analyst-task-plan.md` is a repository-only next-slice design, not part of the 135-file archive and not a released runtime. It records inspected TaskStore behavior, especially idempotent same-attempt dispatch intents, seal removing the lease, explicit completion fence/deadline, allowed failure reasons and analyst-specific recovery boundaries. Start there for a small useful I04b2 implementation. Do not revise the archive or claim new tests for this documentation-only checkpoint.
+
+All 445 full-suite checks, targeted20, build/typecheck/JS syntax and final installed/archive checks remain as recorded above. No active test/service/browser session remains. Broader product scope is unfinished, so continuation remains enabled. No user approval is pending; real configuration/research/pilot inputs remain missing as accurately listed above.
