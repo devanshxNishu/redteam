@@ -5,3 +5,7 @@
 .detail-section details{margin-top:18px;color:#68785d;font-size:11px}.detail-section summary{cursor:pointer;padding:10px 0;font-weight:600}.detail-section details p{font-size:11px}
 
 .code-card{margin-top:24px}.code-card .card-title{flex-wrap:wrap}.code-card .grant-main small{display:block;line-height:1.9;overflow-wrap:anywhere}.code-card details{margin:15px 0;font-size:11px;color:#68785d}.code-card summary{cursor:pointer}.code-hash{display:block;font-size:10px;line-height:1.9;overflow-wrap:anywhere;white-space:normal}.detail-section h4{font-size:12px;overflow-wrap:anywhere}
+
+textarea{width:100%;padding:12px;border:1px solid #dbe0da;border-radius:5px;background:#fcfdfb;color:#35423a;font:inherit;font-size:12px;line-height:1.8;resize:vertical}textarea:focus-visible{outline:3px solid #cf4545;outline-offset:4px}#action-form .primary{margin-top:18px}#action-form .small-button{margin-top:10px;white-space:normal}.action-record .grant-main strong{overflow-wrap:anywhere}.detail-section>.small-button{margin-top:15px}
+
+.detail-section h3,.detail-section details p,#toast{overflow-wrap:anywhere}

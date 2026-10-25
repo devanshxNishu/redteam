@@ -1,6 +1,6 @@
 # redteam: Implementation status
 
-Current build: 0.11.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
+Current build: 0.12.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
 
 This record separates implemented code from the broader product plan. The browser runner reviews one controlled signup journey. Registered actor models can be used through the configured path, but no independent human behavioral validation is recorded.
 
@@ -14,7 +14,7 @@ This record separates implemented code from the broader product plan. The browse
 | Job lifecycle | Queue, primary run, verifier run, reporting, completion, limited coverage, failure, interruption | One active review; up to eight active or queued jobs |
 | Startup recovery | Marks unfinished jobs interrupted | Does not replay browser actions automatically |
 | Access grants | Exact web origins or canonical directories; capabilities, expiry, and revocation | Local text capture is enabled; external runner and code execution remain unavailable |
-| Tracked actions | Owner labels, next steps, validation methods, declared progress, source pins, revision history, atomic expected-revision writes, and current source access | Terminal/API only; no action UI, external assignment/execution, independent outcome, or verified completion |
+| Tracked actions | Owner labels, next steps, validation methods, declared progress, source pins, revision history, atomic expected-revision writes, and current source access | Web/terminal/API; no external assignment/execution, independent outcome, or verified completion |
 | Engineering notes | Supplied requirements and notes, exact saved-file/range hashes, original input artifact, snapshot pin, private report, current access, and immutable catalog | Citation integrity only; statements/provenance remain unreviewed, execution not performed, defects not assessed |
 | Repository evidence | Exact `code:read` grant, bounded text artifacts, file hashes, exclusion counters, immutable catalog, and permission-checked inspection | Local plaintext, trusted operator, no code/test/model execution, no atomic revision or engineering judgment |
 | Browser sessions | CLI import; encrypted local storage; metadata-only API responses | Local key beside the database; no OS keychain integration |
@@ -57,7 +57,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 243 passed, zero failed or skipped |
+| Full automated suite | 247 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -88,6 +88,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Atomic file publication | Nine checks passed for flush/close order, storage failures, unsupported links, six competing processes, and real writers killed at three publication boundaries |
 | Evidence store | Six checks passed for artifact integrity, immutable records, serialization failure, final symlinks, and parent-directory escape |
 | Read-only diagnostic | Thirteen checks passed for malformed/unsupported records, privacy, file and inventory bounds, unsafe references, staging, CLI behavior, and unchanged live task/budget/SQLite files |
+| Action dashboard | Four real-browser checks passed creation, declared completion, text wrapping/escaping, live revision conflicts with preserved drafts, late save responses, mixed snapshot revocation, and unsaved-form expiry |
 | Action tracking | Ten checks passed for strict input, fixed declaration labels, source integrity/access, expiry/revocation, transactional authorization, competing processes, history consistency, real queued fixture findings, distinct evidence IDs, CLI, and API conflicts |
 | Code dashboard lifecycle | A real-browser integration check passed empty/populated cards, safe text, desktop/390 px, expiry, visible/pending revocation, changed evidence, network failure, and stale detail/catalog responses |
 | Code inspection API | Six checks passed for session/Host/Origin, no-store JSON, minimal unverified lists, current permission, expiry/revocation, dependent tamper denial, static errors, and absent write/download routes |
@@ -99,9 +100,11 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 
 An initial test pass attempt exposed browser shutdown deadlines under load. The implementation now closes contexts explicitly and uses the documented bounded cleanup allowance. The full suite passed after that correction. An installed-build review from before that correction correctly reported limited coverage; it did not report an app defect.
 
-The current installable archive is `outputs/redteam-0.11.0.tgz`. `work/verify-installed-0.11.0.mjs` verified compiled CLI/API, plans linked to source notes and an actual reproduced browser fixture finding, seven fixture artifacts, both queued review and evidence IDs, competing terminal updates with one winner, revision history, declared completion without verification promotion, 409 conflicts, current revocation, hidden dependent titles/history, an unrelated permitted fixture action, and no additional review execution by tracking. Results are `outputs/installed-verification-0.11.0.json`. The service and fixture browsers are stopped. No real credential or provider request occurred. Full suite: `outputs/test-results-0.11.0.txt`.
+The current installable archive is `outputs/redteam-0.12.0.tgz`. `work/verify-installed-0.12.0.mjs` verified source-linked plan creation, declared completion, desktop/390 px detail and forms, long-title wrapping, a real CLI update causing a preserved-draft HTTP conflict, normal-poll terminal revocation, cleared detail, denied dependent links, no persistent storage, existing actor detail, and creation from an actual broken-fixture finding with distinct job/evidence IDs. Tracking started no additional review. Results are `outputs/installed-verification-0.12.0.json`; action creation/detail/conflict screenshots under `outputs/preview/` were visually inspected. Browser and service are stopped. No uncaught browser error, real credential, or provider request occurred. Full suite: `outputs/test-results-0.12.0.txt`.
 
-The installed 0.10.0 UI checks remain in `outputs/installed-verification-0.10.0.json`. They cover desktop/390 px code inspection, safe text, long paths/hashes, no overflow, normal-poll terminal revocation, cleared detail, actor detail, and a real fixed browser review. Its screenshots remain under `outputs/preview/` and were visually inspected. Action dashboard controls are not yet implemented. The current suite still passes that browser lifecycle regression.
+The 0.11.0 backend checks remain in `outputs/installed-verification-0.11.0.json`. They cover source pins, atomic expected revisions, history, permission, and controlled finding lineage. U04's scoped action workflow is now available in the web, terminal, and API. Structured experiment/outcome records and independent validation remain unfinished.
+
+The installed 0.10.0 UI checks remain in `outputs/installed-verification-0.10.0.json`. They cover desktop/390 px code inspection, safe text, long paths/hashes, no overflow, normal-poll terminal revocation, cleared detail, actor detail, and a real fixed browser review. Its screenshots remain under `outputs/preview/` and were visually inspected. That release predates action controls; the current release adds them with the same shared dialog ownership. The current suite still passes that browser lifecycle regression.
 
 The 0.9.1 API checks remain in `outputs/installed-verification-0.9.1.json`. They cover protected code catalogs/detail, current access, hash checks, static denials, and absent write/download actions. U15 local inspection is now implemented; it does not provide source execution or semantic review. Cross-process permission changes are detected by refresh and known local expiry, with explicit timing limits.
 
@@ -135,7 +138,7 @@ No real provider calls occurred in the recorded checks. Scripted runs report zer
 
 ## Next milestone
 
-U04 action storage, terminal, and API support are implemented. Next, add action creation/inspection/update controls to the dashboard. Use current source access, expected-revision conflicts, fixed declaration labels, and managed-view invalidation. Browser finding input uses the review job ID; the pinned evidence run ID can differ. Tracking must not send messages, perform tasks, or imply independently verified completion. Semantic review, shared scheduling, isolation, real research, and live provider verification remain open.
+The local action workflow now supports source-linked creation, declared updates, conflict handling, and permission-safe views. Next, prototype U05 bounded release comparison for saved controlled-fixture evidence. Require matching study/requirement scope, verified artifacts, and explicit tested coverage. No longer observed in a tested journey must not become a causal product, purchase, investment, or population outcome. Keep action declarations unchanged. Structured experiments, semantic review, specialist scheduling, isolation, human research, and live providers remain open.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
 

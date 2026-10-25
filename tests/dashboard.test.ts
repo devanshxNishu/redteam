@@ -87,6 +87,10 @@ test("dashboard code inspection clears private detail on expiry, revocation, sta
     await visible(stale.notes.runId).waitFor({ state: "detached" }); releaseCatalog(); await finished;
     await page.evaluate(() => new Promise(accept => requestAnimationFrame(() => requestAnimationFrame(() => accept(null)))));
     assert.equal(await page.locator(".code-record").count(), 0); await page.unroute("**/api/code-runs");
+    // Shared private actor detail also clears when current metadata cannot be refreshed.
+    await page.locator('a[data-view="research"]').click(); await page.getByRole("button", { name: "Run scripted stakeholder demo" }).click();
+    await page.locator("#detail-title").filter({ hasText: "Scripted stakeholder decisions" }).waitFor();
+    await page.route("**/api/actions", route => route.abort("failed")); await refresh(); await closed(); await page.unroute("**/api/actions");
     assert.deepEqual(errors, []);
   } finally { await page.close(); await browser.close(); await server.close(); await rm(workspace, { recursive: true, force: true }); }
 });

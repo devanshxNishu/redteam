@@ -1,6 +1,6 @@
 # Scoped action tracking
 
-Version 0.11.0 adds local action records through the terminal and API. It tracks plans and operator-declared progress. It does not perform the plan or verify its result. Dashboard action controls are a later step.
+Version 0.11.0 introduced local action records through the terminal and API. Version 0.12.0 adds the dashboard workflow. Tracking records plans and operator-declared progress. It does not perform the plan or verify its result.
 
 ## Terminal commands
 
@@ -60,4 +60,19 @@ The existing bearer session, Host/Origin rules, and no-store policy protect thes
 - GET `/api/actions/ACTION_ID`: current checked record and revision history.
 - PATCH `/api/actions/ACTION_ID`: a declared update with an expected revision.
 
-A detail unavailable through permission or integrity checks returns static 404 `action_unavailable`. A conflicting revision returns 409. Invalid write input returns 400. No route executes tests, sends messages, invokes a model, makes payments, starts a worker, or records an independently observed outcome. Action UI and managed client caching remain unfinished in this release.
+A detail unavailable through permission or integrity checks returns static 404 `action_unavailable`. A conflicting revision returns 409. Invalid write input returns 400. No route executes tests, sends messages, invokes a model, makes payments, starts a worker, or records an independently observed outcome. The dashboard now uses these routes with current source checks, draft ownership, revision conflict handling, and managed-view clearing.
+
+
+## Dashboard workflow
+
+Open a source observation or controlled-browser finding and select **Plan a next step**. Enter a title, owner label, next step, and separate validation method. Saving creates a proposed record. It does not assign external work.
+
+Reviews shows recent permitted action summaries. Open a record to inspect its pinned source, declared progress, and revision history. Select **Edit declared action** to change tracked fields and record a reason. Completion stays declared and not independently verified.
+
+Edits keep the revision that the operator opened. A newer background revision does not overwrite the draft. A 409 read/write conflict preserves the draft and offers an explicit latest-record read that discards it. The client never reapplies a conflicting update automatically.
+
+Current workspace grants also filter catalog rows. Older code/action responses cannot override newer known revocation, even within one refresh. Open action views and forms inherit source permission, known expiry, detail checks, request ownership, and managed clearing. HTML-like operator text stays text. Browser finding creation sends the workspace job ID; the server supplies its distinct evidence pin.
+
+A save may commit before its response is lost or aborted. The client does not undo that commit or repeat the write. Read recent actions before deciding to retry an unconfirmed save. Source denial, expiry, or failed access refresh clears private managed forms and details. Data already delivered, unmanaged screenshots, browser history, OS caches, and backups cannot be recalled.
+
+These controls inherit the [code dashboard timing and local-operator limits](code-dashboard.md). Structured experiment plans, independent outcome records, causal impact, and stakeholder predictions remain separate work.

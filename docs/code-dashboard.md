@@ -1,6 +1,6 @@
 # Code records in the local dashboard
 
-Version 0.10.0 adds repository snapshots and engineering source notes to Reviews. Create these records through the terminal. Opening a card starts no capture, code execution, test, or model request.
+Version 0.10.0 added repository snapshots and engineering source notes to Reviews. Version 0.12.0 extends the lifecycle to source-linked action views and drafts. Create these records through the terminal. Opening a card starts no capture, code execution, test, or model request.
 
 ## Read the record labels
 
@@ -23,3 +23,5 @@ Request ownership changes when a different detail opens, the dialog closes, or n
 Managed state retains current catalog metadata and open-record identity. Full engineering reports are not saved in browser storage or a persistent detail cache. Closing detail clears its DOM and releases managed image URLs. The controls cannot erase responses already delivered, developer-tool history, unmanaged screenshots, operating-system caches, or backups.
 
 The service still assumes one trusted local operator. These controls do not provide hosted tenant authentication, production worker isolation, independent research approval, semantic engineering verification, or predictive stakeholder behavior.
+
+Current workspace grant state also filters source and action rows before rendering. A late catalog in the same refresh cannot restore metadata that conflicts with known revocation. Actor detail also closes when required metadata cannot be refreshed. Action revision conflicts preserve an editing draft rather than treating a changed revision as a permission denial.

@@ -7,6 +7,7 @@ const imageUrls = [];
 let openedActorRun = null;
 let openedCodeRun = null;
 let codeCatalog = null;
+let actionCatalog = null;
 let detailGeneration = 0;
 let detailController = null;
 let expiryTimer;
@@ -26,7 +27,7 @@ async function api(path, options = {}) {
   const response = await fetch(path, { ...options, signal, cache: "no-store", headers: { Authorization: `Bearer ${token}`, ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers } });
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: "Request failed." }));
-    throw new Error(error.error || "Request failed.");
+    throw Object.assign(new Error(error.error || "Request failed."), { status: response.status });
   }
   return response.json();
 }
@@ -128,20 +129,33 @@ async function refresh() {
   refreshController?.abort(); refreshController = new AbortController();
   const signal = refreshController.signal;
   try {
-    const [workspace, catalog] = await Promise.all([api("/api/workspace", { signal }), api("/api/code-runs", { signal })]);
+    const [workspace, catalog, actions] = await Promise.all([api("/api/workspace", { signal }), api("/api/code-runs", { signal }), api("/api/actions", { signal })]);
     if (generation !== refreshGeneration) return;
-    data = workspace; codeCatalog = catalog;
+    data = workspace; codeCatalog = catalog; actionCatalog = actions;
     $("connection-status").textContent = "Local service connected";
     $("connection-dot").style.background = "#7ba595";
-    render(); renderCodeCatalog();
+    render(); renderCodeCatalog(); renderActionCatalog();
     if (openedCodeRun) {
       if (!codeEntry(openedCodeRun.kind, openedCodeRun.id)) clearCodeState("Code access changed. The record was closed.");
       else {
         armCodeExpiry();
         if (!openedCodeRun.pending) {
           const attempt = { generation: detailGeneration, signal: detailController.signal }, current = openedCodeRun;
-          try { await api(`/api/code-runs/${current.kind}/${current.id}`, { signal: AbortSignal.any([signal, attempt.signal]) }); }
-          catch (error) { if (generation === refreshGeneration && ownsDetail(attempt)) { closeDetail(); toast("Code record unavailable. Access or integrity checks failed.", true); } }
+          try {
+            const checked = await api(detailRoute(current.kind, current.id), { signal: AbortSignal.any([signal, attempt.signal]) });
+            if (generation === refreshGeneration && ownsDetail(attempt) && current.kind === "actions" && checked.record.revision !== current.revision) {
+              if (current.editing) { $("action-form-status").textContent = "A newer revision is available. Read it before deliberately applying an update."; $("action-reload").hidden = false; }
+              else { $("detail-content").replaceChildren(...actionSections(checked)); current.revision = checked.record.revision; }
+            }
+          }
+          catch (error) {
+            if (generation === refreshGeneration && ownsDetail(attempt)) {
+              if (current.kind === "actions" && error.status === 409) {
+                if (current.editing) { $("action-form-status").textContent = "The revision changed while checking. Read the latest action before deliberately updating. Your draft is preserved."; $("action-reload").hidden = false; }
+                else toast("The action changed while checking. Open it again before editing.", true);
+              } else { closeDetail(); toast("Record unavailable. Access or integrity checks failed.", true); }
+            }
+          }
         }
       }
     }
@@ -149,7 +163,7 @@ async function refresh() {
     if (generation !== refreshGeneration) return;
     $("connection-status").textContent = "Service disconnected";
     $("connection-dot").style.background = "#c93938";
-    clearCodeState("Code access cannot be refreshed. The record was closed.");
+    clearCodeState("Current access cannot be refreshed. The record was closed.");
     if (!data) toast(error.message, true);
   } finally {
     if (generation === refreshGeneration) timer = setTimeout(refresh, data?.jobs.some(job => activeStates.has(job.status)) ? 1500 : 10000);
@@ -163,6 +177,7 @@ function resetDetail() {
   for (const url of imageUrls.splice(0)) URL.revokeObjectURL(url);
   $("detail-content").replaceChildren();
   $("detail-title").textContent = "Review";
+  $("review-dialog").scrollTop = 0;
 }
 function closeDetail() {
   resetDetail();
@@ -175,6 +190,12 @@ function beginDetail() {
 }
 function ownsDetail(attempt) { return detailGeneration === attempt.generation && !attempt.signal.aborted; }
 function codeEntry(kind, id) {
+  if (kind === "browser-source") { const job = data?.jobs.find(item => item.id === id && ["completed", "limited_coverage"].includes(item.status)); return job ? { entry: job, grant: null } : null; }
+  if (kind === "actions") {
+    const action = actionCatalog?.actions.find(item => item.id === id);
+    const parent = action && codeEntry(action.origin.kind === "engineering_observation" ? "observations" : "browser-source", action.origin.runId);
+    return parent ? { entry: action, grant: parent.grant } : null;
+  }
   const entry = (kind === "repositories" ? codeCatalog?.repositoryRuns : codeCatalog?.engineeringRuns)?.find(run => run.runId === id);
   const grant = entry && data?.grants.find(item => item.id === entry.grantId);
   return entry && grant?.kind === "directory" && grant.target === entry.target && grant.capabilities.includes("code:read") && !grant.revokedAt && Date.parse(grant.expiresAt) > Date.now() ? { entry, grant } : null;
@@ -182,7 +203,7 @@ function codeEntry(kind, id) {
 function renderCodeCatalog() {
   $("code-state").textContent = codeCatalog ? "Catalog entries are unverified. Opening a record checks current access and saved evidence hashes." : "Code records unavailable. Reconnect to refresh access.";
   for (const [kind, id, runs] of [["repositories", "repository-run-list", codeCatalog?.repositoryRuns], ["observations", "engineering-run-list", codeCatalog?.engineeringRuns]]) {
-    const rows = (runs ?? []).map(run => {
+    const rows = (runs ?? []).filter(run => codeEntry(kind, run.runId)).map(run => {
       const row = node("div", undefined, "grant-item code-record"); row.dataset.codeRun = run.runId;
       const copy = node("div", undefined, "grant-main");
       copy.append(node("strong", kind === "repositories" ? "Local source snapshot" : "Operator-supplied source notes"), node("p", run.target), node("small", `${date(run.createdAt)} · ${kind === "repositories" ? `${run.fileCount} files · ${run.totalBytes} bytes` : `${run.observationCount} notes`} · Cataloged, unverified`));
@@ -193,20 +214,22 @@ function renderCodeCatalog() {
   }
 }
 function clearCodeState(message) {
-  codeCatalog = null; renderCodeCatalog();
-  if (openedCodeRun) { closeDetail(); if (message) toast(message, true); }
+  codeCatalog = null; actionCatalog = null; renderCodeCatalog(); renderActionCatalog();
+  if (openedCodeRun || openedActorRun) { closeDetail(); if (message) toast(message, true); }
 }
 function armCodeExpiry() {
   clearTimeout(expiryTimer);
   if (!openedCodeRun) return;
   const access = codeEntry(openedCodeRun.kind, openedCodeRun.id);
   if (!access) { clearCodeState("Code access changed. The record was closed."); return; }
+  if (!access.grant) return;
   expiryTimer = setTimeout(() => {
     if (openedCodeRun && codeEntry(openedCodeRun.kind, openedCodeRun.id)) armCodeExpiry();
     else clearCodeState("Code access expired. The record was closed.");
   }, Math.min(2_147_000_000, Math.max(1, Date.parse(access.grant.expiresAt) - Date.now())));
 }
 function codeSections(kind, report) {
+  if (kind === "actions") return actionSections(report);
   const scope = section(kind === "repositories" ? "Captured source scope" : "Operator-supplied notes");
   scope.append(node("p", "Limited coverage. No source code, app test, or model was executed by this workflow."), node("p", `Captured: ${date(report.createdAt)} · Run: ${report.runId}`), node("p", `Target: ${report.target}`), node("p", "Saved evidence hashes checked for this request. This is not semantic verification or an approved finding."));
   const sections = [scope];
@@ -228,6 +251,7 @@ function codeSections(kind, report) {
       const notes = section(`${observation.id} · source observation`);
       notes.append(node("p", observation.statement), node("p", `Expectation: ${observation.requirementId ? `supplied, unverified (${observation.requirementId})` : "unknown"}.`), node("p", "Semantic review: unreviewed. Execution: not executed. Defect: not assessed."), node("p", "Citation integrity: matched saved bytes. This does not establish that the note is correct."));
       for (const citation of observation.citations) notes.append(node("p", `${citation.sourcePath} · lines ${citation.startLine}–${citation.endLine} · ${citation.rangeBytes} bytes`), node("p", "File SHA-256"), node("code", citation.fileSha256, "code-hash"), node("p", "Range SHA-256"), node("code", citation.rangeSha256, "code-hash"));
+      notes.append(planButton({ kind: "engineering_observation", runId: report.runId, itemId: observation.id }));
       sections.push(notes);
     }
   }
@@ -241,16 +265,86 @@ async function showCodeReport(kind, id) {
   if (!codeEntry(kind, id)) { closeDetail(); toast("Current code access is unavailable.", true); return; }
   openedCodeRun = { kind, id, pending: true }; armCodeExpiry();
   try {
-    const report = await api(`/api/code-runs/${kind}/${id}`, { signal: attempt.signal });
+    const report = await api(detailRoute(kind, id), { signal: attempt.signal });
     if (!ownsDetail(attempt)) return;
     if (!codeEntry(kind, id)) { clearCodeState("Code access changed. The record was closed."); return; }
-    $("detail-title").textContent = kind === "repositories" ? "Local repository snapshot" : "Engineering source notes";
+    $("detail-title").textContent = kind === "actions" ? "Tracked follow-up action" : kind === "repositories" ? "Local repository snapshot" : "Engineering source notes";
     $("detail-content").replaceChildren(...codeSections(kind, report));
-    openedCodeRun.pending = false;
-    if (!$("review-dialog").open) $("review-dialog").showModal(); armCodeExpiry();
+    openedCodeRun.pending = false; if (kind === "actions") openedCodeRun.revision = report.record.revision;
+    if (!$("review-dialog").open) $("review-dialog").showModal(); $("detail-title").focus({ preventScroll: true }); armCodeExpiry();
   } catch (error) {
     if (ownsDetail(attempt)) { closeDetail(); toast(error.message, true); }
   }
+}
+
+function detailRoute(kind, id) { return kind === "actions" ? `/api/actions/${id}` : kind === "browser-source" ? `/api/reviews/${id}` : `/api/code-runs/${kind}/${id}`; }
+function renderActionCatalog() {
+  const rows = (actionCatalog?.actions ?? []).filter(action => codeEntry("actions", action.id)).map(action => {
+    const row = node("div", undefined, "grant-item action-record"); row.dataset.actionId = action.id;
+    const copy = node("div", undefined, "grant-main");
+    copy.append(node("strong", action.title), node("p", `Owner label: ${action.owner}`), node("small", `${date(action.updatedAt)} · ${action.status.replaceAll("_", " ")} · revision ${action.revision} · Operator declaration · Cataloged, unverified`));
+    const inspect = node("button", "Inspect action →", "small-button"); inspect.addEventListener("click", () => showCodeReport("actions", action.id)); row.append(copy, inspect); return row;
+  });
+  $("action-run-list").replaceChildren(...(rows.length ? rows : [node("p", actionCatalog ? "No permitted recent actions. Open a source note or browser finding to plan a next step." : "Current action access cannot be established.", "empty")]));
+}
+function actionSections(result) {
+  const record = result.record, scope = section(record.title);
+  scope.append(node("p", `Owner label: ${record.owner}. This does not assign or notify an external person.`), node("p", `Progress: ${record.status.replaceAll("_", " ")} · revision ${record.revision}.`), node("p", "Operator supplied. Not independently verified. Tracking did not perform this work."));
+  const plan = section("Next step and validation method"); plan.append(node("p", record.nextStep), node("h4", "Separate validation method"), node("p", record.validationMethod));
+  const origin = section("Pinned source"); origin.append(node("p", `${record.origin.kind.replaceAll("_", " ")}: ${record.origin.runId} · ${record.origin.itemId}`), node("p", `Evidence run: ${record.origin.evidenceRunId}. Original source status: ${record.origin.sourceStatus.replaceAll("_", " ")}.`), node("code", record.origin.reportSha256, "code-hash"));
+  const history = section("Declared revision history"), details = node("details"); details.append(node("summary", `${result.events.length} recorded revisions`));
+  for (const event of result.events) details.append(node("h4", `Revision ${event.revision} · ${event.after.status.replaceAll("_", " ")}`), node("p", `Recorded: ${date(event.at)}`), node("p", event.note), node("p", `Owner label: ${event.after.owner}`), node("p", event.after.nextStep), node("p", `Validation method: ${event.after.validationMethod}`));
+  history.append(details);
+  const limits = section("Tracking limits"); for (const limitation of result.limitations) limits.append(node("p", limitation));
+  const edit = node("button", "Edit declared action", "primary"); edit.addEventListener("click", () => showActionForm(null, record));
+  const actions = node("div", undefined, "detail-actions"); actions.append(edit);
+  return [scope, plan, origin, history, limits, actions];
+}
+function planButton(origin) { const button = node("button", "Plan a next step", "small-button"); button.addEventListener("click", () => showActionForm(origin)); return button; }
+function showActionForm(origin, record = null) {
+  const attempt = beginDetail();
+  const kind = record ? "actions" : origin.kind === "engineering_observation" ? "observations" : "browser-source", id = record ? record.id : origin.runId;
+  if (!codeEntry(kind, id)) { closeDetail(); toast("Current source access is unavailable.", true); return; }
+  openedCodeRun = { kind, id, pending: false, editing: true, revision: record?.revision }; armCodeExpiry();
+  $("detail-title").textContent = record ? "Edit declared action" : "Plan a next step";
+  const form = node("form"); form.id = "action-form";
+  form.append(node("p", "Plans and progress are operator declarations. Saving does not execute work, send a message, or verify a result.", "fine-print"));
+  const fields = {};
+  for (const [key, label, maximum, multiline] of [["title", "Action title", 200, false], ["owner", "Owner label · no external assignment", 120, false], ["nextStep", "Next step", 2000, true], ["validationMethod", "Separate validation method", 2000, true]]) {
+    const caption = node("label", label); caption.htmlFor = `action-${key}`;
+    const input = node(multiline ? "textarea" : "input"); input.id = `action-${key}`; input.name = key; input.required = true; input.maxLength = maximum; input.autocomplete = "off"; input.value = record?.[key] ?? "";
+    if (multiline) input.rows = 3; fields[key] = input; form.append(caption, input);
+  }
+  if (record) {
+    const caption = node("label", `Declared progress · editing revision ${record.revision}`); caption.htmlFor = "action-status";
+    const status = node("select"); status.id = "action-status";
+    for (const value of ["proposed", "in_progress", "blocked", "completed_declared", "cancelled"]) { const option = node("option", value.replaceAll("_", " ")); option.value = value; status.append(option); }
+    status.value = record.status; fields.status = status; form.append(caption, status);
+    const noteLabel = node("label", "Why are you changing this record?"); noteLabel.htmlFor = "action-note";
+    const note = node("textarea"); note.id = "action-note"; note.required = true; note.maxLength = 1000; note.rows = 2; fields.note = note; form.append(noteLabel, note);
+  }
+  const message = node("p", "", "fine-print"); message.id = "action-form-status"; message.setAttribute("role", "alert");
+  const reload = node("button", "Read latest action · discard this draft", "small-button"); reload.type = "button"; reload.id = "action-reload"; reload.hidden = true; reload.addEventListener("click", () => { if (record) void showCodeReport("actions", record.id); });
+  const save = node("button", record ? "Save declared update" : "Save proposed action", "primary"); save.type = "submit";
+  form.append(message, reload, save);
+  form.addEventListener("submit", async event => {
+    event.preventDefault(); if (!ownsDetail(attempt) || save.disabled) return;
+    const values = Object.fromEntries(["title", "owner", "nextStep", "validationMethod"].map(key => [key, fields[key].value]));
+    if (record && Object.entries({ ...values, status: fields.status.value }).every(([key, value]) => record[key] === value)) { message.textContent = "Change a tracked field before saving."; return; }
+    save.disabled = true;
+    try {
+      const payload = record ? { schemaVersion: "1.0", kind: "action_update", expectedRevision: record.revision, ...values, status: fields.status.value, note: fields.note.value } : { schemaVersion: "1.0", kind: "action_input", origin, ...values };
+      const result = await api(record ? `/api/actions/${record.id}` : "/api/actions", { method: record ? "PATCH" : "POST", body: JSON.stringify(payload), signal: attempt.signal });
+      if (!ownsDetail(attempt)) return;
+      await refresh(); if (!ownsDetail(attempt)) return;
+      await showCodeReport("actions", result.id);
+    } catch (error) {
+      if (!ownsDetail(attempt)) return;
+      if (error.status === 409) { message.textContent = "This action changed. Read its latest revision before deliberately applying an update. Your draft was not submitted again."; reload.hidden = false; }
+      else { closeDetail(); toast(`Save could not be confirmed. Read recent actions before retrying. ${error.message}`, true); }
+    } finally { if (ownsDetail(attempt)) save.disabled = false; }
+  });
+  $("detail-content").replaceChildren(form); if (!$("review-dialog").open) $("review-dialog").showModal(); fields.title.focus({ preventScroll: true });
 }
 
 function section(title) { const element = node("section", undefined, "detail-section"); element.append(node("h3", title)); return element; }
@@ -314,7 +408,7 @@ async function showReview(job) {
     }
     const findings = section("Findings and next action");
     if (!report.findings.length) findings.append(node("p", report.outcome === "completed" ? "The tested requirement passed in both fresh executions." : "Coverage is incomplete. No verified defect can be concluded."));
-    for (const finding of report.findings) findings.append(node("h3", finding.title), node("p", `Verification: ${finding.status}. ${finding.proposedAction}`), node("p", `Business hypothesis: ${finding.businessHypothesis}`));
+    for (const finding of report.findings) findings.append(node("h3", finding.title), node("p", `Verification: ${finding.status}. ${finding.proposedAction}`), node("p", `Business hypothesis: ${finding.businessHypothesis}`), planButton({ kind: "browser_finding", runId: job.id, itemId: finding.id }));
     const artifacts = section("Evidence artifacts");
     for (const artifact of report.artifacts) {
       const row = node("div", undefined, "artifact-row"); row.append(node("span", artifact.mediaType), node("code", `${artifact.sha256.slice(0, 16)}…`));
