@@ -60,7 +60,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 344 passed, zero failed or skipped |
+| Full automated suite | 367 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -293,7 +293,7 @@ No real provider calls occurred in the recorded checks. Scripted runs report zer
 
 ## Next milestone
 
-The scoped U04/U05/U08 action/plan/comparison/export workflows and U16 read-only installation preflight are implemented. Next, build the terminal-only controlled outcome evidence link from `docs/outcome-evidence-plan.md`. Preserve full plan/action/comparison/review lineage, current rights and integrity, local-clock limits, and fixed unadjudicated labels. Do not change frozen plans or infer human/causal/commercial validation. U06 independent outcomes, arbitrary releases, semantic review, scheduling/isolation, real research/pilot/provider inputs, and paid demand remain open. Continue committing and pushing verified milestones to the private GitHub repository.
+The local action/plan/comparison/export workflows, U16 preflight, and terminal-only controlled outcome evidence linking are implemented. Next, expose protected creation/catalog/whitelisted detail from `docs/outcome-evidence-api-plan.md`. Preserve complete source/time lineage, current availability, fixed unadjudicated labels, and final response guards. Keep internal paths/pins out of API output. Independent human outcomes, arbitrary releases, semantic review, scheduling/isolation, real research/pilot/provider inputs, and paid demand remain open. Continue verified pushes to the private GitHub repository.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
 
@@ -321,3 +321,24 @@ Type checking, build, and the full suite passed: 344 tests, zero failures or ski
 The only web change adds the doctor command and 0.20.0 archive text to installation instructions. All dashboard regressions pass; the visually inspected 0.19.0 installed desktop/mobile export baseline remains recorded separately. Installation readiness establishes no researched psychology, human/population validity, purchase/investment/funding/customer demand, commercial validation, or production isolation. Local operator/clock/filesystem/metadata and later-operation races remain explicit.
 
 Next ready milestone: the terminal-only controlled outcome evidence link in `docs/outcome-evidence-plan.md`. Keep full source/time lineage and fixed unadjudicated labels. U06 independent human outcome tracking is not complete. External execution/isolation, real research/pilot/provider inputs, C03 paid demand, and broader hierarchy remain open. Continue normal verified pushes to the private GitHub repository.
+
+## Version 0.21 verification
+
+A terminal-only controlled outcome evidence link now connects a frozen supplied plan to a later checked signup comparison. It requires the exact baseline finding/action/requirement and completed original jobs, fresh full comparison classification, source hashes, historical action-event bytes, and consistent local baseline/action/freeze/window/candidate/observation/comparison times. It preserves all source records and fixes hypothesis resolution, sample adequacy, independent verification, intervention verification, protocol/semantic review, and causality to unapproved states. This is preparation for U06, not completed independent human outcome tracking.
+
+Exact files:
+
+- `src/outcome-evidence.ts`: strict bounded plain input, full checked source capture, exact lineage and clock-window rules, fresh source classification, immutable private JSON/two artifacts, repeated file/source guards, current completed-job/catalog/history checks, checked reads, minimal unverified catalogs, and early sequential-duplicate rejection.
+- `src/workspace.ts`: private immutable outcome-evidence catalog, unique plan/comparison pair, atomic synchronous authorization/insert/audit, and bounded list/lookup methods. Concurrent losing writers can leave private orphan bytes; no adoption/retry/deletion occurs.
+- `src/comparisons.ts`: exports its existing pure controlled evidence classifier for fresh registration checks; original comparison behavior is preserved.
+- `src/cli.ts`: strict `experiments evidence register FILE|list|show EVIDENCE_ID` commands and help.
+- `tests/outcome-evidence.test.ts`: 23 checks covering a genuine freeze-before-later-real-capture workflow, copied-capture/authored-clock negative fixtures, wrong source/type/window, future and observation times, limited/not-comparable sources, freshly detected forged verdicts, changed plan/comparison/browser/own evidence/history, current source availability, unsafe paths, insertion-time source/history/clock races, concurrent uniqueness/atomic audit, orphan preservation, no additional sequential-duplicate directory, later legitimate action revisions, source preservation/fixed labels, strict input and CLI commands.
+- `examples/outcome-evidence.input.json`, `docs/outcome-evidence.md`, README, package metadata, status/backlog/continuation document the scope. `docs/outcome-evidence-api-plan.md` is the repository-only next slice.
+
+Type checking, build, and the full suite passed: 367 tests, zero failures or skips. Log: `outputs/test-results-0.21.0.txt`. The earlier focused 23-check log is `outputs/outcome-evidence-targeted.txt`; the full suite also verifies the later 1000 ms real-plan setup margin. Existing browser/dashboard/source/action/plan/comparison/export/actor, budget, publication, and recovery regressions pass.
+
+`outputs/redteam-0.21.0.tgz` contains 121 files and is installed into an isolated prefix. `work/verify-installed-0.21.0.mjs` verifies compiled CLI/help/template/contract, fresh doctor/no-store, an actual broken capture and finding/action, genuine plan freeze followed by a separate later fixed capture without mocked time, fourteen checked source artifacts, exact job/evidence IDs and requirement lineage, checked comparison/link/two artifacts, fixed unadjudicated labels, unchanged source reports/plan/comparison/action/jobs/actors, minimal catalog, sequential duplicate rejection without a new directory, and historical readability after a real declared action update. Results: `outputs/installed-verification-0.21.0.json`. Capture browsers closed; no service, real credential, live provider, participant research, or human outcome was used.
+
+The dashboard only changes archive-version text. All browser regressions pass; its visually inspected installed 0.19.0 desktop/mobile export baseline remains recorded. A linked comparison verdict does not approve a supplied hypothesis, success rule, sample, planned intervention, independent outcome, human behavior, commercial demand, or causal effect. The original plan remains uncollected and the action is never automatically completed. Local operator/clock/metadata/filesystem and publication/response uncertainty remain explicit. Controlled local fixture source access uses no target grant; saved source availability and checked lineage govern reads.
+
+Next ready milestone: protected minimal catalog, strict creation, and whitelisted checked detail in `docs/outcome-evidence-api-plan.md`, with final synchronous source guards and static denials. No new dashboard, artifact download, report-export kind, arbitrary outcome upload, independent human adjudication, or broad hierarchy is enabled yet. Continue normal verified GitHub pushes.

@@ -28,6 +28,7 @@ import { createStoredComparison, readStoredComparison, comparisonSummaries } fro
 import { freezeExperimentPlan, readExperimentPlan, experimentPlanSummaries } from "./experiments.ts";
 import { createReportExport, readReportExport, reportExportSummaries } from "./report-export.ts";
 import { inspectInstallation } from "./installation.ts";
+import { outcomeEvidenceSummaries, readOutcomeEvidence, registerOutcomeEvidence } from "./outcome-evidence.ts";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspace = resolve(process.cwd());
@@ -57,6 +58,9 @@ redteam comparisons show COMPARISON_ID
 redteam experiments freeze FILE
 redteam experiments list
 redteam experiments show PLAN_ID
+redteam experiments evidence register FILE
+redteam experiments evidence list
+redteam experiments evidence show EVIDENCE_ID
 redteam reports export FILE
 redteam reports list
 redteam reports show EXPORT_ID
@@ -339,6 +343,18 @@ async function main(): Promise<void> {
     return;
   }
   if (command === "experiments") {
+    if (args[0] === "evidence") {
+      const [, operation, parameter, ...extra] = args;
+      if (extra.length || !["register", "list", "show"].includes(operation ?? "") || (operation === "list" ? parameter !== undefined : !parameter)) throw new Error("Usage: redteam experiments evidence register FILE|list|show EVIDENCE_ID");
+      const value = operation === "register" ? await readInput(parameter!) : undefined;
+      const store = new WorkspaceStore(workspace);
+      try {
+        if (operation === "register") print(await registerOutcomeEvidence(store, value));
+        else if (operation === "list") print({ recentWindow: 100, outcomeEvidence: outcomeEvidenceSummaries(store) });
+        else print(await readOutcomeEvidence(store, parameter!));
+      } finally { store.close(); }
+      return;
+    }
     const [operation, parameter, ...extra] = args;
     if (extra.length || !["freeze", "list", "show"].includes(operation ?? "") || (operation === "list" ? parameter !== undefined : !parameter)) throw new Error("Usage: redteam experiments freeze FILE|list|show PLAN_ID");
     const value = operation === "freeze" ? await readInput(parameter!) : undefined;

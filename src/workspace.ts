@@ -7,6 +7,7 @@ import { ActionConflictError } from "./domain/actions.ts";
 import type { ComparisonSummary } from "./comparisons.ts";
 import type { ExperimentPlanSummary } from "./experiments.ts";
 import type { ReportExportSummary } from "./report-export.ts";
+import type { OutcomeEvidenceSummary } from "./outcome-evidence.ts";
 
 export type GrantCapability = "browser:read" | "browser:interact" | "code:read" | "code:test";
 export interface AccessGrant {
@@ -98,6 +99,7 @@ export class WorkspaceStore {
       CREATE TABLE IF NOT EXISTS comparisons (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS experiment_plans (id TEXT PRIMARY KEY, document TEXT NOT NULL, frozen_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS report_exports (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS outcome_evidence (id TEXT PRIMARY KEY, plan_id TEXT NOT NULL, comparison_id TEXT NOT NULL, document TEXT NOT NULL, registered_at TEXT NOT NULL, UNIQUE(plan_id, comparison_id));
     `);
   }
 
@@ -343,6 +345,31 @@ export class WorkspaceStore {
 
   recentReportExports(): ReportExportSummary[] {
     return this.db.prepare("SELECT document FROM report_exports ORDER BY created_at DESC, id LIMIT 100").all().map(row => JSON.parse(String(row.document)) as ReportExportSummary);
+  }
+
+  saveOutcomeEvidence(summary: OutcomeEvidenceSummary, authorize: () => undefined): void {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const authorization: unknown = authorize();
+      if (authorization !== undefined) { if (authorization instanceof Promise) void authorization.catch(() => undefined); throw new Error("Outcome evidence source checks must finish synchronously."); }
+      if (this.db.prepare("SELECT id FROM outcome_evidence WHERE plan_id=? AND comparison_id=?").get(summary.planId, summary.comparisonId)) throw new Error("This plan/comparison pair is already registered. Inspect the saved record; do not retry publication.");
+      this.db.prepare("INSERT INTO outcome_evidence(id, plan_id, comparison_id, document, registered_at) VALUES (?, ?, ?, ?, ?)").run(summary.id, summary.planId, summary.comparisonId, JSON.stringify(summary), summary.registeredAt);
+      this.audit("outcome_evidence_registered", summary.id); this.db.exec("COMMIT");
+    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+  }
+
+  outcomeEvidence(id: string): OutcomeEvidenceSummary | null {
+    const row = this.db.prepare("SELECT document FROM outcome_evidence WHERE id=?").get(id);
+    return row ? JSON.parse(String(row.document)) as OutcomeEvidenceSummary : null;
+  }
+
+  outcomeEvidenceFor(planId: string, comparisonId: string): OutcomeEvidenceSummary | null {
+    const row = this.db.prepare("SELECT document FROM outcome_evidence WHERE plan_id=? AND comparison_id=?").get(planId, comparisonId);
+    return row ? JSON.parse(String(row.document)) as OutcomeEvidenceSummary : null;
+  }
+
+  recentOutcomeEvidence(): OutcomeEvidenceSummary[] {
+    return this.db.prepare("SELECT document FROM outcome_evidence ORDER BY registered_at DESC, id LIMIT 100").all().map(row => JSON.parse(String(row.document)) as OutcomeEvidenceSummary);
   }
 
   close(): void { this.db.close(); }

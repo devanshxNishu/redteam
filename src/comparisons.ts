@@ -101,7 +101,7 @@ function assess(source: FixtureEvidence): Assessment {
   return result;
 }
 
-function classify(baseline: FixtureEvidence, candidate: FixtureEvidence) {
+export function classifyFixtureEvidence(baseline: FixtureEvidence, candidate: FixtureEvidence) {
   const a = assess(baseline), b = assess(candidate), reasons = [...a.reasons.map(value => `baseline:${value}`), ...b.reasons.map(value => `candidate:${value}`)];
   if (baseline.pin.evidenceRunId === candidate.pin.evidenceRunId || new Set([...a.executionIds, ...b.executionIds]).size !== 4 || new Set([...a.snapshotIds, ...b.snapshotIds]).size !== 4) reasons.push("saved_runs_are_not_distinct");
   if (!a.studyHash || a.studyHash !== b.studyHash) reasons.push("study_scope_changed");
@@ -125,7 +125,7 @@ export async function createStoredComparison(store: WorkspaceStore, value: unkno
   if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length !== 2 || Object.keys(value).some(key => !["baselineReviewId", "candidateReviewId"].includes(key))) throw new Error("Supply exactly baselineReviewId and candidateReviewId.");
   const input = value as { baselineReviewId: unknown; candidateReviewId: unknown };
   if (typeof input.baselineReviewId !== "string" || !uuid.test(input.baselineReviewId) || typeof input.candidateReviewId !== "string" || !uuid.test(input.candidateReviewId) || input.baselineReviewId === input.candidateReviewId) throw new Error("Supply two different controlled review/job UUIDs.");
-  const baseline = await readFixtureEvidence(store, input.baselineReviewId), candidate = await readFixtureEvidence(store, input.candidateReviewId), classification = classify(baseline, candidate);
+  const baseline = await readFixtureEvidence(store, input.baselineReviewId), candidate = await readFixtureEvidence(store, input.candidateReviewId), classification = classifyFixtureEvidence(baseline, candidate);
   const assertPins = () => { checkFixturePin(store, baseline.pin); checkFixturePin(store, candidate.pin); return undefined; };
   const guard = async () => {
     for (const pin of [baseline.pin, candidate.pin]) if (!isDeepStrictEqual((await readFixtureEvidence(store, pin.reviewId)).pin, pin)) throw new Error("Comparison source evidence changed during publication.");
