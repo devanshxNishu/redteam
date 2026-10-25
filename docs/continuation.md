@@ -87,7 +87,7 @@ Package metadata, README, and `web/index.html` use 0.7.1. Contracts and status a
 
 Recovery returns `research_restricted` without catalog insertion when current research permission blocks normal restoration. Missing or invalid records return `missing_or_invalid_records`. In particular, a completed task with no JSON publication stays completed and unavailable; no accepted decision is constructed from its seal. Existing files remain untouched. These stores and hashes assume a trusted local coordinator/operator.
 
-## Current milestone: Version 0.7.2
+## Version 0.7.2 verification
 
 `src/publication.ts` adds private staging writes, file flush/close, an exclusive hard link to the final name, staging cleanup, and directory flush. It preserves `EEXIST` and never replaces or removes a final record. Unsupported link or directory-sync operations return errors. An error after the final link can leave a complete published file; callers must inspect it rather than replace it. `src/evidence.ts` uses this path for `writeRecord` JSON and `addBytes` artifacts. It rejects unsupported JSON serialization before writing and checks canonical parent containment. Browser captures registered from external tools, Markdown presentations, and appended events keep their existing paths.
 
@@ -104,14 +104,34 @@ Contract: `docs/evidence-publication.md`, also included in the package. README, 
 
 Local macOS supports the tested hard-link and directory-sync operations. Node documents storage-dependent flush behavior. There is no tested power-loss, network-filesystem, Windows, or hostile-operator guarantee. Orphan `.pending` files are left private and are never promoted or automatically removed; another writer might still own them. Legacy truncated final files remain refused without overwrite. A completed task without saved JSON is still unavailable. No broader hierarchy or psychological claim has been enabled.
 
+## Current milestone: Version 0.7.3
+
+Completed-task publication-gap recovery is implemented. During the task's frozen finalization window, `recoverConfiguredActors` returns `unavailable` with `publication_pending` and changes no task or budget. After the deadline, it verifies the pinned manifest/model/scenario/deadline and exact sealed bytes under current research permission. It can then publish `limited_coverage` with an empty actor-result list, recovery reason `publication_missing`, and acceptance `{ status: "unavailable", reason: "publication_missing" }`. The task remains completed. No stakeholder action is reconstructed or published from its seal, and no provider request is replayed.
+
+Exact files:
+
+- `src/actor-recovery.ts`: finalization guard; distinct publication-gap report/catalog label; permission checks before recovery and around publication/catalog insertion; preserved task and seal; closure of an open budget without release of unresolved liability; catalog repair for the new report. Existing closed budget reasons remain unchanged.
+- `src/actor-reports.ts`: the distinct recovery reason and independently verified manifest model pin for recovered report access. Empty legacy catalog references cannot bypass withdrawal. `src/actor-execution.ts`: unavailable acceptance type, preservation of the first valid JSON, and retention of the recovery timestamp/model references when a delayed coordinator inserts the catalog after a recovery interruption.
+- `src/actor-recovery.ts` also writes Markdown only after winning JSON publication. The losing recovery writer cannot claim the original coordinator's Markdown path first.
+- `web/app.js`: the dialog explicitly states that decision publication is unavailable. `web/index.html` updates the install command to 0.7.3.
+- `tests/actor-recovery.test.ts`: 15 checks, including nine new completed-task, pending, concurrency, changed-byte, withdrawal, and legacy-catalog cases. `tests/configured-actor.test.ts`: 34 checks, including two new delayed-writer orders and one interrupted-catalog permission/timestamp check. Its real pre-publication killed-coordinator check now verifies pending state followed by factual recovery after the deadline.
+
+Type checking and build passed. The full suite passed 187 tests, zero failures or skips, including 49 configured/recovery checks. Log: `outputs/test-results-0.7.3.txt`.
+
+The archive is `outputs/redteam-0.7.3.tgz`. `work/verify-installed-0.7.3.mjs` passed against an isolated installed package. It injected a stop before original JSON publication in an actual configured fake-provider run, checked `publication_pending`, waited through finalization, and recovered four verified artifacts with no actor result. It confirmed the exact seal, unchanged completed task and closed budget, concurrent catalog repair, and four total fake transport requests with a 360 micro-USD configured-rate estimate. No real API key or live provider call was used.
+
+Installed desktop and 390 px browser checks passed the new dialog, explicit unavailable-decision text, hash verification, no overflow, and zero uncaught errors. A synthetic legacy catalog entry with empty model references exercised the independent manifest permission check. Live source withdrawal closed the open dialog, cleared cached detail, disabled retrieval, and denied report access. The browser and temporary service are stopped. Results are `outputs/installed-verification-0.7.3.json`; screenshots are `outputs/preview/publication-gap-desktop-0.7.3.png` and `outputs/preview/publication-gap-mobile-0.7.3.png`, both visually inspected. The isolated workspace is recorded in the verification JSON. Existing 0.7.2 installed fixture checks and the current full suite cover browser execution.
+
+README, package metadata, status, backlog, `docs/task-state.md`, `docs/evidence-publication.md`, `docs/live-inference.md`, and `docs/budget-ledger.md` describe the current boundary. Catalogs and report APIs remain permission checked. Legacy invalid final files and unowned staging files are preserved. Broader hierarchy, external target tools, real human research, live provider verification, and commercial gates remain open.
+
 Official token-counting and structured-output documentation was fetched during earlier integration. Cached copies are `work/openai-token-counting.md` and `work/openai-structured-outputs.md`. Verify current official API details before changing provider behavior. Do not reuse desktop authentication or invent rates.
 
 Use synthetic fixtures for software verification. Keep them visibly separate from human research. Never promote synthetic fixtures into validated psychology.
 
 ## Next sequence
 
-1. Cover task completion before JSON publication with a factual partial report that states publication uncertainty. Current behavior is conservative `unavailable`. Preserve the completed task and original sealed bytes, but do not infer a published accepted decision or replay inference. Keep a distinct recovery reason and test current research restrictions and races with a delayed coordinator before changing the boundary.
-2. Cover remaining interruption points and inspect legacy incomplete final records without overwriting them. Keep uncertain invocation identities unchanged. Do not automatically delete `.pending` files or broaden specialist dispatch before its prerequisites.
+1. Add bounded, actionable diagnostics for legacy invalid final publications. Current recovery preserves and refuses them with `missing_or_invalid_records`. Distinguish missing/changed records from an incomplete final JSON file without exposing content, overwriting files, rejudging decisions, or clearing liability. Prefer a read-only inspection path before any repair action.
+2. Continue independent evidence/tool work under the existing access and isolation prerequisites. Keep uncertainty explicit, preserve sealed outputs and invocation identities, and do not automatically delete `.pending` files. Do not broaden specialist dispatch before its prerequisites.
 3. Add bounded analyst task coordination when prerequisites permit. The commercial hierarchy gate remains unproven; do not enable broad specialist fan-out or claim the roundtable is complete.
 4. A live API smoke test needs explicit model configuration, valid credentials, current rates, and processing permission. Do not reuse desktop authentication or invent pricing. Continue independent work if these inputs are missing.
 5. Continue external runner work after isolation and access prerequisites are met.
@@ -126,7 +146,7 @@ Use synthetic fixtures for software verification. Keep them visibly separate fro
 
 The temporary preview service is stopped during turn teardown. Reopen it with `npm run ui` when needed. Runtime data remains in `.redteam/` and is excluded from Git and release archives.
 
-Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), and `a999dfb` (normal publication catalog repair). The 0.7.2 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.7.2.json` record its final package and checks. `outputs/test-results-0.7.2.txt` records the full suite. Preview services and test browsers are stopped.
+Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), `a999dfb` (normal publication catalog repair), and `7f96811` (atomic publication). The 0.7.3 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.7.3.json` record its final package and checks. `outputs/test-results-0.7.3.txt` records the full suite. Preview services and test browsers are stopped.
 
 ## External inputs still required
 

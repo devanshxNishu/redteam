@@ -135,6 +135,7 @@ async function showActorReport(id) {
     const summary = section(report.kind === "model_actor_run" ? "Simulation scope" : "Software demonstration"); summary.append(node("p", report.note));
     summary.append(node("p", `Run outcome: ${report.outcome.replaceAll("_", " ")}.`));
     if (report.task) summary.append(node("p", `Task state: ${report.task.record.state.replaceAll("_", " ")}.`));
+    if (report.recovery?.reason === "publication_missing") summary.append(node("p", "Decision publication: unavailable. No stakeholder decision is included."));
     if (report.budget) {
       const pending = report.budget.invocations.filter(item => ["reserved", "in_flight", "uncertain"].includes(item.state)).length;
       summary.append(node("p", pending ? `${pending} ${pending === 1 ? "request has" : "requests have"} unsettled usage. Reported cost is incomplete.` : "All recorded inference usage is settled."));

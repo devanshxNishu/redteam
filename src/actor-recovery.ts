@@ -12,10 +12,22 @@ import type { ActorDemoReport } from "./actor-reports.ts";
 import type { ActorReport, ActorScenario } from "./actor.ts";
 import { ResearchRegistry } from "./research.ts";
 
-export interface RecoveredActorReport { runId: string; status: "created" | "existing" | "unavailable"; reason?: "missing_or_invalid_records" | "research_restricted" }
+export interface RecoveredActorReport { runId: string; status: "created" | "existing" | "unavailable"; reason?: "missing_or_invalid_records" | "research_restricted" | "publication_pending" }
 type Candidate = { name: string; bytes: Buffer; digest: string };
-type Manifest = { schemaVersion?: string; kind?: string; runId?: string; taskId?: string; model?: { id: string; version: string; hash: string } | null; scenario?: ActorScenario };
+type Manifest = { schemaVersion?: string; kind?: string; runId?: string; taskId?: string; model?: { id: string; version: string; hash: string } | null; scenario?: ActorScenario; coordinatorDeadlineAt?: string };
 class ResearchRestricted extends Error {}
+
+function authorizeMissingPublication(workspace: string, task: TaskRecord, manifest: Manifest): void {
+  const pin = manifest.model, scenario = manifest.scenario;
+  if (!task.output || !pin || typeof pin.id !== "string" || typeof pin.version !== "string" || !/^[a-f0-9]{64}$/.test(pin.hash)
+    || !scenario || scenario.runId !== task.spec.runId || scenario.modelId !== pin.id || scenario.modelVersion !== pin.version
+    || manifest.coordinatorDeadlineAt !== task.spec.deadlineAt) throw new Error("Completed publication recovery requires its pinned model, scenario, deadline, and seal.");
+  const registry = new ResearchRegistry(workspace);
+  try {
+    if (registry.authorizeModel(pin.id, pin.version, scenario.scope, "exploratory").hash !== pin.hash) throw new Error("Model pin changed.");
+  } catch { throw new ResearchRestricted("Current research permissions restrict publication recovery."); }
+  finally { registry.close(); }
+}
 
 /** Resolve every listed artifact against the bounded, non-symlink files already read. */
 function publishedArtifacts(report: ActorDemoReport, candidates: Candidate[]): Map<string, Candidate> {
@@ -132,23 +144,30 @@ async function recoverReport(workspace: string, runId: string): Promise<Recovere
       const report = JSON.parse((await boundedFile(reportFile)).toString("utf8")) as ActorDemoReport;
       const found = verifyPublication(report, candidates, task, tasks.events(task.spec.id));
       if (!catalog.actorRun(runId)) {
-        if (report.recovery?.reason === "unfinished_report") {
-          if (task.state === "completed" || report.outcome !== "limited_coverage" || report.reports.length !== 0 || report.acceptance?.status !== "rejected" || report.recovery.acceptedDecisionRecovered !== false) throw new Error("Invalid partial report evidence.");
-          saveSummary(catalog, summary(report.generatedAt, report.artifacts.length, report.task?.record.spec.manifestHash));
+        if (report.recovery) {
+          const missing = report.recovery.reason === "publication_missing";
+          if (report.outcome !== "limited_coverage" || report.reports.length !== 0 || report.recovery.acceptedDecisionRecovered !== false
+            || (missing ? task.state !== "completed" || report.acceptance?.status !== "unavailable" || report.acceptance.reason !== "publication_missing"
+              || report.recovery.recordedAt !== report.generatedAt || Date.parse(report.recovery.recordedAt) < Date.parse(task.spec.deadlineAt)
+              : report.recovery.reason !== "unfinished_report" || task.state === "completed" || report.acceptance?.status !== "rejected")) throw new Error("Invalid partial report evidence.");
+          if (missing) authorizeMissingPublication(workspace, task, manifest);
+          saveSummary(catalog, summary(report.generatedAt, report.artifacts.length, report.task?.record.spec.manifestHash, missing));
         } else saveSummary(catalog, recordedSummary(workspace, root, report, found, task, manifest));
       }
       return { runId, status: "existing" };
     }
-    if (task.state === "completed") throw new Error("A completed task without a published report cannot recover an accepted decision.");
+    const missing = task.state === "completed";
+    if (missing && Date.now() < Date.parse(task.spec.deadlineAt)) return { runId, status: "unavailable", reason: "publication_pending" };
+    if (missing) authorizeMissingPublication(workspace, task, manifest);
     const evidence = new EvidenceStore(root);
     await evidence.register("coordinator-recovered", `artifacts/${manifests[0]!.name}`, "application/json");
     if (task.output) {
       const sealed = candidates.find(item => item.digest === task.output!.sha256);
       if (!sealed) throw new Error("The sealed output is missing or changed.");
-      const output = await evidence.register("sealed-unaccepted-worker", `artifacts/${sealed.name}`, "application/json");
+      const output = await evidence.register(missing ? "sealed-worker-publication-missing" : "sealed-unaccepted-worker", `artifacts/${sealed.name}`, "application/json");
       output.id = task.output.artifactRef;
     }
-    ledger.closeRun(runId, "unfinished_report");
+    ledger.closeRun(runId, missing ? "publication_missing" : "unfinished_report");
     const budget = ledger.snapshot(runId), taskSnapshot = { record: task, events: tasks.events(task.spec.id) };
     await evidence.addBytes("budget-ledger-recovered", Buffer.from(JSON.stringify(budget, null, 2)), "json", "application/json");
     await evidence.addBytes("task-state-recovered", Buffer.from(JSON.stringify(taskSnapshot, null, 2)), "json", "application/json");
@@ -156,24 +175,31 @@ async function recoverReport(workspace: string, runId: string): Promise<Recovere
     if (integrityErrors.length) throw new Error("Recovered evidence failed verification.");
     const generatedAt = new Date().toISOString();
     const report: ActorDemoReport = { schemaVersion: "1.0", kind: "model_actor_run", runId, generatedAt, outcome: "limited_coverage",
-      note: "Recovered unfinished configured run. No accepted stakeholder decision was recovered. No provider request was replayed. Unsealed worker candidates are excluded.",
-      reports: [], acceptance: { status: "rejected", reason: "actor_incomplete" }, task: taskSnapshot, budget, recovery: { reason: "unfinished_report", recordedAt: generatedAt, acceptedDecisionRecovered: false }, artifacts: evidence.artifacts, integrityErrors };
-    const markdown = ["# redteam: Recovered partial run", "", report.note, "", `Run: ${runId}`, `Task state: ${task.state}`, `Stop reason: ${task.stopReason ?? "unknown"}`, "Outcome: limited_coverage", "",
+      note: missing ? "The task completed, but its original JSON report publication is unavailable. This partial report preserves the recorded seal and task state. No stakeholder decision is included or reconstructed. No provider request was replayed."
+        : "Recovered unfinished configured run. No accepted stakeholder decision was recovered. No provider request was replayed. Unsealed worker candidates are excluded.",
+      reports: [], acceptance: missing ? { status: "unavailable", reason: "publication_missing" } : { status: "rejected", reason: "actor_incomplete" }, task: taskSnapshot, budget,
+      recovery: { reason: missing ? "publication_missing" : "unfinished_report", recordedAt: generatedAt, acceptedDecisionRecovered: false }, artifacts: evidence.artifacts, integrityErrors };
+    const markdown = [missing ? "# redteam: Recovered publication gap" : "# redteam: Recovered partial run", "", report.note, "", `Run: ${runId}`, `Task state: ${task.state}`,
+      missing ? "Decision publication: unavailable" : `Stop reason: ${task.stopReason ?? "unknown"}`, "Outcome: limited_coverage", "",
       "No accepted decision or app defect is inferred from this interruption. Held budget amounts remain liabilities until a valid usage receipt arrives.", "", "## Evidence", "", ...evidence.artifacts.map(artifact => `- [${artifact.owner}](${artifact.path}): SHA-256 ${artifact.sha256}`), ""].join("\n");
     // JSON is the publication marker. Existing files are never overwritten.
-    await writeFile(resolve(root, "report.md"), markdown, { flag: "wx", mode: 0o600 }).catch(error => { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; });
+    if (missing) authorizeMissingPublication(workspace, task, manifest);
     try { await evidence.writeRecord("report.json", report); }
     catch (error) { if ((error as NodeJS.ErrnoException).code === "EEXIST") return recoverReport(workspace, runId); throw error; }
-    saveSummary(catalog, summary(generatedAt, evidence.artifacts.length, task.spec.manifestHash));
+    // Only the JSON winner writes the presentation. A recovery that loses to
+    // the original coordinator must not claim its Markdown filename first.
+    await writeFile(resolve(root, "report.md"), markdown, { flag: "wx", mode: 0o600 }).catch(error => { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; });
+    if (missing) authorizeMissingPublication(workspace, task, manifest);
+    saveSummary(catalog, summary(generatedAt, evidence.artifacts.length, task.spec.manifestHash, missing));
     return { runId, status: "created" };
 
-    function summary(createdAt: string, artifacts: number, manifestHash?: string): ActorRunSummary {
+    function summary(createdAt: string, artifacts: number, manifestHash?: string, missing = false): ActorRunSummary {
       // The verified manifest provides model identity even when no actor result survived.
       const model = manifest.model;
       const versions = model && typeof model.id === "string" && typeof model.version === "string" && typeof model.hash === "string" && /^[a-f0-9]{64}$/.test(model.hash)
         ? [{ id: model.id, version: model.version }] : [];
       if (manifestHash !== task.spec.manifestHash) throw new Error("Recovery manifest identity changed.");
-      return { runId, taskId: task.spec.id, kind: "model_actor_run", createdAt, outcome: "limited_coverage", directory: root, artifacts, decisions: [{ outcome: task.state }], modelVersions: versions };
+      return { runId, taskId: task.spec.id, kind: "model_actor_run", createdAt, outcome: "limited_coverage", directory: root, artifacts, decisions: [{ outcome: missing ? "publication_missing" : task.state }], modelVersions: versions };
     }
   } finally { tasks.close(); ledger?.close(); catalog?.close(); }
 }

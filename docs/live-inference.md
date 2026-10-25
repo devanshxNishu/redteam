@@ -28,7 +28,9 @@ The dashboard can inspect configured runs created through the terminal. Its run 
 
 `redteam tasks recover RUN_ID` records expired ownership and publishes available factual partial evidence without repeating provider requests. A new configured run also checks prior unfinished tasks. An unfinished sealed candidate is never promoted into an accepted decision during recovery.
 
-Recovery also repairs the catalog for a saved normal report after a publication interruption. It verifies the completed task fence, exact sealed worker, artifact snapshots, model pin, and current research permission before restoring an accepted simulation. Rejected publications stay rejected. Saved files and report-time usage remain unchanged. A completed task with no saved report remains unavailable.
+Recovery also repairs the catalog for a saved normal report after a publication interruption. It verifies the completed task fence, exact sealed worker, artifact snapshots, model pin, and current research permission before restoring an accepted simulation. Rejected publications stay rejected. Saved files and report-time usage remain unchanged.
+
+For a completed task with no JSON report, recovery waits through the frozen finalization deadline and reports `publication_pending`. Afterward, it can save factual metadata under current research permission. This report has `limited_coverage`, no actor decision, and acceptance `unavailable` with reason `publication_missing`. It preserves the completed task and exact seal, closes any open budget without releasing unknown liability, and makes no provider call. A delayed coordinator preserves the first valid publication. The dashboard states when the decision publication is unavailable.
 
 ## Processing permission
 

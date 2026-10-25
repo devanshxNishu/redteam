@@ -65,10 +65,22 @@ Version 0.7.1 also restores a catalog entry when a normal JSON report was saved 
 
 Catalog repair changes no report, artifact, task, or budget. A missing Markdown presentation does not prevent repair of a valid JSON publication. The budget snapshot remains report-time evidence; a later receipt can change the current ledger without invalidating that earlier snapshot. Concurrent repair produces one catalog entry.
 
-Recovery returns `unavailable` with `research_restricted` when current research permission blocks normal publication recovery. Invalid or incomplete evidence returns `missing_or_invalid_records`. Files remain available to the local operator for diagnosis. If a task completed but no JSON report was saved, recovery does not construct an accepted report from its seal; this interruption point remains unavailable. These checks assume the local coordinator and stores are trusted. Artifact hashes do not authenticate records against an operator who controls all files and databases.
+Recovery returns `unavailable` with `research_restricted` when current research permission blocks normal publication recovery. Invalid or incomplete evidence returns `missing_or_invalid_records`. Files remain available to the local operator for diagnosis. These checks assume the local coordinator and stores are trusted. Artifact hashes do not authenticate records against an operator who controls all files and databases.
+
+## Completed task with missing publication
+
+Version 0.7.3 handles completion before JSON publication. During the task's frozen finalization window, recovery returns `unavailable` with `publication_pending` and changes no task or budget. This gives a healthy coordinator time to save its report. Once that deadline passes, recovery can publish a factual partial report if the manifest, model pin, scenario, and sealed bytes remain valid and current research permission allows it.
+
+The report keeps the task `completed` and the exact sealed artifact identity/hash. It has `limited_coverage`, an empty actor-result list, recovery reason `publication_missing`, and decision acceptance `{ status: "unavailable", reason: "publication_missing" }`. This distinguishes a missing original publication from a rejected decision or an incomplete worker. Its catalog entry names the publication gap and includes no simulated action. The raw seal remains a labeled diagnostic artifact.
+
+An open budget run closes without releasing unresolved liability. Existing closed runs retain their closure reason and recorded receipts. Task attempts, transitions, fences, and invocation identities do not change, and no provider request is made. Research permission is checked before recovery and again around publication/catalog insertion. Withdrawal also restricts retrieval and later catalog repair.
+
+Recovered report retrieval independently reads the manifest pinned by the durable task and checks its bytes and model hash. It does not rely only on catalog model references. This protects older catalog entries whose references are empty. If a finishing coordinator must insert the catalog after recovery stopped, it retains the published recovery timestamp and frozen model references, including when the denied worker has no model in its own result.
+
+The first valid JSON publication wins. A delayed coordinator preserves a recovery report rather than replacing it with its buffered decision. If the original report wins first, recovery verifies and preserves that publication. Only the JSON winner writes the Markdown presentation. A missing original publication is never inferred from staging bytes, and recovery never promotes a sealed worker result into a published accepted decision.
 
 Global worker counts, hierarchy depth, child permissions, parent budgets, phase visibility, independent verification, and the commercial gate remain prerequisites for specialist orchestration. Passing these state-store tests does not enable the roundtable.
 
 The prototype assumes a trusted local coordinator and clock. SQLite lock waits can delay local operations. Production isolation and distributed-clock behavior remain open.
 
-JSON publication now uses a flushed private staging file and an exclusive final link. Process interruption cannot expose a partially written final JSON record through that path. Publication still does not establish acceptance, and a completed task without a saved JSON report remains unavailable. See the [evidence publication contract](evidence-publication.md) for filesystem requirements and error boundaries.
+JSON publication uses a flushed private staging file and an exclusive final link. Process interruption cannot expose a partially written final JSON record through that path. Publication still does not establish behavioral truth. See the [evidence publication contract](evidence-publication.md) for filesystem requirements and error boundaries.

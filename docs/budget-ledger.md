@@ -40,6 +40,8 @@ This command reads current invocations, held amounts, reported spend, allocation
 
 A late adapter receipt can settle after the actor stops. It updates the durable ledger without reopening the run or rewriting an earlier report. Inspect the current ledger when a saved report contains unsettled liability. Reports remain snapshots of what was known when they were created.
 
+Recovery of a completed task whose original report is missing waits until its frozen finalization deadline. It closes an open budget with reason `publication_missing` and retains unresolved amounts. It does not change an already closed run's reason or replay any invocation. The partial report contains budget evidence and no recovered stakeholder decision.
+
 ## Boundaries
 
 - Cost uses the operator's configured rates. It is not a provider-enforced billing cap or reconciled invoice.

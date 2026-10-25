@@ -25,7 +25,9 @@ An error after the link, including a directory flush or staging cleanup error, c
 
 ## Acceptance and scope
 
-File publication does not accept an actor decision. The coordinator must still check its task fence, model, research permission, worker bytes, and result. A completed task with no saved JSON report remains unavailable. Catalog recovery never promotes an unfinished seal or staging file and makes no provider request.
+File publication does not accept an actor decision. The coordinator must still check its task fence, model, research permission, worker bytes, and result. A completed task with no saved JSON report remains pending through its frozen finalization window. Afterward, recovery can publish factual metadata while the stakeholder decision stays unavailable. Catalog recovery never promotes an unfinished seal or staging file and makes no provider request.
+
+Recovery now writes Markdown only after winning JSON publication. A recovery writer that loses to the original coordinator must not create the original report's Markdown name first. The first JSON publication remains authoritative; later writers preserve it and its evidence.
 
 The evidence store uses this path for JSON records and bytes it writes itself. Browser screenshots and traces captured by external tools retain their existing capture and registration path. Append-only event streams and Markdown presentations are outside this atomic publication change. Artifact hashes and the current research access checks remain required.
 
@@ -35,4 +37,4 @@ File and directory flush behavior depends on the operating system and storage de
 
 `tests/publication.test.ts` covers actual private-file flush and close order, write and file-flush failures, a directory-flush failure after publication, unsupported hard links, six competing processes, and real writers killed during staging, after file flush, and after publication.
 
-`tests/evidence.test.ts` covers serialization failure, immutable final records, final symlinks, and parent-directory escape. `tests/configured-actor.test.ts` kills actual configured coordinators before and after JSON publication. It checks that the original sealed action is restored only after publication, staging bytes remain excluded, and inference identities and budget records stay unchanged. These tests use authored software fixtures, not participant research or live provider observations.
+`tests/evidence.test.ts` covers serialization failure, immutable final records, final symlinks, and parent-directory escape. `tests/configured-actor.test.ts` kills actual configured coordinators before and after JSON publication and covers both delayed-publication orders. It checks that a missing original publication produces only factual metadata after the deadline, an existing publication retains its exact action, staging bytes remain excluded, and inference identities remain unchanged. These tests use authored software fixtures, not participant research or live provider observations.

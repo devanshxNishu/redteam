@@ -12,7 +12,7 @@ import { authorizedActorRuns, readActorReport } from "../src/actor-reports.ts";
 import { configureInference } from "../src/inference-config.ts";
 import { executeConfiguredActor } from "../src/actor-execution.ts";
 import type { ActorScenario, ActorLimits, InferenceAdapter } from "../src/actor.ts";
-import { checkArtifacts, sha256 } from "../src/evidence.ts";
+import { EvidenceStore, checkArtifacts, sha256 } from "../src/evidence.ts";
 import { BudgetLedger } from "../src/budget.ts";
 import { TaskStore } from "../src/tasks.ts";
 import { recoverConfiguredActors } from "../src/actor-recovery.ts";
@@ -153,7 +153,7 @@ for (const phase of ["before", "after"] as const) test(`killed configured coordi
     const original=EvidenceStore.prototype.writeRecord;
     EvidenceStore.prototype.writeRecord=async function(name,value){if(name!=="report.json")return original.call(this,name,value);if(phase==="after")await original.call(this,name,value);process.send({runId:value.runId,taskId:value.task.record.spec.id,calls,phase});await new Promise(()=>{});};
     const adapter={id:"killed-publication-fixture",mode:"live_model",dataLocation:"local",next:async view=>{calls++;return{action:calls===1?{type:"inspect",ref:"budget"}:{type:"decide",decision:{action:"reject",evidenceRefs:["budget"],constraints:view.constraints,rationale:"Authored fixture exceeds its declared budget",missingInformation:[],limitations:["Not human research"],changeConditions:["Different synthetic scenario"]}},usage:{inputTokens:7,outputTokens:3,costMicrousd:17}};}};
-    try{await executeConfiguredActor(process.argv[1],registry,scenario,${JSON.stringify(limits)},adapter,${JSON.stringify(profile)});}catch(error){process.send({error:error.message});}finally{registry.close();clearInterval(keepalive);}`;
+    try{await executeConfiguredActor(process.argv[1],registry,scenario,${JSON.stringify({ ...limits, timeoutMs: 500 })},adapter,${JSON.stringify(profile)},{taskPolicy:{finalizationMs:100}});}catch(error){process.send({error:error.message});}finally{registry.close();clearInterval(keepalive);}`;
   const child = spawn(process.execPath, ["--input-type=module", "-e", program, directory, JSON.stringify(scenario), phase], { stdio: ["ignore", "ignore", "pipe", "ipc"], env: { ...process.env, OPENAI_API_KEY: "" } });
   try {
     const message = await new Promise<{ runId: string; taskId: string; calls: number; error?: string }>((done, reject) => {
@@ -177,13 +177,105 @@ for (const phase of ["before", "after"] as const) test(`killed configured coordi
         assert.equal(report.acceptance?.status, "accepted"); assert.equal(report.reports[0]?.decision?.action, "reject");
         assert.deepEqual(await checkArtifacts(resolve(reportFile, ".."), report.artifacts), []);
       } else {
-        assert.equal(recovery.reports[0]?.status, "unavailable"); assert.equal(store.actorRun(message.runId), null);
+        assert.equal(recovery.reports[0]?.reason, "publication_pending"); assert.equal(store.actorRun(message.runId), null);
         await assert.rejects(readFile(reportFile), /ENOENT/);
+        await new Promise(done => setTimeout(done, Math.max(1, Date.parse(tasks.task(message.taskId).spec.deadlineAt) - Date.now() + 15)));
+        assert.equal((await recoverConfiguredActors(directory, message.runId)).reports[0]?.status, "created");
+        const report = await readActorReport(store, directory, message.runId, registry);
+        assert.equal(report.recovery?.reason, "publication_missing"); assert.equal(report.acceptance?.status, "unavailable"); assert.deepEqual(report.reports, []);
+        assert.equal(report.task?.record.state, "completed"); assert.equal(report.artifacts.length, 4); assert.deepEqual(await checkArtifacts(resolve(reportFile, ".."), report.artifacts), []);
       }
       assert.deepEqual(ledger.snapshot(message.runId), budgetBefore); assert.equal(tasks.task(message.taskId).dispatchIntents.length, 2);
     } finally { tasks.close(); store.close(); ledger.close(); }
   } finally { if (child.exitCode === null && child.signalCode === null) { const stopped = new Promise<void>(done => child.once("exit", () => done())); child.kill("SIGKILL"); await stopped; } }
 }));
+
+test("a delayed completed coordinator preserves the factual publication-gap report without promoting its decision", async () => temporary(async (registry, directory, scenario) => {
+  const original = EvidenceStore.prototype.writeRecord, fake = provider(), { adapter, configuration } = configureInference(profile, secret, fake.transport);
+  let release: () => void = () => {}, reached: (report: ActorDemoReport) => void = () => {};
+  const gate = new Promise<void>(done => { release = done; }), checkpoint = new Promise<ActorDemoReport>(done => { reached = done; });
+  EvidenceStore.prototype.writeRecord = async function (name, value) {
+    if (name === "report.json" && !(value as ActorDemoReport).recovery) { reached(value as ActorDemoReport); await gate; }
+    await original.call(this, name, value);
+  };
+  const running = executeConfiguredActor(directory, registry, scenario, { ...limits, timeoutMs: 500 }, adapter, configuration, { taskPolicy: { finalizationMs: 100 } });
+  try {
+    const candidate = await checkpoint;
+    assert.equal((await recoverConfiguredActors(directory, candidate.runId)).reports[0]?.reason, "publication_pending");
+    await new Promise(done => setTimeout(done, Math.max(1, Date.parse(candidate.task!.record.spec.deadlineAt) - Date.now() + 15)));
+    assert.equal((await recoverConfiguredActors(directory, candidate.runId)).reports[0]?.status, "created");
+    const file = resolve(directory, ".redteam/actor-runs", candidate.runId, "report.json"), before = await readFile(file);
+    release(); const result = await running;
+    assert.equal(result.outcome, "limited_coverage"); assert.equal(result.recoveredReport, true); assert.equal(result.workerOutcome, "completed");
+    assert.deepEqual(result.acceptance, { status: "unavailable", reason: "publication_missing" });
+    assert.deepEqual(result.decisions, [{ outcome: "publication_missing" }]); assert.equal(fake.requests(), 4);
+    assert.deepEqual(await readFile(file), before);
+    const store = new WorkspaceStore(directory);
+    try { assert.equal(store.actorRuns().length, 1); assert.deepEqual((await readActorReport(store, directory, result.runId, registry)).reports, []); }
+    finally { store.close(); }
+  } finally { release(); EvidenceStore.prototype.writeRecord = original; await running.catch(() => {}); }
+}));
+
+test("an original publication that wins during recovery keeps its exact accepted decision", async () => temporary(async (registry, directory, scenario) => {
+  const write = EvidenceStore.prototype.writeRecord, add = EvidenceStore.prototype.addBytes, fake = provider(), { adapter, configuration } = configureInference(profile, secret, fake.transport);
+  let releaseNormal: () => void = () => {}, releasePublished: () => void = () => {}, releaseRecovery: () => void = () => {}, reachedNormal: (report: ActorDemoReport) => void = () => {}, reachedRecovery: () => void = () => {}, reachedPublished: () => void = () => {};
+  const normalGate = new Promise<void>(done => { releaseNormal = done; }), recoveryGate = new Promise<void>(done => { releaseRecovery = done; });
+  const publishedGate = new Promise<void>(done => { releasePublished = done; }), publishedCheckpoint = new Promise<void>(done => { reachedPublished = done; });
+  const normalCheckpoint = new Promise<ActorDemoReport>(done => { reachedNormal = done; }), recoveryCheckpoint = new Promise<void>(done => { reachedRecovery = done; });
+  EvidenceStore.prototype.writeRecord = async function (name, value) {
+    if (name === "report.json" && !(value as ActorDemoReport).recovery) { reachedNormal(value as ActorDemoReport); await normalGate; }
+    await write.call(this, name, value);
+    if (name === "report.json" && !(value as ActorDemoReport).recovery) { reachedPublished(); await publishedGate; }
+  };
+  EvidenceStore.prototype.addBytes = async function (owner, bytes, extension, mediaType) {
+    if (owner === "budget-ledger-recovered") { reachedRecovery(); await recoveryGate; }
+    return add.call(this, owner, bytes, extension, mediaType);
+  };
+  const running = executeConfiguredActor(directory, registry, scenario, { ...limits, timeoutMs: 500 }, adapter, configuration, { taskPolicy: { finalizationMs: 100 } });
+  let recovery: ReturnType<typeof recoverConfiguredActors> | undefined;
+  try {
+    const candidate = await normalCheckpoint;
+    await new Promise(done => setTimeout(done, Math.max(1, Date.parse(candidate.task!.record.spec.deadlineAt) - Date.now() + 15)));
+    recovery = recoverConfiguredActors(directory, candidate.runId); await recoveryCheckpoint;
+    releaseNormal(); await publishedCheckpoint;
+    const file = resolve(directory, ".redteam/actor-runs", candidate.runId, "report.json"), before = await readFile(file);
+    releaseRecovery(); assert.equal((await recovery).reports[0]?.status, "existing");
+    await assert.rejects(readFile(resolve(file, "../report.md")), /ENOENT/);
+    releasePublished(); const result = await running; assert.equal(result.acceptance.status, "accepted");
+    assert.deepEqual(await readFile(file), before); assert.equal(fake.requests(), 4);
+    const store = new WorkspaceStore(directory);
+    try { assert.equal(store.actorRuns().length, 1); assert.equal(store.actorRun(result.runId)?.outcome, "completed"); assert.equal((await readActorReport(store, directory, result.runId, registry)).reports[0]?.decision?.action, "reject"); }
+    finally { store.close(); }
+  } finally { releaseNormal(); releasePublished(); releaseRecovery(); EvidenceStore.prototype.writeRecord = write; EvidenceStore.prototype.addBytes = add; await running.catch(() => {}); await recovery?.catch(() => {}); }
+}));
+
+test("a finishing denied coordinator keeps recovered catalog permissions when recovery stopped before catalog insertion", async () => temporary(async (registry, directory, scenario) => {
+  const write = EvidenceStore.prototype.writeRecord, save = WorkspaceStore.prototype.saveActorRun, fake = provider(), { adapter, configuration } = configureInference(profile, secret, fake.transport);
+  let release: () => void = () => {}, reached: (report: ActorDemoReport) => void = () => {}, rejectCatalog = true;
+  const gate = new Promise<void>(done => { release = done; }), checkpoint = new Promise<ActorDemoReport>(done => { reached = done; });
+  EvidenceStore.prototype.writeRecord = async function (name, value) {
+    if (name === "report.json" && !(value as ActorDemoReport).recovery) { reached(value as ActorDemoReport); await gate; }
+    return write.call(this, name, value);
+  };
+  WorkspaceStore.prototype.saveActorRun = function (summary) {
+    if (rejectCatalog) { rejectCatalog = false; throw new Error("Authored stop before recovery catalog insertion"); }
+    save.call(this, summary);
+  };
+  const running = executeConfiguredActor(directory, registry, scenario, limits, adapter, configuration);
+  try {
+    const candidate = await checkpoint; assert.equal(candidate.reports[0]?.model, null); assert.equal(fake.requests(), 0);
+    assert.equal((await recoverConfiguredActors(directory, candidate.runId)).reports[0]?.status, "unavailable");
+    const file = resolve(directory, ".redteam/actor-runs", candidate.runId, "report.json"), bytes = await readFile(file), recovered = JSON.parse(bytes.toString("utf8"));
+    assert.equal(recovered.recovery.reason, "unfinished_report");
+    release(); const result = await running;
+    assert.equal(result.recoveredReport, true); assert.equal(result.createdAt, recovered.generatedAt);
+    assert.deepEqual(result.modelVersions, [{ id: scenario.modelId, version: scenario.modelVersion }]); assert.deepEqual(await readFile(file), bytes);
+    registry.revokeSource("source", "Synthetic withdrawal after coordinator catalog repair");
+    const store = new WorkspaceStore(directory);
+    try { assert.equal((await authorizedActorRuns(store, registry, directory))[0]?.restricted, true); await assert.rejects(readActorReport(store, directory, result.runId, registry), /restrict/); }
+    finally { store.close(); }
+  } finally { release(); EvidenceStore.prototype.writeRecord = write; WorkspaceStore.prototype.saveActorRun = save; await running.catch(() => {}); }
+}, false));
 
 test("abandoned staging bytes are never promoted or removed during publication recovery", async () => temporary(async (registry, directory, scenario) => {
   const fake = provider(), { adapter, configuration } = configureInference(profile, secret, fake.transport);

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { lstat, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { EvidenceStore, checkArtifacts } from "./evidence.ts";
 import { ResearchRegistry } from "./research.ts";
 import { WorkspaceStore } from "./workspace.ts";
@@ -15,7 +16,9 @@ import { recoverConfiguredActors } from "./actor-recovery.ts";
 import type { ActorTaskPolicy } from "./actor-task.ts";
 import type { ActorDemoReport } from "./actor-reports.ts";
 
-export interface ActorAcceptance { status: "accepted" | "rejected"; reason: "accepted" | "actor_incomplete" | "artifact_integrity_failed" | "task_not_accepted" }
+export type ActorAcceptance =
+  | { status: "accepted" | "rejected"; reason: "accepted" | "actor_incomplete" | "artifact_integrity_failed" | "task_not_accepted" }
+  | { status: "unavailable"; reason: "publication_missing" };
 export interface ActorExecutionOptions { signal?: AbortSignal; taskPolicy?: Partial<ActorTaskPolicy> }
 
 export async function executeConfiguredActor(workspace: string, registry: ResearchRegistry, input: unknown, inputLimits: ActorLimits, adapter: InferenceAdapter, configuration: PublicOpenAIConfiguration, options: ActorExecutionOptions = {}) {
@@ -73,22 +76,30 @@ export async function executeConfiguredActor(workspace: string, registry: Resear
     const generatedAt = new Date().toISOString();
     let outcome: ActorRunSummary["outcome"] = acceptance.status === "accepted" && integrityErrors.length === 0 ? "completed" : "limited_coverage";
     let note = "Configured model run. Decisions are simulations; independent behavioral validity is not established. No purchase or investment is executed.";
-    let publishedAcceptance = acceptance, artifactCount = evidence.artifacts.length, recoveredReport = false;
+    let publishedAcceptance: ActorAcceptance = acceptance;
+    let publishedAt = generatedAt, artifactCount = evidence.artifacts.length, recoveredReport = false;
     try { await evidence.writeRecord("report.json", { schemaVersion: "1.0", kind: "model_actor_run", runId, generatedAt, outcome, note, reports: [actor], workerOutcome: worker.outcome, acceptance, budget, task: taskSnapshot, artifacts: evidence.artifacts, integrityErrors }); }
     catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
       const file = resolve(evidence.root, "report.json"), info = await lstat(file);
       if (!info.isFile() || info.isSymbolicLink() || info.size > 2_000_000) throw new Error("Existing actor report is not a bounded regular file.");
       const previous = JSON.parse(await readFile(file, "utf8")) as ActorDemoReport;
-      if (previous.kind !== "model_actor_run" || previous.runId !== runId || previous.outcome !== "limited_coverage"
-        || previous.recovery?.reason !== "unfinished_report" || previous.acceptance?.status !== "rejected"
+      const recoveredInterruption = previous.recovery?.reason === "unfinished_report" && previous.acceptance?.status === "rejected";
+      const recoveredPublication = previous.recovery?.reason === "publication_missing" && previous.acceptance?.status === "unavailable"
+        && previous.acceptance.reason === "publication_missing" && taskSnapshot.record.state === "completed"
+        && isDeepStrictEqual(previous.task, taskSnapshot) && typeof previous.recovery.recordedAt === "string"
+        && Date.parse(previous.recovery.recordedAt) >= Date.parse(taskSnapshot.record.spec.deadlineAt)
+        && previous.artifacts?.some(item => item.id === taskSnapshot.record.output?.artifactRef && item.sha256 === taskSnapshot.record.output.sha256);
+      if (previous.schemaVersion !== "1.0" || previous.kind !== "model_actor_run" || previous.runId !== runId || previous.outcome !== "limited_coverage"
+        || typeof previous.generatedAt !== "string" || !Number.isFinite(Date.parse(previous.generatedAt))
+        || (!recoveredInterruption && !recoveredPublication) || previous.recovery?.acceptedDecisionRecovered !== false || !previous.acceptance
         || !Array.isArray(previous.reports) || previous.reports.length !== 0
         || previous.task?.record.spec.manifestHash !== manifest.sha256 || previous.task.record.spec.id !== taskId
         || !Array.isArray(previous.artifacts) || (await checkArtifacts(evidence.root, previous.artifacts)).length) throw new Error("An incompatible actor report already exists.");
-      // Recovery can finish while a cancelled coordinator is still closing.
-      // Preserve that published report; the newer raw worker file stays diagnostic.
+      // Recovery can finish while a stopped or delayed coordinator is closing.
+      // Preserve that publication; raw worker bytes stay diagnostic.
       outcome = "limited_coverage"; note = previous.note; publishedAcceptance = previous.acceptance;
-      artifactCount = previous.artifacts.length; recoveredReport = true;
+      publishedAt = previous.generatedAt; artifactCount = previous.artifacts.length; recoveredReport = true;
     }
     const lines = ["# redteam: Configured model run", "", note, "", `Run: ${runId}`, `Outcome: ${outcome}`, `Actor outcome: ${actor.outcome}`, `Coordinator acceptance: ${acceptance.status}`, `Task: ${taskId} (${taskSnapshot.record.state})`, `Cost basis: ${actor.backend.costBasis}`, "",
       actor.decision ? `Simulated ${actor.decision.domain} action: ${actor.decision.action}` : "No valid decision was accepted.", "", actor.decision?.rationale ?? actor.errors.join("; "), "",
@@ -97,9 +108,9 @@ export async function executeConfiguredActor(workspace: string, registry: Resear
       ...(actor.decision?.domain === "investor" ? actor.decision.conditions.map(condition => `- Condition: ${condition}`) : []), "",
       "## Limitations", "", ...actor.limitations.map(limitation => `- ${limitation}`), "", "## Evidence", "", ...evidence.artifacts.map(artifact => `- [${artifact.owner}](${artifact.path}): SHA-256 ${artifact.sha256}`)];
     if (!recoveredReport) await writeFile(resolve(evidence.root, "report.md"), lines.join("\n") + "\n", { flag: "wx", mode: 0o600 });
-    let summary: ActorRunSummary = { runId, taskId, kind: "model_actor_run", createdAt: generatedAt, outcome, directory: evidence.root, artifacts: artifactCount,
-      decisions: recoveredReport ? [{ outcome: taskSnapshot.record.state }] : actor.decision ? [{ domain: actor.decision.domain, action: actor.decision.action, outcome: actor.outcome }] : [{ outcome: actor.outcome }],
-      modelVersions: actor.model ? [{ id: actor.model.id, version: actor.model.version }] : [] };
+    let summary: ActorRunSummary = { runId, taskId, kind: "model_actor_run", createdAt: publishedAt, outcome, directory: evidence.root, artifacts: artifactCount,
+      decisions: recoveredReport ? [{ outcome: publishedAcceptance.status === "unavailable" ? "publication_missing" : taskSnapshot.record.state }] : actor.decision ? [{ domain: actor.decision.domain, action: actor.decision.action, outcome: actor.outcome }] : [{ outcome: actor.outcome }],
+      modelVersions: recoveredReport ? modelPin ? [{ id: modelPin.id, version: modelPin.version }] : [] : actor.model ? [{ id: actor.model.id, version: actor.model.version }] : [] };
     const store = new WorkspaceStore(workspace);
     try {
       const existing = store.actorRun(runId);

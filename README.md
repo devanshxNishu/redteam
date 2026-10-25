@@ -2,7 +2,7 @@
 
 Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
 
-Version 0.7.2 provides a local workspace, an installable CLI, scoped access grants, browser evidence, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, and factual crash recovery. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.7.3 provides a local workspace, an installable CLI, scoped access grants, browser evidence, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, and factual crash recovery. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -24,7 +24,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.7.2.tgz
+npm install --global ./redteam-0.7.3.tgz
 redteam --help
 ```
 
@@ -136,7 +136,9 @@ Configured terminal runs also save a durable budget snapshot. Use `redteam budge
 
 Use `redteam tasks list`, `redteam tasks show TASK_ID`, or `redteam tasks cancel TASK_ID` to inspect and stop a configured actor from another terminal. Ctrl+C requests bounded cancellation. `redteam tasks recover RUN_ID` publishes available partial evidence from an interrupted run without repeating provider requests or accepting an unfinished decision. See [task ownership and recovery](docs/task-state.md).
 
-The same recovery command restores a missing catalog entry when a normal report was saved before its process stopped. An accepted report must match its completed task, original sealed worker bytes, evidence snapshots, and current research permission. Recovery preserves the saved files and simulated action. A completed task with no saved report returns `unavailable`; recovery does not infer an accepted publication from a seal.
+The same recovery command restores a missing catalog entry when a normal report was saved before its process stopped. An accepted report must match its completed task, original sealed worker bytes, evidence snapshots, and current research permission. Recovery preserves the saved files and simulated action.
+
+If a completed task has no JSON report, recovery returns `publication_pending` until its frozen finalization deadline. After that deadline, it can publish a factual partial report with the completed task, verified seal, and budget. Its decision is `unavailable`, with reason `publication_missing`; no stakeholder action is reconstructed. Current research permission is required. A delayed coordinator preserves the first valid publication, and no inference request is repeated.
 
 JSON records and byte artifacts saved through the evidence store use private staging files and exclusive publication. Readers see a complete final record, and an existing entry cannot be replaced. Interrupted staging files remain outside the report and are never promoted during recovery. See the [publication contract](docs/evidence-publication.md) for filesystem requirements and the boundary between publication and acceptance.
 
