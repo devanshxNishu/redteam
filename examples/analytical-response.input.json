@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "analytical_review_response",
+  "mode": "analytical_only",
+  "reviewStatus": "unreviewed",
+  "briefId": "00000000-0000-0000-0000-000000000000",
+  "packetSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "concerns": [],
+  "abstention": "Authored format template only; no analysis has been performed. Replace the identity with a checked packet and supply a real response before checking."
+}

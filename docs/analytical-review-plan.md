@@ -1,6 +1,6 @@
 # Bounded analytical review: next implementation
 
-This is the I04 plan after 0.27.0. Intake works through web, terminal and protected API. A brief and its fixed question preview are not a completed analytical review. Live analysis, a multi-agent roundtable, researched consumer behavior and investor prediction are not enabled by this document.
+This is the I04 plan after 0.27.0; 0.28.0 implements I04a only. See [the packet/check contract](analytical-review.md). Intake works through web, terminal and protected API. A brief and its fixed question preview are not a completed analytical review. Live analysis, a multi-agent roundtable, researched consumer behavior and investor prediction are not enabled by this document.
 
 ## Product result
 
@@ -10,7 +10,7 @@ Every material concern needs a precise basis in the supplied brief and an explic
 
 ## Ordered slices
 
-1. **I04a — packet and output contract.** Derive a bounded deterministic packet from a fully checked saved brief. Give each supplied non-null field or list entry a stable local reference, exact text and hash. Preserve explicit unknowns, assumptions and unopened/unverified evidence labels. Exclude private paths/catalogs/sessions/credentials automatically; supplied text can still contain private information. Add terminal packet inspection. Define and test strict bounded analytical output with exact packet/brief identity and resolvable field citations. Run no model or tool.
+1. **I04a — packet and output contract (implemented in 0.28.0).** Derive a bounded deterministic packet from a fully checked saved brief. Give each supplied non-null field or list entry a stable local reference, exact text and hash. Preserve explicit unknowns, assumptions and unopened/unverified evidence labels. Exclude private paths/catalogs/sessions/credentials automatically; supplied text can still contain private information. Add terminal packet inspection. Define and test strict bounded analytical output with exact packet/brief identity and resolvable field citations. Run no model or tool.
 2. **I04b — one bounded analyst.** Use an explicitly configured provider/processing choice and the existing durable budget, fenced ownership and immutable publication patterns after inspecting their fit. A brief alone does not dispatch a model or authorize new target access. Supply the packet as untrusted data, with no shell/browser/payment/delegation tool. Use one bounded attempt; uncertain dispatch/spend and interrupted work require factual recovery, not automatic replay. Verify with fake transport before a separately recorded live run. Missing credentials/processing choice must give a clear unavailable state.
 3. **I04c — review gate and report.** Show analytical concerns, their supplied basis, proposed checks, contradictions and unknowns. Mark structural/reference checks separately from semantic review. Keep an unreviewed state until an explicit permitted review occurs. Add terminal/API/web inspection with current source/publication checks, literal content, managed-view lifecycle and no automatic action/experiment promotion. Record measured pilot usefulness before claiming commercial validity.
 

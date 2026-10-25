@@ -27,6 +27,7 @@ import { createTrackedAction, readTrackedAction, updateTrackedAction, authorized
 import { createStoredComparison, readStoredComparison, comparisonSummaries } from "./comparisons.ts";
 import { freezeExperimentPlan, readExperimentPlan, experimentPlanSummaries } from "./experiments.ts";
 import { createReviewBrief, previewReviewBrief, readReviewBrief, readReviewBriefInput, reviewBriefSummaries } from "./review-briefs.ts";
+import { readAnalyticalPacket, readAnalyticalResponseInput, checkStoredAnalyticalResponse } from "./analytical-review.ts";
 import { createReportExport, readReportExport, reportExportSummaries } from "./report-export.ts";
 import { inspectInstallation } from "./installation.ts";
 import { outcomeEvidenceSummaries, readOutcomeEvidence, registerOutcomeEvidence } from "./outcome-evidence.ts";
@@ -69,6 +70,8 @@ redteam briefs preview FILE
 redteam briefs add FILE
 redteam briefs list
 redteam briefs show BRIEF_ID
+redteam analysis packet BRIEF_ID
+redteam analysis check BRIEF_ID FILE
 redteam verify RUN_DIRECTORY
 redteam research demo
 redteam research sources|models
@@ -332,6 +335,14 @@ async function main(): Promise<void> {
       else if (operation === "list") print(authorizedRepositoryRuns(store));
       else print(await readRepositorySnapshot(store, rest[0]!));
     } finally { store.close(); }
+    return;
+  }
+  if (command === "analysis") {
+    const [operation, id, file, ...extra] = args;
+    if (extra.length || !id || !["packet", "check"].includes(operation ?? "") || (operation === "packet" ? file !== undefined : !file)) throw new Error("Usage: redteam analysis packet BRIEF_ID|check BRIEF_ID FILE");
+    const value = operation === "check" ? await readAnalyticalResponseInput(file!) : undefined;
+    const store = new WorkspaceStore(workspace);
+    try { print(operation === "packet" ? await readAnalyticalPacket(store, id) : await checkStoredAnalyticalResponse(store, id, value)); } finally { store.close(); }
     return;
   }
   if (command === "briefs") {
