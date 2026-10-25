@@ -1,6 +1,6 @@
 # redteam: Implementation status
 
-Current build: 0.19.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
+Current build: 0.24.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
 
 This record separates implemented code from the broader product plan. The browser runner reviews one controlled signup journey. Registered actor models can be used through the configured path, but no independent human behavioral validation is recorded.
 
@@ -14,7 +14,7 @@ This record separates implemented code from the broader product plan. The browse
 | Job lifecycle | Queue, primary run, verifier run, reporting, completion, limited coverage, failure, interruption | One active review; up to eight active or queued jobs |
 | Startup recovery | Marks unfinished jobs interrupted | Does not replay browser actions automatically |
 | Access grants | Exact web origins or canonical directories; capabilities, expiry, and revocation | Local text capture is enabled; external runner and code execution remain unavailable |
-| Checked report export | Selected controlled reviews, supplied actions/plans, and comparisons; immutable JSON/Markdown, source hashes, historical action prefix, current source rights | Web/terminal/API; no raw source/research/credentials, new judgments, independent outcomes, or recall of delivered copies |
+| Checked report export | Selected controlled reviews, supplied actions/plans, comparisons, and controlled evidence links; immutable JSON/Markdown, source hashes, historical action prefix, current source rights | Web/terminal/API; no raw source/research/credentials, new judgments, independent outcomes, or recall of delivered copies |
 | Frozen experiment plans | Exact supplied plan and action revision, hypothesis/intervention/metric/sample/window/owner, immutable artifacts, current source rights, historical action integrity | Web/terminal/API; unreviewed protocol, local clock only, no execution or collected/independent outcome |
 | Controlled comparison | Saved signup reports, pinned study/requirement/source hashes, complete distinct execution pairs, recorded instrumentation, explicit verdicts and coverage reasons | Web/terminal/API; no new execution, causal fix, action promotion, or arbitrary release matching |
 | Tracked actions | Owner labels, next steps, validation methods, declared progress, source pins, revision history, atomic expected-revision writes, and current source access | Web/terminal/API; no external assignment/execution, independent outcome, or verified completion |
@@ -60,7 +60,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 383 passed, zero failed or skipped |
+| Full automated suite | 395 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -293,7 +293,7 @@ No real provider calls occurred in the recorded checks. Scripted runs report zer
 
 ## Next milestone
 
-The local action/plan/comparison/export workflows, U16 preflight, and controlled outcome evidence web/terminal/API are implemented. Next, add bounded fifth-kind evidence-link export from `docs/outcome-evidence-export-plan.md`. Preserve old exports, exact transitive source pins/current availability, unadjudicated labels, and explicit dependency/serialized-size limits. Add no artifact/participant/actor/research export or outcome promotion. Independent human outcomes, external isolation, real research/pilot/provider inputs, C03 paid demand, and broader hierarchy remain open. Continue normal verified pushes to the private GitHub repository.
+The active subject scope is **ideas and apps only**, as confirmed by the user. The checked evidence-link export is implemented in 0.24.0. Next, implement I01 strict versioned idea/app review brief intake and deterministic scope preview from `docs/idea-and-app-scope.md`, then its protected API and explicit web form. Saving a brief is not a completed review. Do not fetch supplied URLs/files, grant access, execute tools/models, fabricate app evidence for ideas, or infer demand/investment. Independent human outcomes, external isolation, real research/pilot/provider inputs, C03 paid demand, and broader hierarchy remain open. Continue normal verified GitHub pushes.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
 
@@ -380,3 +380,28 @@ Type checking, JavaScript syntax check, build, and the full suite passed: 383 te
 This is a controlled software evidence workflow, not independent U06 human outcome tracking, a validated hypothesis/sample/intervention/protocol, researched psychology, causal effect, buying/investment/funding/customer demand, commercial validation or production isolation. Current parent catalog windows, idle poll/request timing, trusted local operator/clock/metadata/filesystem, uncertain writes and delivered copies remain explicit. The four report-export kinds remain unchanged.
 
 Next ready milestone: bounded fifth-kind evidence-link export in `docs/outcome-evidence-export-plan.md`, preserving old export compatibility, exact link/transitive source pins, unadjudicated labels, current availability and existing limits. Do not bypass browser/size budgets through transitive links or enable artifact/participant/actor/research export. Continue normal verified GitHub pushes; external research/pilot/provider, C03 paid demand, independent adjudication, production isolation and broader hierarchy gates remain open.
+
+
+## Version 0.24 verification
+
+U08 now permits an explicitly selected fifth `outcome_evidence` record under `local-record-export-v2`. The public projection preserves exact link/source IDs and hashes, supplied notes, local chronology, factual comparison and fixed unadjudicated labels. It adds no interpretation or state promotion. Actual saved v1 four-kind exports remain readable and downloadable unchanged.
+
+Changed implementation:
+
+- `src/report-export.ts`: strict fifth-kind selection, complete checked outcome reader/public whitelist, private exact link/source/history pins, metadata-first transitive dependency limits, pinned dependency rechecks around publication/catalog insertion/retrieval, legacy v1 read policy, and canonical publication/public-source binding for final response checks. V2 permits five distinct underlying review IDs and ten references including repeats. These count logical references, not disk IO, bytes, time or cost; existing source/serialized-byte bounds remain.
+- `src/outcome-evidence.ts`: synchronous current publication/source/clock check for a private pin already produced by a full checked read.
+- `src/server.ts`: final detail/JSON/Markdown checks bind the already checked canonical report and public references to its current catalog before delivery.
+- `web/app.js`, `web/index.html`: explicit unadjudicated fifth group, shared exact-parent filtering, dependency counters on selection/submit, checked literal detail/native downloads, and normal idle source-loss clearing. No automatic selection, artifact download, or persistent storage.
+- `tests/outcome-evidence.test.ts`: ten added backend/API checks for mixed public bundles, authored v1 format compatibility, distinct/repeated comparison/link dependency caps before source readers, historical update/tamper, link/plan/comparison/browser tamper and source loss, insertion/final-download races, and clock rollback.
+- `tests/outcome-evidence-dashboard.test.ts`: extended genuine prospective five-kind path plus two added browser checks for transitive selection refusal and normal-poll export/link clearing. All earlier dashboard tests remain.
+- `docs/idea-and-app-scope.md`, master plan v1.3 and backlog v1.3: record the user's idea/app-only scope, next I01 intake, separate analytical lenses and researched behavior, and existing commercial/evaluation gates. No idea review runtime is claimed. README/package/export/outcome/continuation docs state actual capability.
+
+Type checking, JavaScript syntax checking, build and the full suite passed: **395 tests, zero failures or skips**. Log: `outputs/test-results-0.24.0.txt`. Focused backend/API41 and browser21 logs: `outputs/report-export-v2-linked-targeted.txt` and `outputs/report-export-v2-dashboard-targeted.txt`.
+
+`outputs/redteam-0.24.0.tgz` contains 122 files. Final installed prefix: `work/install-release-0.24.0/node_modules/redteam`. `work/verify-installed-0.24.0.mjs` checks compiled CLI/doctor, actual broken/fixed captures around a genuinely frozen plan, fourteen source/two link artifacts, web-selected five-kind v2 export, exact two-distinct/seven-reference counts, draft preservation across all seven metadata responses, long literal supplied text, collapsed JSON/desktop/390 px/no overflow, actual native JSON and Markdown bytes equal checked saved files, exact public projection, later legitimate action update preserving historical exports, and normal idle-poll source-job loss clearing both link and export catalogs/detail. It creates an actual v1 bundle using the prior installed 0.23.0 library, then checks new-reader/API compatibility and exact unchanged JSON/Markdown before and after the action update. Source loss denies both old/new exports; restoration restores reads. No browser storage or uncaught errors, real credentials/provider calls/participant research/human outcomes. Browsers and service stop. Proof: `outputs/installed-verification-0.24.0.json`.
+
+Four new export selection/detail desktop/mobile screenshots are `outputs/preview/report-export-*-0.24.0.png`; visual inspection is recorded in the release proof. Archive whitelist, SHA-512/size, exact installed/source bytes, and high-confidence credential pattern checks use the existing release helper. A normal push and exact private `origin/main` SHA check follow; ignored release/GitHub proofs record the exact source SHA.
+
+The source-reference limits do not constitute a shared all-resource budget. Trusted local metadata/clocks/operator/filesystem, source catalog windows, uncertain writes, non-atomic filesystem/delivery boundaries and copies outside managed recall remain explicit. Independent U06 human adjudication, researched psychology, buyer/investor prediction, customer demand, commercial validation, external app execution/isolation and broad hierarchy are not established.
+
+Next ready work: I01 strict immutable idea/app briefs and deterministic scope preview, then protected API and web intake. Keep all other subject types deferred and preserve the current controlled app evidence workflows.

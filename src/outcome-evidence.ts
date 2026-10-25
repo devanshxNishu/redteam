@@ -28,6 +28,7 @@ interface Alignment { baselineGeneratedAt: string; frozenAt: string; startsAt: s
 interface Observation { verdict: ComparisonReport["verdict"]; baselineState: ComparisonReport["baselineState"]; candidateState: ComparisonReport["candidateState"]; requirementId: string; requirementHash: string; studyHash: string }
 export interface OutcomeEvidenceReport { schemaVersion: "1.0"; kind: "controlled_outcome_evidence"; policyVersion: typeof policyVersion; id: string; registeredAt: string; input: OutcomeEvidenceInput; state: "evidence_registered"; execution: "not_performed_by_tracking"; assessment: typeof assessment; observation: Observation; alignment: Alignment; sources: OutcomeEvidenceSources; artifacts: Artifact[]; limitations: string[] }
 export interface OutcomeEvidenceSummary { id: string; registeredAt: string; planId: string; comparisonId: string; directory: string; reportSha256: string; sources: OutcomeEvidenceSources; verdict: Observation["verdict"] }
+export interface OutcomeEvidencePin { id: string; registeredAt: string; reportSha256: string; sources: OutcomeEvidenceSources }
 
 export function validateOutcomeEvidenceInput(value: unknown): OutcomeEvidenceInput {
   const fail = () => { throw new Error("Supply a plain controlled_outcome_evidence_input with schemaVersion, planId, comparisonId, and an optional note of 1 to 2000 characters."); };
@@ -109,6 +110,12 @@ export function checkOutcomeEvidenceAccess(store: WorkspaceStore, report: Outcom
   if (!uuid.test(id)) throw new Error("Supply an outcome evidence UUID."); const summary = store.outcomeEvidence(id); if (!summary) throw new Error("Outcome evidence not found.");
   if (summary.reportSha256 !== sha256(JSON.stringify(report, null, 2) + "\n") || summary.planId !== report.input.planId || summary.comparisonId !== report.input.comparisonId || summary.registeredAt !== report.registeredAt || summary.verdict !== report.observation.verdict || !isDeepStrictEqual(summary.sources, report.sources)) throw new Error("The checked outcome evidence catalog changed before delivery.");
   checkSources(store, report.sources); if (Date.now() < time(report.registeredAt)) throw new Error("The record is ahead of the current local clock."); return undefined;
+}
+/** Current metadata/source check for a private pin produced by a complete checked read. */
+export function checkOutcomeEvidencePin(store: WorkspaceStore, pin: OutcomeEvidencePin): undefined {
+  const summary = store.outcomeEvidence(pin.id);
+  if (!summary || summary.reportSha256 !== pin.reportSha256 || summary.registeredAt !== pin.registeredAt || !isDeepStrictEqual(summary.sources, pin.sources)) throw new Error("The pinned outcome evidence publication changed.");
+  checkSources(store, pin.sources); if (Date.now() < time(pin.registeredAt)) throw new Error("The evidence pin is ahead of the current local clock."); return undefined;
 }
 /** Whitelist for a report returned by readOutcomeEvidence; never spread private source pins. */
 export function publicOutcomeEvidence(report: OutcomeEvidenceReport) {

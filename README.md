@@ -2,9 +2,9 @@
 
 Private source repository: [devanshxNishu/redteam](https://github.com/devanshxNishu/redteam). Verified development milestones are pushed to `main`.
 
-Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
+Redteam is planned for **ideas and apps** through a web dashboard and terminal CLI. The current build provides controlled app evidence and local record workflows. Structured idea intake and analysis are next; researched stakeholder predictions and the live roundtable remain gated. See the [active scope](docs/idea-and-app-scope.md).
 
-Version 0.23.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.24.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -27,7 +27,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.23.0.tgz
+npm install --global ./redteam-0.24.0.tgz
 redteam --help
 redteam doctor
 ```
@@ -130,7 +130,7 @@ Progress is operator-declared, including `completed_declared`. Tracking sends no
 
 Structured experiment plans can be frozen against a checked action revision through `redteam experiments freeze FILE`, then inspected with `experiments list` and `experiments show PLAN_ID`. Plans preserve the supplied hypothesis, intervention, measurement rule, sample plan, future window, owner, and original action version. Action detail also offers a supplied-plan form; Reviews provides checked frozen-plan inspection. Revision conflicts preserve the draft until a deliberate fresh action read. They execute no work and collect no outcome. See the [experiment-plan contract](docs/experiment-plans.md) and packaged input template.
 
-Selected checked review, action, experiment-plan, and comparison records can be exported through `redteam reports export FILE`, then inspected with `reports list` and `reports show EXPORT_ID`. The private JSON/Markdown bundle preserves their source references and declaration limits. The dashboard and protected local API also create, inspect, and download checked exports with current access checks before delivery. The dashboard verifies byte length/hash before requesting a native download and clears managed state after source denial. It adds no test, model, raw source, research, or credential content automatically. See the [report-export contract](docs/report-export.md).
+Selected checked review, action, experiment-plan, comparison, and controlled evidence-link records can be exported through `redteam reports export FILE`, then inspected with `reports list` and `reports show EXPORT_ID`. The private JSON/Markdown bundle preserves their source references and declaration limits. New v2 exports count transitive dependencies (at most five distinct underlying reviews and ten references); saved v1 exports remain readable without rewriting. The dashboard and protected local API also create, inspect, and download checked exports with current access checks before delivery. The dashboard verifies byte length/hash before requesting a native download and clears managed state after source denial. It adds no test, model, raw source, research, or credential content automatically. See the [report-export contract](docs/report-export.md).
 
 Saved controlled reviews can also be compared without executing another test:
 

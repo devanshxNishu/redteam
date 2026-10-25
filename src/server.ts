@@ -95,9 +95,9 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
           const id = reportExportDetail[1]!, report = await readReportExport(store, id);
           if (reportExportDetail[2]) {
             const format = reportExportDetail[3]!, content = Buffer.from(format === "json" ? JSON.stringify(report, null, 2) + "\n" : reportExportMarkdown(report));
-            checkReportExportAccess(store, id);
+            checkReportExportAccess(store, id, report);
             response.writeHead(200, { "Content-Type": format === "json" ? "application/json; charset=utf-8" : "text/markdown; charset=utf-8", "Content-Disposition": `attachment; filename="redteam-report-${id}.${format}"`, "Content-Length": content.length, "X-Content-SHA256": sha256(content) }); response.end(content);
-          } else { checkReportExportAccess(store, id); send(response, 200, report); }
+          } else { checkReportExportAccess(store, id, report); send(response, 200, report); }
         } catch { send(response, 404, { code: "report_export_unavailable", error: "Report export unavailable. Current source or saved integrity checks failed." }); }
         return;
       }

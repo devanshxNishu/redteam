@@ -1,9 +1,9 @@
 {
   "name": "redteam",
-  "version": "0.23.0",
+  "version": "0.24.0",
   "private": true,
   "type": "module",
-  "description": "Evidence-first app review and researched stakeholder decision simulations.",
+  "description": "Ideas and apps: controlled evidence, structured review planning, and bounded stakeholder mechanics.",
   "engines": {
     "node": ">=24.12.0"
   },
@@ -34,7 +34,8 @@
     "docs/experiment-plans.md",
     "docs/report-export.md",
     "docs/installation-preflight.md",
-    "docs/outcome-evidence.md"
+    "docs/outcome-evidence.md",
+    "docs/idea-and-app-scope.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

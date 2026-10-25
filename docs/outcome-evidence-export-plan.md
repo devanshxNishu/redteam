@@ -1,6 +1,6 @@
 # Checked evidence-link export plan
 
-Next narrow slice after 0.23.0: allow an explicitly selected controlled outcome evidence link as a fifth report-export record kind. The existing release still exports only review/action/experiment/comparison records. This plan enables nothing until implementation and verification pass.
+Implemented in 0.24.0 as policy `local-record-export-v2`: an explicitly selected controlled outcome evidence link is the fifth report-export record kind. See [the implemented contract](report-export.md) and implementation status for exact verification. This retained plan records the design boundaries; it does not extend independent outcome or stakeholder validity.
 
 Reuse the checked private outcome reader, full historical action-event/source/plan/comparison/browser lineage, and final synchronous publication/source guard. Export only the existing public outcome projection, preserving supplied note, exact IDs/report hashes, fixed unadjudicated assessment, local chronology, factual comparison verdict, and limitations. Omit private paths, access targets/grants, catalog fingerprints, private action-history pins, artifact paths/bytes, code, actor/research data, sessions and credentials. Supplied text may contain private information; there is no universal detector. Source artifact metadata is not a download permission.
 

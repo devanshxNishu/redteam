@@ -637,7 +637,7 @@ function outcomeEvidenceSections(report) {
 
 function exportSourceAccess(source) {
   if (source.kind === "comparison") { const entry = comparisonEntry(source.id); return entry ? { entry, grant: null } : null; }
-  const kind = { review: "browser-source", action: "actions", experiment: "experiments" }[source.kind];
+  const kind = { review: "browser-source", action: "actions", experiment: "experiments", outcome_evidence: "outcome-evidence" }[source.kind];
   return kind ? codeEntry(kind, source.id) : null;
 }
 function exportAccess(items) {
@@ -648,12 +648,26 @@ function exportAccess(items) {
   }
   return { grant };
 }
+function exportReviewScope(items) {
+  const references = [];
+  for (const item of items) {
+    const access = exportSourceAccess(item); if (!access) return null;
+    if (item.kind === "review") references.push(item.id);
+    else if (["action", "experiment"].includes(item.kind)) { if (access.entry.origin.kind === "browser_finding") references.push(access.entry.origin.runId); }
+    else {
+      const comparison = item.kind === "comparison" ? access.entry : outcomeComparison(access.entry.planId, access.entry.comparisonId);
+      if (!comparison) return null; references.push(comparison.baselineReviewId, comparison.candidateReviewId);
+    }
+  }
+  return { distinct: new Set(references).size, references: references.length };
+}
 function exportOptions() {
   return [
     ...(data?.jobs ?? []).map(item => ({ kind: "review", id: item.id, label: `${jobTitle(item)} · ${item.id.slice(0, 8)}` })),
     ...(actionCatalog?.actions ?? []).map(item => ({ kind: "action", id: item.id, label: `${item.title} · revision ${item.revision} · ${item.id.slice(0, 8)}` })),
     ...(experimentCatalog?.experimentPlans ?? []).map(item => ({ kind: "experiment", id: item.id, label: `${item.title} · outcome not collected · ${item.id.slice(0, 8)}` })),
     ...(comparisonCatalog?.comparisons ?? []).map(item => ({ kind: "comparison", id: item.id, label: `${comparisonLabel(item.verdict)} · ${item.id.slice(0, 8)}` })),
+    ...(outcomeCatalog?.outcomeEvidence ?? []).map(item => ({ kind: "outcome_evidence", id: item.id, label: `Linked controlled evidence · unadjudicated · ${item.id.slice(0, 8)}` })),
   ].filter(item => exportSourceAccess(item));
 }
 function renderReportExportCatalog() {
@@ -668,7 +682,7 @@ function renderReportExportCatalog() {
 function renderExportOptions() {
   if (openedCodeRun?.kind !== "export-selection" || !exportSelection || !$("export-options")) return;
   const generation = detailGeneration, key = item => `${item.kind}:${item.id}`, selected = new Set(exportSelection.items.map(key)), options = exportOptions(), groups = [];
-  for (const [kind, title] of [["review", "Controlled review results"], ["action", "Operator-declared actions"], ["experiment", "Supplied experiment plans"], ["comparison", "Saved controlled comparisons"]]) {
+  for (const [kind, title] of [["review", "Controlled review results"], ["action", "Operator-declared actions"], ["experiment", "Supplied experiment plans"], ["comparison", "Saved controlled comparisons"], ["outcome_evidence", "Linked controlled evidence · unadjudicated"]]) {
     const eligible = options.filter(item => item.kind === kind), shown = eligible.filter((item, index) => index < 25 || selected.has(key(item))), group = node("fieldset", undefined, "export-option-group");
     group.append(node("legend", title), node("p", "Up to 25 recent available options, plus selected records still in the current catalog. Source integrity is checked before export.", "fine-print"));
     for (const option of shown) {
@@ -677,6 +691,8 @@ function renderExportOptions() {
         if (generation !== detailGeneration || openedCodeRun?.kind !== "export-selection" || !exportSelection || exportSelection.saving) return;
         const next = exportSelection.items.filter(item => key(item) !== key(option)); if (input.checked) next.push({ kind, id: option.id });
         if (next.length > 10 || next.filter(item => item.kind === "review").length > 5) { input.checked = false; $("export-form-status").textContent = "Choose at most ten records, including no more than five reviews."; return; }
+        const scope = exportReviewScope(next);
+        if (!scope || scope.distinct > 5 || scope.references > 10) { input.checked = !input.checked; $("export-form-status").textContent = "Select at most five distinct underlying reviews and ten review references, including linked records."; return; }
         exportSelection.items = next; $("export-selection-count").textContent = `${next.length} selected · maximum 10 records and 5 reviews`; armCodeExpiry();
       });
       label.append(input, node("span", option.label)); group.append(label);
@@ -691,7 +707,7 @@ function showReportExportForm() {
   exportSelection = { items: [] }; openedCodeRun = { kind: "export-selection", id: "selection", pending: true }; armCodeExpiry();
   $("detail-title").textContent = "Select local records for export";
   const form = node("form"); form.id = "report-export-form";
-  form.append(node("p", "Select one to ten local records. Supplied text is included. Source permissions and saved bytes are checked before export. No raw code, research, session, or credential store is copied automatically. Downloaded copies cannot be recalled.", "fine-print"));
+  form.append(node("p", "Select one to ten local records, using at most five distinct underlying reviews and ten review references across all selections. Linked evidence stays unadjudicated. Supplied text is included. Source permissions and saved bytes are checked before export. No raw code, research, session, or credential store is copied automatically. Downloaded copies cannot be recalled.", "fine-print"));
   const label = node("label", "Report title · operator supplied"); label.htmlFor = "export-title";
   const title = node("input"); title.id = "export-title"; title.required = true; title.maxLength = 200; title.autocomplete = "off";
   const count = node("p", "0 selected · maximum 10 records and 5 reviews", "fine-print"); count.id = "export-selection-count";
@@ -703,6 +719,8 @@ function showReportExportForm() {
     event.preventDefault(); if (!ownsDetail(attempt) || save.disabled) return;
     if (!title.value.trim() || /[\x00-\x1f\x7f-\x9f]/u.test(title.value) || !exportSelection.items.length) { message.textContent = "Supply a title without control characters and select at least one record."; return; }
     if (!codeEntry("export-selection", "selection")) { clearCodeState("A selected source is unavailable. The export form was closed."); return; }
+    const scope = exportReviewScope(exportSelection.items);
+    if (!scope || scope.distinct > 5 || scope.references > 10) { message.textContent = "Select at most five distinct underlying reviews and ten review references, including linked records."; return; }
     const payload = { schemaVersion: "1.0", kind: "report_export_input", title: title.value, items: exportSelection.items.map(item => ({ ...item })) };
     exportSelection.saving = true; save.disabled = true; title.disabled = true; for (const input of options.querySelectorAll("input")) input.disabled = true;
     try {

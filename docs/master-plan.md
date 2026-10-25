@@ -1,6 +1,6 @@
 # Redteam: Master Plan
 
-Version: 1.2
+Version: 1.3
 
 Date: October 25, 2026
 
@@ -16,11 +16,11 @@ This plan defines the product, research program, system architecture, and develo
 
 All market choices, operating limits, schedules, and commercial targets below are proposals. They require pilot evidence before adoption.
 
-**Product promise:** Give the system an app, target stakeholders, and a business decision. Receive verified problems, stakeholder objections, and prioritized actions.
+**Product promise:** Give the system an idea or an app, target stakeholders, and a decision. Receive evidence-linked findings, clearly labeled objections, and prioritized actions. Verified app problems require actual scoped tests; supplied idea claims remain unverified until evidence supports them.
 
 ## 1. Product purpose
 
-The system helps startup teams make specific decisions with better evidence. It combines app tests, stakeholder research, controlled simulations, and independent review.
+The system helps startup teams make specific decisions about ideas and apps with better evidence. It combines structured idea analysis, scoped app tests, stakeholder research, controlled simulations, and independent review. The active subject scope is ideas and apps only. CVs, general services, and universal subject review are outside current development. See the [scope and intake plan](idea-and-app-scope.md).
 
 The long-term product can support launch, product changes, pricing, market entry, operations, and investor preparation. Each review must address a defined decision.
 
@@ -39,7 +39,7 @@ The central quality measure is decision usefulness. Agent count, report length, 
 
 ## 2. Initial scope and assumptions
 
-The recommended first customer is a small team with a self-service B2B software app. The team is preparing for a paid pilot.
+The recommended first customer is a small team with a self-service B2B software idea or app. The team is preparing to test its assumptions or run a paid pilot. An idea can enter without an app, URL, repository, or test account. App execution remains a separate granted and bounded operation.
 
 This customer choice is a planning assumption. Founder discovery can change it before implementation.
 
@@ -62,17 +62,20 @@ The first release excludes population adoption forecasts, automated funding pred
 
 Security review initially covers explicitly scoped checks. A broad penetration test requires a separate engagement and operating policy.
 
-## 3. Product modes and evidence levels
+## 3. Subject modes and evidence levels
 
-The product has three modes. Each mode has a separate release gate.
+The product has two subject modes: idea and app. Idea review inspects supplied assumptions, alternatives, business logic, evidence gaps, and proposed tests. App review can inspect actual product behavior within granted execution scope. Both use the same evidence labels, research boundaries, and reporting system. Structured intake and scope preview precede idea review execution.
+
+The product also has separate evidence levels. These are not substitutes for the subject type. Each level has its own release gate.
 
 | Mode | Function | Permitted conclusion |
 |---|---|---|
+| Idea analysis | Inspects supplied context and explicit assumptions | This objection or next test follows from the stated inputs; demand and feasibility remain unverified |
 | App review | Tests actual product behavior | The tested journey produced this result |
 | Grounded scenario | Uses researched stakeholder models | This model reacted this way under these conditions |
 | Validated prediction | Predicts a previously evaluated behavior | This prediction has measured validity within the stated scope |
 
-An app review can operate before behavioral prediction passes validation. A grounded scenario must show its research sources and untested assumptions.
+Idea analysis and app review can operate before behavioral prediction passes validation. A grounded scenario must show its research sources and untested assumptions. An analytical customer or investor lens must be labeled as such; it is not a researched person's reaction.
 
 A validated prediction must identify its task, population, environment, evaluation results, and model version.
 
@@ -80,6 +83,7 @@ The system must never convert a simulated purchase into evidence of actual deman
 
 Each mode has an independent release path:
 
+- Idea analysis requires traceable inputs, explicit unknowns, checked reasoning boundaries, and demonstrated usefulness; saving a brief alone does not pass this gate.
 - App review requires verified findings, operational integrity, and demonstrated customer value.
 - Grounded scenarios additionally require research provenance and controlled actor boundaries.
 - Validated prediction additionally requires successful held-out evaluation within the claimed scope.
