@@ -1,14 +1,97 @@
 import { lstat, readFile, readdir, realpath, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { EvidenceStore, checkArtifacts, sha256 } from "./evidence.ts";
 import { TaskStore } from "./tasks.ts";
+import type { TaskRecord } from "./tasks.ts";
 import { BudgetLedger } from "./budget.ts";
 import { WorkspaceStore, workspaceDirectory } from "./workspace.ts";
 import type { ActorRunSummary } from "./workspace.ts";
 import { recoverActorTasks } from "./actor-task.ts";
 import type { ActorDemoReport } from "./actor-reports.ts";
+import type { ActorReport, ActorScenario } from "./actor.ts";
+import { ResearchRegistry } from "./research.ts";
 
-export interface RecoveredActorReport { runId: string; status: "created" | "existing" | "unavailable"; reason?: "missing_or_invalid_records" }
+export interface RecoveredActorReport { runId: string; status: "created" | "existing" | "unavailable"; reason?: "missing_or_invalid_records" | "research_restricted" }
+type Candidate = { name: string; bytes: Buffer; digest: string };
+type Manifest = { schemaVersion?: string; kind?: string; runId?: string; taskId?: string; model?: { id: string; version: string; hash: string } | null; scenario?: ActorScenario };
+class ResearchRestricted extends Error {}
+
+/** Resolve every listed artifact against the bounded, non-symlink files already read. */
+function publishedArtifacts(report: ActorDemoReport, candidates: Candidate[]): Map<string, Candidate> {
+  if (!Array.isArray(report.artifacts) || report.artifacts.length < 1 || report.artifacts.length > 20) throw new Error("Invalid published artifact set.");
+  const found = new Map<string, Candidate>(), paths = new Set<string>();
+  for (const artifact of report.artifacts) {
+    const candidate = candidates.find(item => artifact.path === `artifacts/${item.name}`);
+    if (!candidate || typeof artifact.id !== "string" || !/^[a-f0-9-]{36}$/.test(artifact.id) || found.has(artifact.id) || paths.has(artifact.path)
+      || artifact.mediaType !== "application/json" || typeof artifact.owner !== "string" || artifact.sha256 !== candidate.digest || artifact.bytes !== candidate.bytes.length) throw new Error("Published artifact identity or bytes changed.");
+    found.set(artifact.id, candidate); paths.add(artifact.path);
+  }
+  return found;
+}
+
+function artifactRecord(report: ActorDemoReport, found: Map<string, Candidate>, owners: string[], expected: unknown): void {
+  const matches = report.artifacts.filter(item => owners.includes(item.owner));
+  if (matches.length !== 1 || !isDeepStrictEqual(JSON.parse(found.get(matches[0]!.id)!.bytes.toString("utf8")), expected)) throw new Error("Published snapshot does not match its artifact.");
+}
+
+function verifyPublication(report: ActorDemoReport, candidates: Candidate[], task: TaskRecord, events: { kind: string; at: string }[]): Map<string, Candidate> {
+  if (report.schemaVersion !== "1.0" || report.kind !== "model_actor_run" || report.runId !== task.spec.runId || !Array.isArray(report.reports)
+    || typeof report.note !== "string" || typeof report.generatedAt !== "string" || !Number.isFinite(Date.parse(report.generatedAt))
+    || !Array.isArray(report.integrityErrors) || report.integrityErrors.length !== 0
+    || !isDeepStrictEqual(report.task, { record: task, events }) || report.budget?.run.runId !== task.spec.runId || report.budget.run.state !== "closed") throw new Error("Published report does not match its durable task.");
+  const found = publishedArtifacts(report, candidates);
+  const manifests = report.artifacts.filter(item => item.sha256 === task.spec.manifestHash);
+  if (manifests.length !== 1) throw new Error("Published manifest reference is missing or ambiguous.");
+  if (task.output && !report.artifacts.some(item => item.id === task.output!.artifactRef && item.sha256 === task.output!.sha256)) throw new Error("The published seal does not match the durable output.");
+  artifactRecord(report, found, ["task-state", "task-state-recovered"], report.task);
+  artifactRecord(report, found, ["budget-ledger", "budget-ledger-recovered"], report.budget);
+  return found;
+}
+
+/** Restores a publication, never reconstructs an accepted decision from a seal. */
+function recordedSummary(workspace: string, root: string, report: ActorDemoReport, found: Map<string, Candidate>, task: TaskRecord, manifest: Manifest): ActorRunSummary {
+  if (report.recovery || report.artifacts.length !== 4 || report.reports.length !== 1) throw new Error("Invalid configured publication.");
+  const actor = report.reports[0]!;
+  const workers = report.artifacts.filter(item => item.owner === `worker:${actor.id}`);
+  if (workers.length !== 1) throw new Error("The recorded worker artifact is missing.");
+  const artifact = workers[0]!, worker = JSON.parse(found.get(artifact.id)!.bytes.toString("utf8")) as ActorReport;
+  if (report.workerOutcome !== worker.outcome || !manifest.scenario || actor.scenarioRef !== manifest.scenario.id
+    || manifest.scenario.runId !== task.spec.runId || !isDeepStrictEqual(actor.model, worker.model)) throw new Error("Published worker identity changed.");
+  if (report.acceptance?.status === "accepted") {
+    if (report.acceptance.reason !== "accepted" || report.outcome !== "completed" || task.state !== "completed"
+      || !task.output || task.output.artifactRef !== artifact.id || task.output.sha256 !== artifact.sha256
+      || !isDeepStrictEqual(actor, worker) || worker.outcome !== "completed" || !worker.decision || !worker.model
+      || !isDeepStrictEqual(worker.model, manifest.model) || worker.decision.runId !== task.spec.runId
+      || worker.decision.scenarioRef !== manifest.scenario.id || worker.decision.actorRef !== manifest.scenario.actorRef
+      || worker.decision.model.id !== worker.model.id || worker.decision.model.version !== worker.model.version) throw new Error("No exact accepted publication exists under the completed fence.");
+  } else {
+    if (report.acceptance?.status !== "rejected" || report.acceptance.reason === "accepted" || report.outcome !== "limited_coverage"
+      || task.state === "completed" || actor.decision !== null || actor.outcome === "completed") throw new Error("An unaccepted publication cannot carry a decision.");
+    // A rejected completed candidate is deliberately redacted by the coordinator.
+    if (worker.outcome !== "completed" && !isDeepStrictEqual(actor, worker)) throw new Error("The incomplete worker record changed.");
+    if (worker.outcome === "completed" && (actor.outcome !== "policy_denied"
+      || !isDeepStrictEqual({ ...actor, outcome: worker.outcome, decision: worker.decision, errors: worker.errors, limitations: worker.limitations }, worker))) throw new Error("The rejected candidate changed beyond coordinator redaction.");
+  }
+  const pin = manifest.model;
+  if (pin) {
+    const registry = new ResearchRegistry(workspace);
+    try {
+      const model = registry.authorizeModel(pin.id, pin.version, manifest.scenario.scope, "exploratory");
+      if (model.hash !== pin.hash || manifest.scenario.modelId !== model.id || manifest.scenario.modelVersion !== model.version
+        || (actor.model && !isDeepStrictEqual(actor.model, pin))) throw new Error("The model pin changed.");
+    } catch { throw new ResearchRestricted("Current research permissions restrict publication recovery."); }
+    finally { registry.close(); }
+  } else if (actor.model || report.acceptance?.status === "accepted") throw new Error("The publication has no pinned model.");
+  return { runId: report.runId, taskId: task.spec.id, kind: "model_actor_run", createdAt: report.generatedAt, outcome: report.outcome, directory: root, artifacts: report.artifacts.length,
+    decisions: actor.decision ? [{ domain: actor.decision.domain, action: actor.decision.action, outcome: actor.outcome }] : [{ outcome: actor.outcome }],
+    modelVersions: pin ? [{ id: pin.id, version: pin.version }] : [] };
+}
+
+function saveSummary(catalog: WorkspaceStore, summary: ActorRunSummary): void {
+  try { catalog.saveActorRun(summary); }
+  catch (error) { if (!isDeepStrictEqual(catalog.actorRun(summary.runId), summary)) throw error; }
+}
 
 async function boundedFile(path: string): Promise<Buffer> {
   const info = await lstat(path);
@@ -17,7 +100,7 @@ async function boundedFile(path: string): Promise<Buffer> {
 }
 
 /** Publishes recorded metadata only. It has no inference adapter or provider credentials. */
-async function publishPartialReport(workspace: string, runId: string): Promise<RecoveredActorReport> {
+async function recoverReport(workspace: string, runId: string): Promise<RecoveredActorReport> {
   if (!/^[a-f0-9-]{36}$/.test(runId)) throw new Error("Invalid configured run identity.");
   const state = await realpath(workspaceDirectory(workspace));
   const root = resolve(state, "actor-runs", runId);
@@ -27,13 +110,13 @@ async function publishPartialReport(workspace: string, runId: string): Promise<R
   try {
     ledger = new BudgetLedger(workspace); catalog = new WorkspaceStore(workspace);
     const records = tasks.list(runId);
-    if (records.length !== 1 || !["interrupted", "failed", "cancelled"].includes(records[0]!.state) || !ledger.hasRun(runId)) throw new Error("No recoverable configured task.");
+    if (records.length !== 1 || records[0]!.spec.kind !== "actor" || !["completed", "interrupted", "failed", "cancelled"].includes(records[0]!.state) || !ledger.hasRun(runId)) throw new Error("No recoverable configured task.");
     const task = records[0]!;
     const artifactRoot = resolve(root, "artifacts");
     if (await realpath(artifactRoot) !== artifactRoot) throw new Error("Recovery artifact directory escaped its run.");
     const names = await readdir(artifactRoot);
     if (names.length > 20) throw new Error("Recovery artifact set exceeds its bound.");
-    const candidates: { name: string; bytes: Buffer; digest: string }[] = [];
+    const candidates: Candidate[] = [];
     for (const name of names) {
       if (!/^[a-f0-9-]{36}\.json$/.test(name)) continue;
       const bytes = await boundedFile(resolve(artifactRoot, name));
@@ -41,19 +124,22 @@ async function publishPartialReport(workspace: string, runId: string): Promise<R
     }
     const manifests = candidates.filter(item => item.digest === task.spec.manifestHash);
     if (manifests.length !== 1) throw new Error("The frozen manifest is missing or changed.");
-    const manifest = JSON.parse(manifests[0]!.bytes.toString("utf8")) as { schemaVersion?: string; kind?: string; runId?: string; taskId?: string; model?: { id?: string; version?: string; hash?: string } | null };
+    const manifest = JSON.parse(manifests[0]!.bytes.toString("utf8")) as Manifest;
     if (manifest.schemaVersion !== "1.0" || manifest.kind !== "configured_actor_manifest" || manifest.runId !== runId || manifest.taskId !== task.spec.id) throw new Error("The manifest does not match the task.");
     const reportFile = resolve(root, "report.json");
     const existing = await lstat(reportFile).catch(error => { if ((error as NodeJS.ErrnoException).code === "ENOENT") return null; throw error; });
     if (existing) {
       const report = JSON.parse((await boundedFile(reportFile)).toString("utf8")) as ActorDemoReport;
-      if (report.runId !== runId || report.kind !== "model_actor_run") throw new Error("Invalid existing recovery report.");
-      if (!catalog.actorRun(runId) && report.recovery?.reason === "unfinished_report") {
-        if (report.outcome !== "limited_coverage" || report.reports.length !== 0 || (await checkArtifacts(root, report.artifacts)).length) throw new Error("Invalid partial report evidence.");
-        catalog.saveActorRun(summary(report.generatedAt, report.artifacts.length, report.task?.record.spec.manifestHash));
+      const found = verifyPublication(report, candidates, task, tasks.events(task.spec.id));
+      if (!catalog.actorRun(runId)) {
+        if (report.recovery?.reason === "unfinished_report") {
+          if (task.state === "completed" || report.outcome !== "limited_coverage" || report.reports.length !== 0 || report.acceptance?.status !== "rejected" || report.recovery.acceptedDecisionRecovered !== false) throw new Error("Invalid partial report evidence.");
+          saveSummary(catalog, summary(report.generatedAt, report.artifacts.length, report.task?.record.spec.manifestHash));
+        } else saveSummary(catalog, recordedSummary(workspace, root, report, found, task, manifest));
       }
       return { runId, status: "existing" };
     }
+    if (task.state === "completed") throw new Error("A completed task without a published report cannot recover an accepted decision.");
     const evidence = new EvidenceStore(root);
     await evidence.register("coordinator-recovered", `artifacts/${manifests[0]!.name}`, "application/json");
     if (task.output) {
@@ -77,9 +163,8 @@ async function publishPartialReport(workspace: string, runId: string): Promise<R
     // JSON is the publication marker. Existing files are never overwritten.
     await writeFile(resolve(root, "report.md"), markdown, { flag: "wx", mode: 0o600 }).catch(error => { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; });
     try { await evidence.writeRecord("report.json", report); }
-    catch (error) { if ((error as NodeJS.ErrnoException).code === "EEXIST") return publishPartialReport(workspace, runId); throw error; }
-    try { catalog.saveActorRun(summary(generatedAt, evidence.artifacts.length, task.spec.manifestHash)); }
-    catch (error) { if (!catalog.actorRun(runId)) throw error; }
+    catch (error) { if ((error as NodeJS.ErrnoException).code === "EEXIST") return recoverReport(workspace, runId); throw error; }
+    saveSummary(catalog, summary(generatedAt, evidence.artifacts.length, task.spec.manifestHash));
     return { runId, status: "created" };
 
     function summary(createdAt: string, artifacts: number, manifestHash?: string): ActorRunSummary {
@@ -100,12 +185,12 @@ export async function recoverConfiguredActors(workspace: string, runId?: string)
   let candidates: string[];
   try {
     catalog = new WorkspaceStore(workspace);
-    candidates = [...new Set(tasks.list(runId).filter(task => task.spec.kind === "actor" && ["interrupted", "failed", "cancelled"].includes(task.state) && !catalog!.actorRun(task.spec.runId)).map(task => task.spec.runId))];
+    candidates = [...new Set(tasks.list(runId).filter(task => task.spec.kind === "actor" && ["completed", "interrupted", "failed", "cancelled"].includes(task.state) && !catalog!.actorRun(task.spec.runId)).map(task => task.spec.runId))];
   } finally { tasks.close(); catalog?.close(); }
   const reports: RecoveredActorReport[] = [];
   for (const id of candidates) {
-    try { reports.push(await publishPartialReport(workspace, id)); }
-    catch { reports.push({ runId: id, status: "unavailable", reason: "missing_or_invalid_records" }); }
+    try { reports.push(await recoverReport(workspace, id)); }
+    catch (error) { reports.push({ runId: id, status: "unavailable", reason: error instanceof ResearchRestricted ? "research_restricted" : "missing_or_invalid_records" }); }
   }
   return { ...recovered, reports };
 }

@@ -28,6 +28,8 @@ The dashboard can inspect configured runs created through the terminal. Its run 
 
 `redteam tasks recover RUN_ID` records expired ownership and publishes available factual partial evidence without repeating provider requests. A new configured run also checks prior unfinished tasks. An unfinished sealed candidate is never promoted into an accepted decision during recovery.
 
+Recovery also repairs the catalog for a saved normal report after a publication interruption. It verifies the completed task fence, exact sealed worker, artifact snapshots, model pin, and current research permission before restoring an accepted simulation. Rejected publications stay rejected. Saved files and report-time usage remain unchanged. A completed task with no saved report remains unavailable.
+
 ## Processing permission
 
 Sources default to `local_only`, including legacy records. External inference requires `processing: external_model_allowed` on every model source, the scenario, and every fact. Derived model content is subject to its source permissions. These flags are distinct from training permission.

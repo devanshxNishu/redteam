@@ -2,7 +2,7 @@
 
 Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
 
-Version 0.7 provides a local workspace, an installable CLI, scoped access grants, browser evidence, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, and factual crash recovery. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.7.1 provides a local workspace, an installable CLI, scoped access grants, browser evidence, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, and factual crash recovery. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -24,7 +24,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.7.0.tgz
+npm install --global ./redteam-0.7.1.tgz
 redteam --help
 ```
 
@@ -135,6 +135,8 @@ The same scripted demo is available in the dashboard's Stakeholder models view. 
 Configured terminal runs also save a durable budget snapshot. Use `redteam budgets show RUN_ID` to inspect current reported spend and unsettled reservations, including late receipts. Unknown cost remains held after timeout or restart. This protects local allocation at configured rates; it does not establish actual provider billing. See [the ledger contract](docs/budget-ledger.md).
 
 Use `redteam tasks list`, `redteam tasks show TASK_ID`, or `redteam tasks cancel TASK_ID` to inspect and stop a configured actor from another terminal. Ctrl+C requests bounded cancellation. `redteam tasks recover RUN_ID` publishes available partial evidence from an interrupted run without repeating provider requests or accepting an unfinished decision. See [task ownership and recovery](docs/task-state.md).
+
+The same recovery command restores a missing catalog entry when a normal report was saved before its process stopped. An accepted report must match its completed task, original sealed worker bytes, evidence snapshots, and current research permission. Recovery preserves the saved files and simulated action. A completed task with no saved report returns `unavailable`; recovery does not infer an accepted publication from a seal.
 
 The adapter is an authored software fixture. It makes no live model calls and does not predict demand or funding. The runtime enforces information access, observed references, decision consistency, step and read limits, context and output size, usage receipts, timeouts, and cancellation. Unknown usage remains visible when a call ends without a receipt.
 

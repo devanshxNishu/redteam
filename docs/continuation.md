@@ -56,7 +56,7 @@ Type checking and the full 125-test suite passed with zero failures or skips. Th
 
 Version 0.6.0 built, packed, and installed in an isolated prefix. `work/verify-installed-0.6.0.mjs` verified compiled help/version/examples, registered synthetic inputs, configured fake transport (four requests), two settled reservations, 360 micro-USD estimated spend, zero held cost, current-budget CLI, both scripted demo decisions, persisted catalog, and all artifact hashes. Results are in `outputs/installed-verification-0.6.0.json`. Real credentials were not loaded.
 
-## Current milestone: Version 0.7
+## Version 0.7 verification
 
 Task ownership and factual partial recovery are integrated. Type checking, build, and the full 148-test suite passed with zero failures or skips. `outputs/redteam-0.7.0.tgz` is built and installed. `work/verify-installed-0.7.0.mjs` passed compiled CLI and desktop/mobile browser checks. It verified a four-artifact accepted fake-provider run, a three-artifact interrupted recovery with unsettled usage and no decision, task inspection/recovery, scripted demos, three catalog entries, and source withdrawal restricting both dependent reports. No overflow or browser errors were observed. Results are `outputs/installed-verification-0.7.0.json`; screenshots are under `outputs/preview/`. The temporary service and browser are stopped.
 
@@ -75,14 +75,26 @@ Exact implementation files:
 
 Contracts are `docs/task-state.md`, `docs/budget-ledger.md`, and `docs/live-inference.md`. The default demo remains a script. No live API key, live model smoke test, real participant research, or behavioral validation is recorded.
 
+## Current milestone: Version 0.7.1
+
+Normal publication catalog repair is implemented in `src/actor-recovery.ts`. It scans completed configured tasks as well as failed, cancelled, and interrupted ones. A saved normal report must match the durable task record and full transition history, frozen manifest, unique bounded artifact identities/paths, budget/task evidence snapshots, and original sealed worker bytes under the completed fence. The pinned model must remain permitted in the recorded scope. An accepted simulation is restored exactly; a rejected publication stays rejected. A missing Markdown presentation does not prevent JSON publication restoration. No report, artifact, task, budget, or provider request is changed by catalog repair. Report-time budget evidence remains valid after a later receipt updates the ledger.
+
+`tests/configured-actor.test.ts` now has 28 checks, including 12 new publication checks. They cover concurrent restoration, unchanged bytes and records, changed decisions/fences/transitions/budgets, omitted and duplicate artifacts, altered sealed bytes, absent JSON publication, withdrawal, and rejected output. Existing cancellation and late-receipt checks also verify restoration. The full suite passed 160 tests with zero failures or skips; type checking and build passed. The log is `outputs/test-results-0.7.1.txt`.
+
+The archive is `outputs/redteam-0.7.1.tgz`. The installed compiled CLI passed `work/verify-installed-0.7.1.mjs`: four fake transport requests, four valid artifacts, the original simulated action, one catalog entry under concurrent recovery, unchanged report/artifact/task/budget records, task and budget commands, source withdrawal denial, and the scripted demo. Results are `outputs/installed-verification-0.7.1.json`. Its isolated workspace is recorded in that file. No live key or provider was used. No server or browser was started. Browser verification remains the recorded 0.7.0 baseline because the only web edit changes the install command's version text.
+
+Package metadata, README, and `web/index.html` use 0.7.1. Contracts and status are updated in `docs/task-state.md`, `docs/live-inference.md`, `docs/development-backlog.md`, and `docs/implementation-status.md`.
+
+Recovery returns `research_restricted` without catalog insertion when current research permission blocks normal restoration. Missing or invalid records return `missing_or_invalid_records`. In particular, a completed task with no JSON publication stays completed and unavailable; no accepted decision is constructed from its seal. Existing files remain untouched. These stores and hashes assume a trusted local coordinator/operator.
+
 Official token-counting and structured-output documentation was fetched during earlier integration. Cached copies are `work/openai-token-counting.md` and `work/openai-structured-outputs.md`. Verify current official API details before changing provider behavior. Do not reuse desktop authentication or invent rates.
 
 Use synthetic fixtures for software verification. Keep them visibly separate from human research. Never promote synthetic fixtures into validated psychology.
 
 ## Next sequence
 
-1. Repair catalog publication for an already completed normal report if the process ended between report writing and catalog insertion. Import only the exact recorded accepted worker artifact under its completed fence and current research permissions. Never promote an unfinished sealed candidate. This case is not handled by partial recovery yet.
-2. Extend recovery checks to concurrent publication and remaining interruption points. Keep uncertain invocation identities and original sealed outputs unchanged. Do not broaden to specialist dispatch before its prerequisites.
+1. Make JSON report publication atomic and preserve its no-overwrite rule. A process ending during `writeRecord` can currently leave an incomplete final JSON file that recovery correctly refuses. Test interrupted and concurrent publication without replaying inference or changing recorded acceptance.
+2. Cover remaining interruption points, including task completion before JSON publication. Current behavior is conservative `unavailable`; design a factual report that states publication uncertainty before changing that boundary. Keep original seals and uncertain invocation identities unchanged. Do not broaden to specialist dispatch before its prerequisites.
 3. Add bounded analyst task coordination when prerequisites permit. The commercial hierarchy gate remains unproven; do not enable broad specialist fan-out or claim the roundtable is complete.
 4. A live API smoke test needs explicit model configuration, valid credentials, current rates, and processing permission. Do not reuse desktop authentication or invent pricing. Continue independent work if these inputs are missing.
 5. Continue external runner work after isolation and access prerequisites are met.
@@ -97,7 +109,7 @@ Use synthetic fixtures for software verification. Keep them visibly separate fro
 
 The temporary preview service is stopped during turn teardown. Reopen it with `npm run ui` when needed. Runtime data remains in `.redteam/` and is excluded from Git and release archives.
 
-Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), and `f770971` (task-state foundation). The 0.7 installed verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.7.0.json` record its final package and checks. `outputs/test-results-0.7.0.txt` records the full suite. Preview services and test browsers are stopped.
+Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), and `3da6b62` (guarded actor integration and factual recovery). The 0.7.1 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.7.1.json` record its final package and checks. `outputs/test-results-0.7.1.txt` records the full suite. Preview services and test browsers are stopped.
 
 ## External inputs still required
 

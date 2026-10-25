@@ -1,20 +1,22 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn, spawnSync } from "node:child_process";
+import { DatabaseSync } from "node:sqlite";
 import { ResearchRegistry } from "../src/research.ts";
 import { WorkspaceStore } from "../src/workspace.ts";
 import { authorizedActorRuns, readActorReport } from "../src/actor-reports.ts";
 import { configureInference } from "../src/inference-config.ts";
 import { executeConfiguredActor } from "../src/actor-execution.ts";
 import type { ActorScenario, ActorLimits, InferenceAdapter } from "../src/actor.ts";
-import { checkArtifacts } from "../src/evidence.ts";
+import { checkArtifacts, sha256 } from "../src/evidence.ts";
 import { BudgetLedger } from "../src/budget.ts";
 import { TaskStore } from "../src/tasks.ts";
 import { recoverConfiguredActors } from "../src/actor-recovery.ts";
+import type { ActorDemoReport } from "../src/actor-reports.ts";
 
 // All provider exchanges below use an injected local function. They are not live
 // OpenAI observations and must not be used as model-quality evidence.
@@ -48,6 +50,100 @@ function provider(refusal = false) {
   };
   return { transport, requests: () => requests };
 }
+
+function removeCatalogEntry(directory: string, runId: string) {
+  const db = new DatabaseSync(resolve(directory, ".redteam/workspace.sqlite"));
+  try { db.prepare("DELETE FROM actor_runs WHERE id=?").run(runId); } finally { db.close(); }
+}
+
+test("concurrent recovery restores an accepted publication exactly without inference or file changes", async () => temporary(async (registry, directory, scenario) => {
+  const fake = provider(), { adapter, configuration } = configureInference(profile, secret, fake.transport);
+  const result = await executeConfiguredActor(directory, registry, scenario, limits, adapter, configuration);
+  const file = resolve(result.directory, "report.json"), before = await readFile(file);
+  const store = new WorkspaceStore(directory), tasks = new TaskStore(directory), ledger = new BudgetLedger(directory);
+  try {
+    const expected = { ...store.actorRun(result.runId), directory: await realpath(result.directory) }, taskBefore = tasks.task(result.taskId!), budgetBefore = ledger.snapshot(result.runId);
+    const report = JSON.parse(before.toString("utf8")) as ActorDemoReport;
+    const artifactBytes = await Promise.all(report.artifacts.map(item => readFile(resolve(result.directory, item.path))));
+    removeCatalogEntry(directory, result.runId);
+    // JSON can be durable before the optional Markdown presentation is written.
+    await rm(resolve(result.directory, "report.md"));
+    const recovered = await Promise.all([recoverConfiguredActors(directory, result.runId), recoverConfiguredActors(directory, result.runId)]);
+    assert(recovered.every(item => item.reports[0]?.status === "existing"));
+    assert.deepEqual(store.actorRun(result.runId), expected); assert.equal(store.actorRuns().length, 1);
+    assert.deepEqual(await readFile(file), before); await assert.rejects(readFile(resolve(result.directory, "report.md")), /ENOENT/);
+    assert.deepEqual(await Promise.all(report.artifacts.map(item => readFile(resolve(result.directory, item.path)))), artifactBytes);
+    assert.deepEqual(tasks.task(result.taskId!), taskBefore); assert.deepEqual(ledger.snapshot(result.runId), budgetBefore);
+    assert.equal((await readActorReport(store, directory, result.runId, registry)).reports[0]?.decision?.action, "reject");
+    assert.deepEqual((await recoverConfiguredActors(directory, result.runId)).reports, []); assert.equal(fake.requests(), 4);
+  } finally { store.close(); tasks.close(); ledger.close(); }
+}));
+
+const publicationChanges: [string, (report: ActorDemoReport) => void][] = [
+  ["a changed decision", report => { report.reports[0]!.decision!.action = "buy"; }],
+  ["a different completed fence", report => { report.task!.record.fence++; }],
+  ["a changed task transition", report => { report.task!.events.pop(); }],
+  ["a changed budget snapshot", report => { report.budget!.pools[0]!.spent.costMicrousd = "0"; }],
+  ["an omitted sealed worker", report => { report.artifacts = report.artifacts.filter(item => item.id !== report.task!.record.output!.artifactRef); }],
+  ["duplicate artifact identities", report => { report.artifacts[1]!.id = report.artifacts[0]!.id; }],
+  ["a rejected report for a completed task", report => { report.acceptance = { status: "rejected", reason: "task_not_accepted" }; }],
+];
+for (const [name, change] of publicationChanges) test(`publication recovery rejects ${name}`, async () => temporary(async (registry, directory, scenario) => {
+  const fake = provider(), { adapter, configuration } = configureInference(profile, secret, fake.transport);
+  const result = await executeConfiguredActor(directory, registry, scenario, limits, adapter, configuration);
+  const file = resolve(result.directory, "report.json"), report = JSON.parse(await readFile(file, "utf8")) as ActorDemoReport;
+  change(report); const changed = JSON.stringify(report); await writeFile(file, changed); removeCatalogEntry(directory, result.runId);
+  assert.equal((await recoverConfiguredActors(directory, result.runId)).reports[0]?.status, "unavailable");
+  const store = new WorkspaceStore(directory); try { assert.equal(store.actorRun(result.runId), null); } finally { store.close(); }
+  assert.equal(await readFile(file, "utf8"), changed); assert.equal(fake.requests(), 4);
+}));
+
+test("publication recovery rejects changed sealed bytes even when the report adopts their new hash", async () => temporary(async (registry, directory, scenario) => {
+  const fake = provider(), { adapter, configuration } = configureInference(profile, secret, fake.transport);
+  const result = await executeConfiguredActor(directory, registry, scenario, limits, adapter, configuration);
+  const file = resolve(result.directory, "report.json"), report = JSON.parse(await readFile(file, "utf8")) as ActorDemoReport;
+  const artifact = report.artifacts.find(item => item.id === report.task!.record.output!.artifactRef)!;
+  const changed = Buffer.from(JSON.stringify({ ...report.reports[0], outcome: "adapter_failed", decision: null }));
+  await writeFile(resolve(result.directory, artifact.path), changed);
+  artifact.sha256 = sha256(changed); artifact.bytes = changed.length;
+  await writeFile(file, JSON.stringify(report)); removeCatalogEntry(directory, result.runId);
+  assert.equal((await recoverConfiguredActors(directory, result.runId)).reports[0]?.status, "unavailable");
+  assert.equal(fake.requests(), 4);
+}));
+
+test("completed task without a published report never reconstructs a decision from its seal", async () => temporary(async (registry, directory, scenario) => {
+  const fake = provider(), { adapter, configuration } = configureInference(profile, secret, fake.transport);
+  const result = await executeConfiguredActor(directory, registry, scenario, limits, adapter, configuration);
+  removeCatalogEntry(directory, result.runId); await rm(resolve(result.directory, "report.json"));
+  const recovered = await recoverConfiguredActors(directory, result.runId);
+  assert.deepEqual(recovered.taskIds, []); assert.equal(recovered.reports[0]?.status, "unavailable");
+  const store = new WorkspaceStore(directory), tasks = new TaskStore(directory);
+  try { assert.equal(store.actorRun(result.runId), null); assert.equal(tasks.task(result.taskId!).state, "completed"); } finally { store.close(); tasks.close(); }
+  await assert.rejects(readFile(resolve(result.directory, "report.json")), /ENOENT/); assert.equal(fake.requests(), 4);
+}));
+
+test("source withdrawal blocks catalog restoration of a previously accepted publication", async () => temporary(async (registry, directory, scenario) => {
+  const fake = provider(), { adapter, configuration } = configureInference(profile, secret, fake.transport);
+  const result = await executeConfiguredActor(directory, registry, scenario, limits, adapter, configuration);
+  const file = resolve(result.directory, "report.json"), before = await readFile(file);
+  removeCatalogEntry(directory, result.runId); registry.revokeSource("source", "Synthetic withdrawal before catalog repair");
+  assert.deepEqual((await recoverConfiguredActors(directory, result.runId)).reports, [{ runId: result.runId, status: "unavailable", reason: "research_restricted" }]);
+  const store = new WorkspaceStore(directory); try { assert.equal(store.actorRun(result.runId), null); } finally { store.close(); }
+  assert.deepEqual(await readFile(file), before); assert.equal(fake.requests(), 4);
+}));
+
+test("recovery restores an existing rejected publication without promoting its worker", async () => temporary(async (registry, directory, scenario) => {
+  const fake = provider(true), { adapter, configuration } = configureInference(profile, secret, fake.transport);
+  const result = await executeConfiguredActor(directory, registry, scenario, limits, adapter, configuration);
+  const file = resolve(result.directory, "report.json"), before = await readFile(file), store = new WorkspaceStore(directory);
+  try {
+    const expected = { ...store.actorRun(result.runId), directory: await realpath(result.directory) }; removeCatalogEntry(directory, result.runId);
+    assert.equal((await recoverConfiguredActors(directory, result.runId)).reports[0]?.status, "existing");
+    assert.deepEqual(store.actorRun(result.runId), expected); assert.equal(store.actorRun(result.runId)?.decisions[0]?.action, undefined);
+    assert.equal((await readActorReport(store, directory, result.runId, registry)).acceptance?.status, "rejected");
+    assert.deepEqual(await readFile(file), before); assert.equal(fake.requests(), 2);
+  } finally { store.close(); }
+}));
 
 test("configured fake-provider execution saves receipts, model versions, and verifiable private artifacts", async () => temporary(async (registry, directory, scenario) => {
   const fake = provider();
@@ -109,6 +205,11 @@ test("a worker result is rejected when its task is cancelled before coordinator 
   const report = JSON.parse(await readFile(resolve(result.directory, "report.json"), "utf8"));
   assert.equal(report.reports[0].decision, null);
   assert.equal(result.budget.pools[0]?.spent.costMicrousd, "17");
+  removeCatalogEntry(directory, result.runId);
+  assert.equal((await recoverConfiguredActors(directory, result.runId)).reports[0]?.status, "existing");
+  const store = new WorkspaceStore(directory);
+  try { assert.equal(store.actorRun(result.runId)?.decisions[0]?.action, undefined); assert.equal((await readActorReport(store, directory, result.runId, registry)).reports[0]?.decision, null); }
+  finally { store.close(); }
 }));
 
 test("task cancellation between actor steps denies another adapter dispatch", async () => temporary(async (registry, directory, scenario) => {
@@ -275,6 +376,9 @@ test("a late usage receipt reconciles a stopped actor without reopening its run 
   } finally { ledger.close(); }
   assert.equal(await readFile(reportFile, "utf8"), original);
   assert.equal(result.budget.invocations[0]?.state, "uncertain");
+  removeCatalogEntry(directory, result.runId);
+  assert.equal((await recoverConfiguredActors(directory, result.runId)).reports[0]?.status, "existing");
+  assert.equal(await readFile(reportFile, "utf8"), original);
 }));
 
 test("malformed receipts keep liability while overrun receipts preserve actual usage", async () => temporary(async (registry, directory, scenario) => {
