@@ -2,7 +2,7 @@
 
 Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
 
-Version 0.16.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.17.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -24,7 +24,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.16.0.tgz
+npm install --global ./redteam-0.17.0.tgz
 redteam --help
 ```
 
@@ -125,6 +125,8 @@ Templates are under `redteam examples`. Link a plan to an existing controlled-br
 Progress is operator-declared, including `completed_declared`. Tracking sends no message, assigns no external task, executes no code, and verifies no outcome. Reviews now supports source-linked plan creation, action/history inspection, and revision-aware declared updates. Conflicts preserve the draft and require a deliberate fresh read; source expiry or denial clears managed views. See the [action contract](docs/actions.md).
 
 Structured experiment plans can be frozen against a checked action revision through `redteam experiments freeze FILE`, then inspected with `experiments list` and `experiments show PLAN_ID`. Plans preserve the supplied hypothesis, intervention, measurement rule, sample plan, future window, owner, and original action version. Action detail also offers a supplied-plan form; Reviews provides checked frozen-plan inspection. Revision conflicts preserve the draft until a deliberate fresh action read. They execute no work and collect no outcome. See the [experiment-plan contract](docs/experiment-plans.md) and packaged input template.
+
+Selected checked review, action, experiment-plan, and comparison records can be exported through `redteam reports export FILE`, then inspected with `reports list` and `reports show EXPORT_ID`. The private JSON/Markdown bundle preserves their source references and declaration limits. It adds no test, model, raw source, research, or credential content automatically. See the [report-export contract](docs/report-export.md).
 
 Saved controlled reviews can also be compared without executing another test:
 

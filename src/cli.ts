@@ -26,6 +26,7 @@ import { registerEngineeringObservations, authorizedEngineeringRuns, readEnginee
 import { createTrackedAction, readTrackedAction, updateTrackedAction, authorizedActionSummaries } from "./actions.ts";
 import { createStoredComparison, readStoredComparison, comparisonSummaries } from "./comparisons.ts";
 import { freezeExperimentPlan, readExperimentPlan, experimentPlanSummaries } from "./experiments.ts";
+import { createReportExport, readReportExport, reportExportSummaries } from "./report-export.ts";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspace = resolve(process.cwd());
@@ -54,6 +55,9 @@ redteam comparisons show COMPARISON_ID
 redteam experiments freeze FILE
 redteam experiments list
 redteam experiments show PLAN_ID
+redteam reports export FILE
+redteam reports list
+redteam reports show EXPORT_ID
 redteam verify RUN_DIRECTORY
 redteam research demo
 redteam research sources|models
@@ -309,6 +313,19 @@ async function main(): Promise<void> {
       if (operation === "snapshot") print(await captureRepository(store, { grantId: options["--grant"]!, target: options["--path"]! }));
       else if (operation === "list") print(authorizedRepositoryRuns(store));
       else print(await readRepositorySnapshot(store, rest[0]!));
+    } finally { store.close(); }
+    return;
+  }
+  if (command === "reports") {
+    const [operation, parameter, ...extra] = args;
+    if (extra.length || !["export", "list", "show"].includes(operation ?? "") || (operation === "list" ? parameter !== undefined : !parameter)) throw new Error("Usage: redteam reports export FILE|list|show EXPORT_ID");
+    const value = operation === "export" ? await readInput(parameter!) : undefined;
+    const store = new WorkspaceStore(workspace);
+    try {
+      if (operation === "export") {
+        const summary = await createReportExport(store, value); print({ id: summary.id, title: summary.title, createdAt: summary.createdAt, json: resolve(summary.directory, "report.json"), markdown: resolve(summary.directory, summary.markdownFile) });
+      } else if (operation === "list") print({ recentWindow: 100, reportExports: reportExportSummaries(store) });
+      else print(await readReportExport(store, parameter!));
     } finally { store.close(); }
     return;
   }

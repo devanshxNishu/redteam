@@ -6,6 +6,7 @@ import type { ActionRecord, ActionEvent } from "./domain/actions.ts";
 import { ActionConflictError } from "./domain/actions.ts";
 import type { ComparisonSummary } from "./comparisons.ts";
 import type { ExperimentPlanSummary } from "./experiments.ts";
+import type { ReportExportSummary } from "./report-export.ts";
 
 export type GrantCapability = "browser:read" | "browser:interact" | "code:read" | "code:test";
 export interface AccessGrant {
@@ -96,6 +97,7 @@ export class WorkspaceStore {
       CREATE TABLE IF NOT EXISTS action_events (action_id TEXT NOT NULL, revision INTEGER NOT NULL, document TEXT NOT NULL, PRIMARY KEY(action_id, revision));
       CREATE TABLE IF NOT EXISTS comparisons (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS experiment_plans (id TEXT PRIMARY KEY, document TEXT NOT NULL, frozen_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS report_exports (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
     `);
   }
 
@@ -322,6 +324,25 @@ export class WorkspaceStore {
 
   recentExperimentPlans(): ExperimentPlanSummary[] {
     return this.db.prepare("SELECT document FROM experiment_plans ORDER BY frozen_at DESC, id LIMIT 100").all().map(row => JSON.parse(String(row.document)) as ExperimentPlanSummary);
+  }
+
+  saveReportExport(summary: ReportExportSummary, authorize: () => undefined): void {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const authorization: unknown = authorize();
+      if (authorization !== undefined) { if (authorization instanceof Promise) void authorization.catch(() => undefined); throw new Error("Export source checks must finish synchronously."); }
+      this.db.prepare("INSERT INTO report_exports(id, document, created_at) VALUES (?, ?, ?)").run(summary.id, JSON.stringify(summary), summary.createdAt);
+      this.audit("report_export_saved", summary.id); this.db.exec("COMMIT");
+    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+  }
+
+  reportExport(id: string): ReportExportSummary | null {
+    const row = this.db.prepare("SELECT document FROM report_exports WHERE id=?").get(id);
+    return row ? JSON.parse(String(row.document)) as ReportExportSummary : null;
+  }
+
+  recentReportExports(): ReportExportSummary[] {
+    return this.db.prepare("SELECT document FROM report_exports ORDER BY created_at DESC, id LIMIT 100").all().map(row => JSON.parse(String(row.document)) as ReportExportSummary);
   }
 
   close(): void { this.db.close(); }
