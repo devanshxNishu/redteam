@@ -11,6 +11,8 @@ let actionCatalog = null;
 let experimentCatalog = null;
 let reportExportCatalog = null;
 let exportSelection = null;
+let outcomeCatalog = null;
+let outcomeSelection = null;
 let comparisonCatalog = null;
 let openedComparison = null;
 let detailGeneration = 0;
@@ -134,12 +136,12 @@ async function refresh() {
   refreshController?.abort(); refreshController = new AbortController();
   const signal = refreshController.signal;
   try {
-    const [workspace, catalog, actions, comparisons, experiments, exports] = await Promise.all([api("/api/workspace", { signal }), api("/api/code-runs", { signal }), api("/api/actions", { signal }), api("/api/comparisons", { signal }), api("/api/experiments", { signal }), api("/api/report-exports", { signal })]);
+    const [workspace, catalog, actions, comparisons, experiments, exports, outcomes] = await Promise.all([api("/api/workspace", { signal }), api("/api/code-runs", { signal }), api("/api/actions", { signal }), api("/api/comparisons", { signal }), api("/api/experiments", { signal }), api("/api/report-exports", { signal }), api("/api/outcome-evidence", { signal })]);
     if (generation !== refreshGeneration) return;
-    data = workspace; codeCatalog = catalog; actionCatalog = actions; comparisonCatalog = comparisons; experimentCatalog = experiments; reportExportCatalog = exports;
+    data = workspace; codeCatalog = catalog; actionCatalog = actions; comparisonCatalog = comparisons; experimentCatalog = experiments; reportExportCatalog = exports; outcomeCatalog = outcomes;
     $("connection-status").textContent = "Local service connected";
     $("connection-dot").style.background = "#7ba595";
-    render(); renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog(); renderExperimentCatalog(); renderReportExportCatalog(); renderExportOptions();
+    render(); renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog(); renderExperimentCatalog(); renderReportExportCatalog(); renderExportOptions(); renderOutcomeCatalog(); renderOutcomeOptions();
     if (openedCodeRun) {
       if (!codeEntry(openedCodeRun.kind, openedCodeRun.id)) clearCodeState("Code access changed. The record was closed.");
       else {
@@ -148,6 +150,11 @@ async function refresh() {
           const attempt = { generation: detailGeneration, signal: detailController.signal }, current = openedCodeRun;
           try {
             const checked = await api(detailRoute(current.kind, current.id), { signal: AbortSignal.any([signal, attempt.signal]) });
+            if (generation === refreshGeneration && ownsDetail(attempt) && current.kind === "outcome-selection" && outcomeSelection?.comparisonId) {
+              const selected = outcomeSelection.comparisonId;
+              try { await api(`/api/comparisons/${selected}`, { signal: AbortSignal.any([signal, attempt.signal]) }); }
+              catch (error) { if (ownsDetail(attempt) && outcomeSelection?.comparisonId === selected) throw error; }
+            }
             if (generation === refreshGeneration && ownsDetail(attempt) && current.kind === "actions" && checked.record.revision !== current.revision) {
               if (current.editing) { $("action-form-status").textContent = "A newer revision is available. Read it before deliberately applying an update."; $("action-reload").hidden = false; }
               else { $("detail-content").replaceChildren(...actionSections(checked)); current.revision = checked.record.revision; }
@@ -190,7 +197,7 @@ function resetDetail() {
   detailGeneration++;
   detailController?.abort(); detailController = null;
   clearTimeout(expiryTimer);
-  openedActorRun = null; openedCodeRun = null; openedComparison = null; exportSelection = null;
+  openedActorRun = null; openedCodeRun = null; openedComparison = null; exportSelection = null; outcomeSelection = null;
   for (const url of imageUrls.splice(0)) URL.revokeObjectURL(url);
   $("detail-content").replaceChildren();
   $("detail-title").textContent = "Review";
@@ -207,6 +214,14 @@ function beginDetail() {
 }
 function ownsDetail(attempt) { return detailGeneration === attempt.generation && !attempt.signal.aborted; }
 function codeEntry(kind, id) {
+  if (kind === "outcome-selection") {
+    const plan = outcomeSelection && outcomeCatalog && outcomePlanAccess(outcomeSelection.planId);
+    return plan && (!outcomeSelection.comparisonId || outcomeComparison(outcomeSelection.planId, outcomeSelection.comparisonId)) ? plan : null;
+  }
+  if (kind === "outcome-evidence") {
+    const entry = outcomeCatalog?.outcomeEvidence.find(item => item.id === id), comparison = entry && outcomeComparison(entry.planId, entry.comparisonId);
+    return comparison && comparison.verdict === entry.verdict ? { entry, grant: null } : null;
+  }
   if (kind === "export-selection") {
     const scope = exportSelection && reportExportCatalog && exportAccess(exportSelection.items);
     return scope ? { entry: exportSelection, grant: scope.grant } : null;
@@ -244,7 +259,7 @@ function renderCodeCatalog() {
   }
 }
 function clearCodeState(message) {
-  codeCatalog = null; actionCatalog = null; comparisonCatalog = null; experimentCatalog = null; reportExportCatalog = null; renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog(); renderExperimentCatalog(); renderReportExportCatalog();
+  codeCatalog = null; actionCatalog = null; comparisonCatalog = null; experimentCatalog = null; reportExportCatalog = null; outcomeCatalog = null; renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog(); renderExperimentCatalog(); renderReportExportCatalog(); renderOutcomeCatalog();
   if (openedCodeRun || openedActorRun || openedComparison) { closeDetail(); if (message) toast(message, true); }
 }
 function armCodeExpiry() {
@@ -259,6 +274,7 @@ function armCodeExpiry() {
   }, Math.min(2_147_000_000, Math.max(1, Date.parse(access.grant.expiresAt) - Date.now())));
 }
 function codeSections(kind, report) {
+  if (kind === "outcome-evidence") return outcomeEvidenceSections(report);
   if (kind === "report-exports") return reportExportSections(report);
   if (kind === "actions") return actionSections(report);
   if (kind === "experiments") return experimentSections(report);
@@ -300,7 +316,7 @@ async function showCodeReport(kind, id) {
     const report = await api(detailRoute(kind, id), { signal: attempt.signal });
     if (!ownsDetail(attempt)) return;
     if (!codeEntry(kind, id)) { clearCodeState("Code access changed. The record was closed."); return; }
-    $("detail-title").textContent = kind === "report-exports" ? "Checked local report export" : kind === "experiments" ? "Frozen experiment plan" : kind === "actions" ? "Tracked follow-up action" : kind === "repositories" ? "Local repository snapshot" : "Engineering source notes";
+    $("detail-title").textContent = kind === "outcome-evidence" ? "Linked controlled evidence" : kind === "report-exports" ? "Checked local report export" : kind === "experiments" ? "Frozen experiment plan" : kind === "actions" ? "Tracked follow-up action" : kind === "repositories" ? "Local repository snapshot" : "Engineering source notes";
     $("detail-content").replaceChildren(...codeSections(kind, report));
     openedCodeRun.pending = false; if (kind === "actions") openedCodeRun.revision = report.record.revision;
     if (!$("review-dialog").open) $("review-dialog").showModal(); $("detail-title").focus({ preventScroll: true }); armCodeExpiry();
@@ -309,7 +325,7 @@ async function showCodeReport(kind, id) {
   }
 }
 
-function detailRoute(kind, id) { return kind === "report-exports" ? `/api/report-exports/${id}` : kind === "experiments" ? `/api/experiments/${id}` : kind === "actions" ? `/api/actions/${id}` : kind === "browser-source" ? `/api/reviews/${id}` : `/api/code-runs/${kind}/${id}`; }
+function detailRoute(kind, id) { return kind === "outcome-evidence" ? `/api/outcome-evidence/${id}` : kind === "report-exports" ? `/api/report-exports/${id}` : ["experiments", "outcome-selection"].includes(kind) ? `/api/experiments/${id}` : kind === "actions" ? `/api/actions/${id}` : kind === "browser-source" ? `/api/reviews/${id}` : `/api/code-runs/${kind}/${id}`; }
 function renderActionCatalog() {
   const rows = (actionCatalog?.actions ?? []).filter(action => codeEntry("actions", action.id)).map(action => {
     const row = node("div", undefined, "grant-item action-record"); row.dataset.actionId = action.id;
@@ -491,6 +507,10 @@ function experimentSections(report) {
   const source = section("Pinned historical action and source"); source.append(node("p", `Action: ${report.actionVersion.id} · revision ${report.actionVersion.revision}`), node("code", report.actionVersion.sha256, "code-hash"), node("p", `${report.actionVersion.origin.kind.replaceAll("_", " ")}: ${report.actionVersion.origin.runId} · ${report.actionVersion.origin.itemId}`), node("p", `Evidence run: ${report.actionVersion.origin.evidenceRunId}`), node("code", report.actionVersion.origin.reportSha256, "code-hash"));
   const limits = section("Plan limits and current access"); for (const limitation of report.limitations) limits.append(node("p", limitation));
   limits.append(node("p", "Source permission and saved bytes are checked again during refresh, at most ten seconds between idle polls plus request time. Known access expiry clears managed detail locally. Data already delivered cannot be recalled."));
+  if (report.actionVersion.origin.kind === "browser_finding") {
+    const link = node("button", "Link controlled evidence", "small-button"); link.disabled = !outcomeCatalog || !outcomePlanAccess(report.id);
+    link.addEventListener("click", () => showOutcomeEvidenceForm({ id: report.id, baselineId: report.actionVersion.origin.runId, findingId: report.actionVersion.origin.itemId, startsAt: plan.horizon.startsAt, endsAt: plan.horizon.endsAt })); summary.append(link);
+  }
   return [summary, hypothesis, outcome, sample, window, source, limits];
 }
 function showExperimentForm(record) {
@@ -539,6 +559,80 @@ function showExperimentForm(record) {
     } finally { if (ownsDetail(attempt)) { save.disabled = false; for (const input of Object.values(fields)) input.disabled = false; } }
   });
   $("detail-content").replaceChildren(form); if (!$("review-dialog").open) $("review-dialog").showModal(); fields.title.focus({ preventScroll: true });
+}
+
+function outcomePlanAccess(planId) {
+  const access = codeEntry("experiments", planId);
+  return access?.entry.origin.kind === "browser_finding" && data?.jobs.some(job => job.id === access.entry.origin.runId && job.status === "completed") ? access : null;
+}
+function outcomeComparison(planId, comparisonId) {
+  const plan = outcomePlanAccess(planId), comparison = comparisonCatalog?.comparisons.find(item => item.id === comparisonId);
+  return plan && comparison?.outcome === "compared" && comparison.baselineReviewId === plan.entry.origin.runId && [comparison.baselineReviewId, comparison.candidateReviewId].every(id => data?.jobs.some(job => job.id === id && job.status === "completed")) ? comparison : null;
+}
+function renderOutcomeCatalog() {
+  const rows = (outcomeCatalog?.outcomeEvidence ?? []).filter(item => codeEntry("outcome-evidence", item.id)).map(item => {
+    const row = node("div", undefined, "grant-item outcome-record"); row.dataset.outcomeId = item.id;
+    const copy = node("div", undefined, "grant-main"); copy.append(node("strong", comparisonLabel(item.verdict)), node("p", `Plan: ${item.planId}`), node("small", `${date(item.registeredAt)} · Evidence linked · Unadjudicated · Cataloged, unverified`));
+    const inspect = node("button", "Inspect linked evidence →", "small-button"); inspect.addEventListener("click", () => showCodeReport("outcome-evidence", item.id)); row.append(copy, inspect); return row;
+  });
+  $("outcome-evidence-list").replaceChildren(...(rows.length ? rows : [node("p", outcomeCatalog ? "No available recent evidence links. Open a frozen browser-finding plan to select a saved comparison." : "Current linked evidence access cannot be established.", "empty")]));
+}
+function renderOutcomeOptions() {
+  if (openedCodeRun?.kind !== "outcome-selection" || !outcomeSelection || !$("outcome-comparison")) return;
+  const selected = outcomeSelection.comparisonId, options = (comparisonCatalog?.comparisons ?? []).filter(item => outcomeComparison(outcomeSelection.planId, item.id)).filter((item, index) => index < 25 || item.id === selected), control = $("outcome-comparison");
+  const placeholder = node("option", "Choose a saved comparison"); placeholder.value = "";
+  control.replaceChildren(placeholder, ...options.map(item => { const option = node("option", `${comparisonLabel(item.verdict)} · candidate ${item.candidateReviewId.slice(0, 8)} · comparison ${item.id.slice(0, 8)}`); option.value = item.id; return option; }));
+  control.value = selected; control.disabled = !!outcomeSelection.saving;
+  const comparison = selected && outcomeComparison(outcomeSelection.planId, selected);
+  $("outcome-selected-source").textContent = comparison ? `Selected comparison: ${comparison.id} · Candidate review: ${comparison.candidateReviewId}. Server time-window and full source checks still apply.` : options.length ? "Choose explicitly from up to 25 recent available comparisons, plus a selection still in current catalogs. No comparison is chosen automatically." : "No comparable completed capture for this baseline is known in current catalogs. Create a separate comparison or refresh; no source is substituted.";
+}
+function showOutcomeEvidenceForm(scope) {
+  const attempt = beginDetail();
+  if (!outcomeCatalog || !outcomePlanAccess(scope.id)) { closeDetail(); toast("The frozen browser-finding plan is currently unavailable.", true); return; }
+  outcomeSelection = { planId: scope.id, comparisonId: "", saving: false }; openedCodeRun = { kind: "outcome-selection", id: scope.id, pending: false }; armCodeExpiry();
+  $("detail-title").textContent = "Link controlled evidence to a frozen plan";
+  const form = node("form"); form.id = "outcome-evidence-form"; form.noValidate = true;
+  form.append(node("p", "Register saved evidence only. Hypothesis, sample adequacy, independent outcome, planned intervention, and causality are not adjudicated. The plan and action stay unchanged.", "fine-print"), node("p", `Plan: ${scope.id}`), node("p", `Exact baseline review: ${scope.baselineId} · Finding: ${scope.findingId}`), node("p", `Frozen window (UTC): ${scope.startsAt} → ${scope.endsAt}. Local clock only. The server checks the exact compared requirement and all capture times.`));
+  const label = node("label", "Saved comparable capture for this baseline"); label.htmlFor = "outcome-comparison";
+  const comparison = node("select"); comparison.id = "outcome-comparison";
+  comparison.addEventListener("change", () => { if (!ownsDetail(attempt) || !outcomeSelection || outcomeSelection.saving) return; outcomeSelection.comparisonId = comparison.value; renderOutcomeOptions(); });
+  const selected = node("p", "", "fine-print"); selected.id = "outcome-selected-source";
+  const noteLabel = node("label", "Optional supplied note · unreviewed, up to 2000 characters"); noteLabel.htmlFor = "outcome-note";
+  const note = node("textarea"); note.id = "outcome-note"; note.maxLength = 2000; note.rows = 3; note.autocomplete = "off";
+  const message = node("p", "", "fine-print"); message.id = "outcome-form-status"; message.setAttribute("role", "alert");
+  const save = node("button", "Register controlled evidence", "primary"); save.type = "submit";
+  form.append(label, comparison, selected, noteLabel, note, message, save);
+  form.addEventListener("submit", async event => {
+    event.preventDefault(); if (!ownsDetail(attempt) || !outcomeSelection || outcomeSelection.saving) return;
+    if (!outcomeSelection.comparisonId || !outcomeComparison(scope.id, outcomeSelection.comparisonId)) { message.textContent = "Choose one currently available comparable capture for the exact baseline."; return; }
+    if (note.value.length > 2000 || note.value && (!note.value.trim() || /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]/u.test(note.value))) { message.textContent = "Use an optional nonempty note of at most 2000 characters without unsupported control characters."; return; }
+    if (!codeEntry("outcome-selection", scope.id)) { closeDetail(); toast("A selected source is unavailable. The evidence form was closed.", true); return; }
+    const payload = { schemaVersion: "1.0", kind: "controlled_outcome_evidence_input", planId: scope.id, comparisonId: outcomeSelection.comparisonId, ...(note.value ? { note: note.value } : {}) };
+    outcomeSelection.saving = true; save.disabled = true; note.disabled = true; comparison.disabled = true;
+    try {
+      const result = await api("/api/outcome-evidence", { method: "POST", body: JSON.stringify(payload), signal: attempt.signal });
+      if (!ownsDetail(attempt)) return; await refresh(); if (!ownsDetail(attempt)) return; await showCodeReport("outcome-evidence", result.id);
+    } catch (error) { if (ownsDetail(attempt)) { closeDetail(); toast(`Registration not confirmed. Inspect recent evidence links before retrying. ${error.message}`, true); } }
+    finally { if (ownsDetail(attempt) && outcomeSelection) { outcomeSelection.saving = false; save.disabled = false; note.disabled = false; comparison.disabled = false; } }
+  });
+  $("detail-content").replaceChildren(form); renderOutcomeOptions(); if (!$("review-dialog").open) $("review-dialog").showModal(); comparison.focus({ preventScroll: true });
+}
+function outcomeEvidenceSections(report) {
+  const summary = section("Evidence linked · unadjudicated"); summary.append(node("p", "Scope: controlled local signup only. No intervention, participant collection, app test, or model runs through registration."), node("p", "Hypothesis resolution: not assessed. Sample adequacy: not assessed. Independent outcome verification: not established. Planned intervention: not verified. Causal attribution: not assessed."), node("p", "Semantic review: unreviewed. Protocol review: not assessed. The original plan remains uncollected; action declarations stay unchanged."));
+  const observation = section("Saved controlled observation"); observation.append(node("p", comparisonLabel(report.observation.verdict)), node("p", `Baseline: ${report.observation.baselineState.replaceAll("_", " ")} · Candidate: ${report.observation.candidateState.replaceAll("_", " ")}`), node("p", `Requirement: ${report.observation.requirementId}`), node("code", report.observation.requirementHash, "code-hash"), node("p", "Study SHA-256"), node("code", report.observation.studyHash, "code-hash"));
+  const note = section("Supplied note · unreviewed"); note.append(node("p", report.input.note ?? "No supplied note."));
+  const alignment = section("Recorded local time alignment");
+  for (const [key, label] of [["baselineGeneratedAt", "Baseline report"], ["frozenAt", "Plan frozen"], ["startsAt", "Planned start"], ["candidateCreatedAt", "Candidate created"], ["candidateGeneratedAt", "Candidate report"], ["endsAt", "Planned end"], ["comparisonCreatedAt", "Comparison created"]]) alignment.append(node("p", `${label} (UTC): ${report.alignment[key]}`));
+  for (const execution of report.alignment.candidateExecutions) alignment.append(node("p", `Candidate execution ${execution.id}: ${execution.startedAt} → ${execution.finishedAt}`));
+  alignment.append(node("p", `Evidence registered: ${report.registeredAt}. Local clock only; no independent prospective registration or unknown-outcome proof.`));
+  const sources = section("Checked source identities and hashes");
+  for (const [label, pin] of [["Frozen plan", report.sources.plan], ["Comparison", report.sources.comparison]]) sources.append(node("p", `${label}: ${pin.id}`), node("code", pin.reportSha256, "code-hash"));
+  sources.append(node("p", `Historical action: ${report.sources.actionVersion.id} · revision ${report.sources.actionVersion.revision}`), node("code", report.sources.actionVersion.sha256, "code-hash"));
+  for (const [label, pin] of [["Baseline", report.sources.comparison.baseline], ["Candidate", report.sources.comparison.candidate]]) sources.append(node("p", `${label} review: ${pin.reviewId} · Evidence: ${pin.evidenceRunId}`), node("code", pin.reportSha256, "code-hash"));
+  const artifacts = section("Checked link artifact metadata · no download"); for (const artifact of report.artifacts) artifacts.append(node("p", `${artifact.owner} · ${artifact.bytes} bytes · ${artifact.mediaType} · ${artifact.id}`), node("code", artifact.sha256, "code-hash"));
+  const raw = node("details"), title = node("summary", "Show literal public record JSON"), body = node("pre", JSON.stringify(report, null, 2), "export-record-json"); raw.append(title, body);
+  const limits = section("Evidence limits and current sources"); for (const limitation of report.limitations) limits.append(node("p", limitation)); limits.append(node("p", "Current known parents and completed jobs are checked on refresh; full source/file checks repeat at most ten seconds between idle polls plus bounded request time. Absent catalog parents are unavailable. Delivered copies cannot be recalled."));
+  return [summary, observation, note, alignment, sources, artifacts, raw, limits];
 }
 
 function exportSourceAccess(source) {

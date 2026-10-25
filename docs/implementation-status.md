@@ -60,7 +60,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 375 passed, zero failed or skipped |
+| Full automated suite | 383 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -293,7 +293,7 @@ No real provider calls occurred in the recorded checks. Scripted runs report zer
 
 ## Next milestone
 
-The local action/plan/comparison/export workflows, U16 preflight, and controlled outcome evidence terminal/API are implemented. Next, implement explicit web selection, registration and checked detail from `docs/outcome-evidence-dashboard-plan.md`. Preserve full source/time lineage, fixed unadjudicated labels, current-source filtering, safe text, shared dialog ownership, and late-response guards. Add no download, export kind, independent human outcome claim, or action/plan promotion. Real research/pilot/provider inputs, external execution/isolation, C03 paid demand, and broader hierarchy remain open. Continue normal verified pushes to the private GitHub repository.
+The local action/plan/comparison/export workflows, U16 preflight, and controlled outcome evidence web/terminal/API are implemented. Next, add bounded fifth-kind evidence-link export from `docs/outcome-evidence-export-plan.md`. Preserve old exports, exact transitive source pins/current availability, unadjudicated labels, and explicit dependency/serialized-size limits. Add no artifact/participant/actor/research export or outcome promotion. Independent human outcomes, external isolation, real research/pilot/provider inputs, C03 paid demand, and broader hierarchy remain open. Continue normal verified pushes to the private GitHub repository.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
 
@@ -361,3 +361,22 @@ Type checking, build, and the full suite passed: 375 tests, zero failures or ski
 The dashboard only changes archive-version text. All browser regressions pass; its visually inspected installed 0.19.0 desktop/mobile export baseline remains recorded separately. The API establishes no independent human outcome, researched psychology, hypothesis/sample/intervention/protocol approval, causal effect, demand, buying/investment/funding outcome, or production isolation. Current sources and local operator/clock/metadata/filesystem boundaries remain explicit; delivered bytes cannot be recalled and final response checks are not atomic with filesystem changes or receipt.
 
 Next ready milestone: `docs/outcome-evidence-dashboard-plan.md` adds explicit web selection, registration, minimal catalog, and checked literal detail under shared managed-view guards. Preserve the existing contract and four report-export kinds. Independent human outcomes, external execution/isolation, real research/pilot/provider inputs, C03 paid demand, and broad hierarchy remain open. Continue normal verified GitHub pushes.
+
+## Version 0.23 verification
+
+Controlled outcome evidence now supports explicit dashboard selection/registration, minimal catalog, and checked literal detail. Open a frozen browser-finding plan, select a saved comparable comparison for its exact baseline, and optionally supply a bounded note. Nothing is selected automatically. The backend retains full requirement/window/lineage/byte checks. Fixed unadjudicated limits remain visible; the original plan/action/source records are unchanged.
+
+Exact files:
+
+- `web/app.js`: seven-endpoint all-or-nothing refresh; current known plan/comparison/completed-job filtering; source-linked form with primitive selected IDs and note preservation; selected/unselected source loss handling; locked pending controls; full plan/selected-comparison refresh; checked public detail with fixed limits, local chronology, source IDs/hashes, artifact metadata, and collapsed literal JSON. Existing shared dialog/abort/reset/generation guards prevent late initial/detail/committed-create restoration. No persistent browser storage, global full-report cache, automatic retry, artifact download, source substitution or state promotion is added.
+- `web/index.html`: linked controlled evidence card in Reviews; install text uses 0.23.0. Existing shared styles wrap the form, literal long notes, hashes, and mobile detail.
+- `tests/outcome-evidence-dashboard.test.ts`: eight real-browser checks cover a genuinely frozen plan and later actual capture for the positive web path, exact input/unchanged sources/fixed labels, empty and out-of-window creation, refresh draft preservation, desktop/390 px literal long text, selected/unselected source loss, normal idle-poll clearing, own/source tamper, late initial and committed response, locked pending controls, mixed old/current catalogs, failed metadata refresh, no duplicate creation, and absent persistent browser storage. Other negative cases use explicitly authored clock fixtures over copied real captures.
+- `docs/outcome-evidence.md`, README, package/status/backlog/continuation describe current-catalog timing and no-adjudication limits. `docs/outcome-evidence-export-plan.md` is repository-only next work.
+
+Type checking, JavaScript syntax check, build, and the full suite passed: 383 tests, zero failures or skips. Log: `outputs/test-results-0.23.0.txt`. Focused eight-browser-check log: `outputs/outcome-evidence-dashboard-targeted.txt`. All existing dashboard, API, source/action/plan/comparison/export/actor, budget, publication and recovery regressions pass.
+
+`outputs/redteam-0.23.0.tgz` contains 121 files and is installed into an isolated prefix. `work/verify-installed-0.23.0.mjs` verifies compiled CLI/API/template/contract/doctor, actual broken/fixed captures around a genuinely frozen plan without mocked time, fourteen checked source artifacts, exact source lineage, web selection/note preservation across metadata refresh, confirmed web registration and two checked link artifacts, literal long supplied text, desktop/390 px layout without horizontal overflow, collapsed public JSON, no artifact download, public API field exclusion, fixed unadjudicated labels, duplicate rejection without another directory, historical readability after real terminal action update, normal idle-poll source-loss closure/catalog clearing, no persistent browser storage or uncaught browser errors, API/CLI denial under authored source-job unavailability, and checked retrieval after restoration. Results: `outputs/installed-verification-0.23.0.json`. Four form/detail desktop/mobile screenshots are under `outputs/preview/outcome-evidence-*-0.23.0.png`; visual inspection is recorded in the release proof. The temporary browser and service stop. No real credential, provider, participant research, or human outcome is used.
+
+This is a controlled software evidence workflow, not independent U06 human outcome tracking, a validated hypothesis/sample/intervention/protocol, researched psychology, causal effect, buying/investment/funding/customer demand, commercial validation or production isolation. Current parent catalog windows, idle poll/request timing, trusted local operator/clock/metadata/filesystem, uncertain writes and delivered copies remain explicit. The four report-export kinds remain unchanged.
+
+Next ready milestone: bounded fifth-kind evidence-link export in `docs/outcome-evidence-export-plan.md`, preserving old export compatibility, exact link/transitive source pins, unadjudicated labels, current availability and existing limits. Do not bypass browser/size budgets through transitive links or enable artifact/participant/actor/research export. Continue normal verified GitHub pushes; external research/pilot/provider, C03 paid demand, independent adjudication, production isolation and broader hierarchy gates remain open.
