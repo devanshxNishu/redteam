@@ -4,7 +4,7 @@ Private source repository: [devanshxNishu/redteam](https://github.com/devanshxNi
 
 Redteam is planned for **ideas and apps** through a web dashboard and terminal CLI. The current build provides controlled app evidence and local record workflows. Web, terminal and protected API idea/app intake are implemented; analytical idea review is next; researched stakeholder predictions and the live roundtable remain gated. See the [active scope](docs/idea-and-app-scope.md) and [next analytical review slices](docs/analytical-review-plan.md).
 
-Version 0.30.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.31.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -27,7 +27,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.30.0.tgz
+npm install --global ./redteam-0.31.0.tgz
 redteam --help
 redteam doctor
 ```
@@ -69,7 +69,7 @@ redteam analysis prepare BRIEF_ID
 redteam analysis check BRIEF_ID ./analytical-response.input.json
 ```
 
-Packet reads the checked idea/app brief and assigns exact supplied-field references. Check validates a separately supplied response against those references and lists uncovered tracks. It calls no model and creates no review result. Structure/reference checks leave reasoning and proposed protocols unreviewed. See the [analytical contract](docs/analytical-review.md); [Local generation preparation](docs/analyst-generation.md) also previews instructions/input/schema without a model, key or request. An isolated [analyst ownership handle](docs/analyst-task.md) now provides one fenced task and current-source checks for future integration. Configured dispatch, budgets, publication/recovery and semantic review remain later steps.
+Packet reads the checked idea/app brief and assigns exact supplied-field references. Check validates a separately supplied response against those references and lists uncovered tracks. It calls no model and creates no review result. Structure/reference checks leave reasoning and proposed protocols unreviewed. See the [analytical contract](docs/analytical-review.md); [Local generation preparation](docs/analyst-generation.md) also previews instructions/input/schema without a model, key or request. An isolated [analyst ownership handle](docs/analyst-task.md) now provides one fenced task and current-source checks for future integration. Internal [explicit analyst configuration and manifest preparation](docs/analyst-configuration.md) also pins exact source permission and separate phase caps without creating a run. Configured dispatch, budgets, publication/recovery and semantic review remain later steps.
 
 ## Grant access
 

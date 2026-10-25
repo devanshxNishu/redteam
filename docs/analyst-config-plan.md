@@ -1,6 +1,6 @@
 # Next analyst slice: explicit configuration and manifest
 
-After 0.30.0, ownership is ready but no analyst runtime exists. Add a separately typed, strict public analyst configuration parser and a checked-source-bound, unwritten manifest preparation helper. Keep it separate from actor configuration and processing authority. No new CLI/API run command is planned in this slice.
+Implemented as the isolated 0.31.0 configuration/manifest slice; see `docs/analyst-configuration.md`. No analyst runtime exists yet. Add a separately typed, strict public analyst configuration parser and a checked-source-bound, unwritten manifest preparation helper. Keep it separate from actor configuration and processing authority. No new CLI/API run command is planned in this slice.
 
 Require an explicit provider/model, operator-supplied rate estimates, exact brief/packet external-processing attestation with expiry and basis, separate nonzero count/generation caps, maximum input/output, timeout/finalization and lease policy. Count also transmits the packet; do not infer zero liability from a token count. Derive a conservative total cap from both phase reservations. Refuse impossible estimated generation budgets using integer arithmetic. Attestation records the local operator's declaration, not independent rights verification or research permission.
 

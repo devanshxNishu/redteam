@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "analyst_configuration",
+  "provider": "openai",
+  "model": "REPLACE_WITH_SELECTED_MODEL",
+  "pricing": {
+    "inputUsdPerMillion": "1",
+    "outputUsdPerMillion": "1"
+  },
+  "processing": {
+    "mode": "external",
+    "provider": "openai",
+    "scope": "exact_brief_packet_and_generation",
+    "briefId": "00000000-0000-4000-8000-000000000000",
+    "packetSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "authorized": false,
+    "basis": "Replace with your actual authority for this exact supplied context and provider.",
+    "expiresAt": "1970-01-01T00:00:00.000Z"
+  },
+  "limits": {
+    "maximumInputTokens": 32000,
+    "maximumOutputTokens": 2000,
+    "count": { "tokens": 32000, "costMicrousd": 32000 },
+    "generation": { "tokens": 34000, "costMicrousd": 34000 },
+    "timeoutMs": 60000,
+    "finalizationMs": 5000
+  },
+  "taskPolicy": { "leaseMs": 30000, "heartbeatMs": 1000 }
+}
