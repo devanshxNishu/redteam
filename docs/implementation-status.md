@@ -1,6 +1,6 @@
 # redteam: Implementation status
 
-Current build: 0.17.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
+Current build: 0.18.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
 
 This record separates implemented code from the broader product plan. The browser runner reviews one controlled signup journey. Registered actor models can be used through the configured path, but no independent human behavioral validation is recorded.
 
@@ -14,7 +14,7 @@ This record separates implemented code from the broader product plan. The browse
 | Job lifecycle | Queue, primary run, verifier run, reporting, completion, limited coverage, failure, interruption | One active review; up to eight active or queued jobs |
 | Startup recovery | Marks unfinished jobs interrupted | Does not replay browser actions automatically |
 | Access grants | Exact web origins or canonical directories; capabilities, expiry, and revocation | Local text capture is enabled; external runner and code execution remain unavailable |
-| Checked report export | Selected controlled reviews, supplied actions/plans, and comparisons; immutable JSON/Markdown, source hashes, historical action prefix, current source rights | Terminal only; no raw source/research/credentials, new judgments, independent outcomes, or recall of delivered copies |
+| Checked report export | Selected controlled reviews, supplied actions/plans, and comparisons; immutable JSON/Markdown, source hashes, historical action prefix, current source rights | Terminal/API; no raw source/research/credentials, new judgments, independent outcomes, or recall of delivered copies |
 | Frozen experiment plans | Exact supplied plan and action revision, hypothesis/intervention/metric/sample/window/owner, immutable artifacts, current source rights, historical action integrity | Web/terminal/API; unreviewed protocol, local clock only, no execution or collected/independent outcome |
 | Controlled comparison | Saved signup reports, pinned study/requirement/source hashes, complete distinct execution pairs, recorded instrumentation, explicit verdicts and coverage reasons | Web/terminal/API; no new execution, causal fix, action promotion, or arbitrary release matching |
 | Tracked actions | Owner labels, next steps, validation methods, declared progress, source pins, revision history, atomic expected-revision writes, and current source access | Web/terminal/API; no external assignment/execution, independent outcome, or verified completion |
@@ -60,7 +60,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 315 passed, zero failed or skipped |
+| Full automated suite | 321 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -225,6 +225,26 @@ Existing dashboard behavior remains the installed 0.16.0 workflow; only install-
 
 Next ready milestone: protected U08 report-export API and dashboard selection/inspection/download. Reuse current source/pin checks and no-store session/Host/Origin boundaries. Keep full private pins out of catalogs/downloads, allow only selected typed records, render supplied text safely, recheck access immediately before response/download, prevent stale responses from restoring closed/restricted views, and state that delivered copies cannot be recalled. Actor/research export and U06 independent outcome intake/adjudication remain separate.
 
+
+## Version 0.18 verification
+
+U08 report export now has protected creation, catalog/detail, and exact JSON/Markdown attachment downloads through the local API. Session/Host/Origin/no-store protections apply. Full selected-source and saved-file checks precede detail/download; a synchronous current-source/access check runs again immediately before response headers and bytes. Catalogs contain minimal public references, without private source pins or directories. Unsupported formats/mutations/source-artifact routes remain unavailable.
+
+Exact files:
+
+- `src/report-export.ts`: minimal public source refs in authorized summaries, a synchronous final access guard, and Markdown rendering from an already checked in-memory public report. It does not reopen an arbitrary path after the access check.
+- `src/server.ts`: GET/POST `/api/report-exports`, checked detail, `/download.json`, and `/download.md`; one active creation per service; static 400/404/409 responses; UUID-derived attachment names, exact byte length and SHA-256 header, no-store, and final access guard.
+- `tests/report-export-api.test.ts`: six checks for confirmed creation, exact attachment/file bytes/hash/length, public catalog projection, session/Origin/real forged-Host protection, strict inputs, unavailable/tampered publications, unsupported formats/mutations, withdrawal/expiry, unchanged delivered copies, historical action updates/note tamper, and revocation injected after full source verification but before attachment delivery. The last check receives static 404 with no attachment headers or private body.
+- `docs/report-export.md`, README, package metadata, status/backlog/continuation describe the API and delivery boundary. `docs/report-export-dashboard-plan.md` records the next UI work and verification; it is repository-only.
+
+Type checking, build, and the full suite passed: 321 tests, zero failures or skips. Log: `outputs/test-results-0.18.0.txt`. Focused API log: `outputs/report-export-api-targeted.txt`. `outputs/redteam-0.18.0.tgz` contains 114 files and is installed into an isolated prefix. `work/verify-installed-0.18.0.mjs` verifies the compiled mixed actual browser/action/plan/comparison export, protected API creation, public catalog omission of private pins/paths, exact JSON/Markdown attachments, length/hash/no-store headers, unsupported route/input denials, historical preservation, terminal withdrawal blocking both downloads/detail/catalog/CLI, preserved delivered bytes, unchanged source/jobs/actors, and zero live credentials/provider calls. Results: `outputs/installed-verification-0.18.0.json`. Browser capture contexts closed and the temporary service stopped.
+
+Dashboard behavior remains the verified 0.16.0 workflow, with only install-version text changed. All current dashboard regressions pass. Delivered copies cannot be recalled. Current-source checks are local boundaries rather than atomic transactions with external receipt/files. Local metadata/operator/clock/filesystem/backups, declaration semantics, absent independent outcomes, and research/commercial/isolation/hierarchy gates remain as documented.
+
+Next ready milestone: implement the protected export dashboard selection, checked inspection, and JSON/Markdown download workflow in `docs/report-export-dashboard-plan.md`. Preserve all existing managed-view protections and keep exported source scope unchanged. U06 independent outcomes, actor/research export, real research/pilot/provider inputs, C03 paid demand, and broader scheduling/isolation remain open.
+
+During this continuing run, a later account check reported ordinary usage available, primary 24% used and secondary 4% used. No credits or reset credits were purchased or redeemed. Continue useful work; do not stop at an individual release checkpoint.
+
 ## Remaining scope
 
 - Authorized external app execution and production worker isolation.
@@ -235,13 +255,13 @@ Next ready milestone: protected U08 report-export API and dashboard selection/in
 - Country adaptation, consumer buying models, and investor decision models.
 - Validated purchase, conversion, investment, or population predictions.
 - Hosted tenant authentication, durable distributed workers, analyst task leases, and integration of shared parent budgets with a specialist scheduler.
-- Web/API report export, arbitrary release matching, independent outcome tracking, and commercial demand evidence.
+- Dashboard report export, arbitrary release matching, independent outcome tracking, and commercial demand evidence.
 
 No real provider calls occurred in the recorded checks. Scripted runs report zero model spend. Configured runs retain rate-based estimates and unknown-usage markers. Infrastructure cost is not calculated.
 
 ## Next milestone
 
-U08 now exports bounded checked local records through terminal JSON/Markdown. Add protected API and dashboard selection, inspection, and download with current source rights/integrity, no-store session/Host/Origin checks, safe text, current-parent catalog filtering, expiry, and late-response ownership. Keep full private source pins/internal paths out of exported records. Recheck current access before delivery and make the inability to recall downloaded copies explicit. Actor/research export and U06 independent outcomes remain separate. Arbitrary releases, semantic review, specialist scheduling, isolation, real research, paid demand, and live providers remain open.
+U08 now creates, inspects, and downloads checked local exports through terminal/API. Implement `docs/report-export-dashboard-plan.md`: explicit bounded selection, current-parent filtering/expiry, checked safe-text detail, verified JSON/Markdown downloads, managed Blob cleanup, no-store sessions, and late-response ownership. Never silently alter a selected bundle after source denial or retry an uncertain create. Delivered copies cannot be recalled. Actor/research export and U06 independent outcomes remain separate. Arbitrary releases, semantic review, specialist scheduling, isolation, real research, paid demand, and live providers remain open.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
 

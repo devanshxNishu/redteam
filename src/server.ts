@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import { WorkspaceStore } from "./workspace.ts";
 import { grantAccess, isGrantActive } from "./access.ts";
 import { ReviewService } from "./review-service.ts";
-import { checkArtifacts } from "./evidence.ts";
+import { checkArtifacts, sha256 } from "./evidence.ts";
 import { ResearchRegistry } from "./research.ts";
 import { runActorDemo } from "./actor-demo.ts";
 import { readActorReport, authorizedActorRuns } from "./actor-reports.ts";
@@ -16,6 +16,7 @@ import { ActionConflictError } from "./domain/actions.ts";
 import { authorizedActionSummaries, createTrackedAction, readTrackedAction, updateTrackedAction } from "./actions.ts";
 import { comparisonSummaries, createStoredComparison, readStoredComparison } from "./comparisons.ts";
 import { experimentPlanSummaries, freezeExperimentPlan, readExperimentPlan } from "./experiments.ts";
+import { reportExportSummaries, createReportExport, readReportExport, checkReportExportAccess, reportExportMarkdown } from "./report-export.ts";
 
 async function body(request: IncomingMessage): Promise<Record<string, unknown>> {
   if (request.headers["content-type"]?.split(";")[0] !== "application/json") throw new Error("Use application/json.");
@@ -52,6 +53,7 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
   let origin = "";
   let actorDemoActive: Promise<unknown> | null = null;
   let comparisonActive = false;
+  let reportExportActive = false;
   let closing = false;
   const server = createServer((request, response) => {
     response.setHeader("Cache-Control", "no-store");
@@ -76,6 +78,27 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
       const supplied = Buffer.from(authorization.startsWith("Bearer ") ? authorization.slice(7) : "");
       const expected = Buffer.from(token);
       if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) { send(response, 401, { error: "A local Redteam session is required." }); return; }
+      if (request.method === "GET" && url.pathname === "/api/report-exports") { send(response, 200, { recentWindow: 100, reportExports: reportExportSummaries(store) }); return; }
+      if (request.method === "POST" && url.pathname === "/api/report-exports") {
+        if (reportExportActive) { send(response, 409, { code: "report_export_busy", error: "A local report export is already running." }); return; }
+        reportExportActive = true;
+        try { const summary = await createReportExport(store, await body(request)); checkReportExportAccess(store, summary.id); send(response, 201, { id: summary.id, title: summary.title, createdAt: summary.createdAt, records: summary.sourcePins.length }); }
+        catch { send(response, 400, { code: "report_export_not_created", error: "Export could not be confirmed. Check the bounded selection and current source access; inspect recent exports before retrying." }); }
+        finally { reportExportActive = false; }
+        return;
+      }
+      const reportExportDetail = /^\/api\/report-exports\/([a-f0-9-]{36})(?:\/(download\.(json|md)))?$/.exec(url.pathname);
+      if (request.method === "GET" && reportExportDetail) {
+        try {
+          const id = reportExportDetail[1]!, report = await readReportExport(store, id);
+          if (reportExportDetail[2]) {
+            const format = reportExportDetail[3]!, content = Buffer.from(format === "json" ? JSON.stringify(report, null, 2) + "\n" : reportExportMarkdown(report));
+            checkReportExportAccess(store, id);
+            response.writeHead(200, { "Content-Type": format === "json" ? "application/json; charset=utf-8" : "text/markdown; charset=utf-8", "Content-Disposition": `attachment; filename="redteam-report-${id}.${format}"`, "Content-Length": content.length, "X-Content-SHA256": sha256(content) }); response.end(content);
+          } else { checkReportExportAccess(store, id); send(response, 200, report); }
+        } catch { send(response, 404, { code: "report_export_unavailable", error: "Report export unavailable. Current source or saved integrity checks failed." }); }
+        return;
+      }
       if (request.method === "GET" && url.pathname === "/api/experiments") { send(response, 200, { recentWindow: 100, experimentPlans: experimentPlanSummaries(store) }); return; }
       if (request.method === "POST" && url.pathname === "/api/experiments") {
         try { send(response, 201, await freezeExperimentPlan(store, await body(request))); }

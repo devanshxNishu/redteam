@@ -127,8 +127,14 @@ export async function createReportExport(store: WorkspaceStore, value: unknown):
   store.saveReportExport(summary, () => checkPins(store, pins)); return summary;
 }
 export function reportExportSummaries(store: WorkspaceStore) {
-  return store.recentReportExports().flatMap(item => { try { checkPins(store, item.sourcePins); return [{ id: item.id, createdAt: item.createdAt, title: item.title, records: item.sourcePins.length, recordStatus: "cataloged_unverified" as const }]; } catch { return []; } });
+  return store.recentReportExports().flatMap(item => { try { checkPins(store, item.sourcePins); return [{ id: item.id, createdAt: item.createdAt, title: item.title, records: item.sourcePins.length, sources: item.sourcePins.map(publicRef), recordStatus: "cataloged_unverified" as const }]; } catch { return []; } });
 }
+export function checkReportExportAccess(store: WorkspaceStore, id: string): undefined {
+  if (!uuid.test(id)) throw new Error("Supply a report export UUID."); const summary = store.reportExport(id); if (!summary) throw new Error("Report export not found.");
+  return checkPins(store, summary.sourcePins);
+}
+/** Render only a report returned by readReportExport; no filesystem content is loaded here. */
+export function reportExportMarkdown(report: ReportExport): string { return markdown(report.id, report.createdAt, report.title, report.records); }
 export async function readReportExport(store: WorkspaceStore, id: string): Promise<ReportExport> {
   if (!uuid.test(id)) throw new Error("Supply a report export UUID."); const summary = store.reportExport(id); if (!summary) throw new Error("Report export not found."); checkPins(store, summary.sourcePins);
   const state = await realpath(store.directory), root = resolve(state, "report-exports", id); if (root !== summary.directory) throw new Error("The report export directory does not match its catalog.");
