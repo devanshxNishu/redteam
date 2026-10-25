@@ -9,3 +9,5 @@
 textarea{width:100%;padding:12px;border:1px solid #dbe0da;border-radius:5px;background:#fcfdfb;color:#35423a;font:inherit;font-size:12px;line-height:1.8;resize:vertical}textarea:focus-visible{outline:3px solid #cf4545;outline-offset:4px}#action-form .primary{margin-top:18px}#action-form .small-button{margin-top:10px;white-space:normal}.action-record .grant-main strong{overflow-wrap:anywhere}.detail-section>.small-button{margin-top:15px}
 
 .detail-section h3,.detail-section details p,#toast{overflow-wrap:anywhere}
+
+#comparison-form .primary{margin-top:18px}.comparison-record .grant-main strong{overflow-wrap:anywhere}#comparison-form select{max-width:100%}

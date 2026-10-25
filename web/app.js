@@ -8,6 +8,8 @@ let openedActorRun = null;
 let openedCodeRun = null;
 let codeCatalog = null;
 let actionCatalog = null;
+let comparisonCatalog = null;
+let openedComparison = null;
 let detailGeneration = 0;
 let detailController = null;
 let expiryTimer;
@@ -129,12 +131,12 @@ async function refresh() {
   refreshController?.abort(); refreshController = new AbortController();
   const signal = refreshController.signal;
   try {
-    const [workspace, catalog, actions] = await Promise.all([api("/api/workspace", { signal }), api("/api/code-runs", { signal }), api("/api/actions", { signal })]);
+    const [workspace, catalog, actions, comparisons] = await Promise.all([api("/api/workspace", { signal }), api("/api/code-runs", { signal }), api("/api/actions", { signal }), api("/api/comparisons", { signal })]);
     if (generation !== refreshGeneration) return;
-    data = workspace; codeCatalog = catalog; actionCatalog = actions;
+    data = workspace; codeCatalog = catalog; actionCatalog = actions; comparisonCatalog = comparisons;
     $("connection-status").textContent = "Local service connected";
     $("connection-dot").style.background = "#7ba595";
-    render(); renderCodeCatalog(); renderActionCatalog();
+    render(); renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog();
     if (openedCodeRun) {
       if (!codeEntry(openedCodeRun.kind, openedCodeRun.id)) clearCodeState("Code access changed. The record was closed.");
       else {
@@ -159,6 +161,18 @@ async function refresh() {
         }
       }
     }
+    if (generation !== refreshGeneration) return;
+    if (openedComparison) {
+      const current = openedComparison, attempt = { generation: detailGeneration, signal: detailController.signal };
+      if (current.kind === "form") {
+        if ([current.baselineReviewId, current.candidateReviewId].some(id => id && !codeEntry("browser-source", id))) { closeDetail(); toast("A selected review is unavailable. The comparison form was closed.", true); }
+        else refreshComparisonOptions();
+      } else if (!comparisonEntry(current.id)) { closeDetail(); toast("Comparison sources are unavailable. The record was closed.", true); }
+      else if (!current.pending) {
+        try { await api(`/api/comparisons/${current.id}`, { signal: AbortSignal.any([signal, attempt.signal]) }); }
+        catch { if (generation === refreshGeneration && ownsDetail(attempt)) { closeDetail(); toast("Comparison unavailable. Current source or publication checks failed.", true); } }
+      }
+    }
   } catch (error) {
     if (generation !== refreshGeneration) return;
     $("connection-status").textContent = "Service disconnected";
@@ -173,7 +187,7 @@ function resetDetail() {
   detailGeneration++;
   detailController?.abort(); detailController = null;
   clearTimeout(expiryTimer);
-  openedActorRun = null; openedCodeRun = null;
+  openedActorRun = null; openedCodeRun = null; openedComparison = null;
   for (const url of imageUrls.splice(0)) URL.revokeObjectURL(url);
   $("detail-content").replaceChildren();
   $("detail-title").textContent = "Review";
@@ -214,8 +228,8 @@ function renderCodeCatalog() {
   }
 }
 function clearCodeState(message) {
-  codeCatalog = null; actionCatalog = null; renderCodeCatalog(); renderActionCatalog();
-  if (openedCodeRun || openedActorRun) { closeDetail(); if (message) toast(message, true); }
+  codeCatalog = null; actionCatalog = null; comparisonCatalog = null; renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog();
+  if (openedCodeRun || openedActorRun || openedComparison) { closeDetail(); if (message) toast(message, true); }
 }
 function armCodeExpiry() {
   clearTimeout(expiryTimer);
@@ -346,6 +360,98 @@ function showActionForm(origin, record = null) {
   });
   $("detail-content").replaceChildren(form); if (!$("review-dialog").open) $("review-dialog").showModal(); fields.title.focus({ preventScroll: true });
 }
+
+function comparisonEntry(id) {
+  const entry = comparisonCatalog?.comparisons.find(item => item.id === id);
+  return entry && codeEntry("browser-source", entry.baselineReviewId) && codeEntry("browser-source", entry.candidateReviewId) ? entry : null;
+}
+function eligibleReviews() { return (data?.jobs ?? []).filter(job => codeEntry("browser-source", job.id)).sort((a, b) => a.createdAt.localeCompare(b.createdAt)); }
+function comparisonLabel(verdict) { return verdict.replaceAll("_", " "); }
+function renderComparisonCatalog() {
+  $("compare-reviews").disabled = !comparisonCatalog || eligibleReviews().length < 2;
+  const rows = (comparisonCatalog?.comparisons ?? []).filter(item => comparisonEntry(item.id)).map(item => {
+    const row = node("div", undefined, "grant-item comparison-record"); row.dataset.comparisonId = item.id;
+    const copy = node("div", undefined, "grant-main");
+    copy.append(node("strong", comparisonLabel(item.verdict)), node("p", `Baseline ${item.baselineReviewId.slice(0, 8)} → candidate ${item.candidateReviewId.slice(0, 8)}`), node("small", `${date(item.createdAt)} · Cataloged, unverified`));
+    const inspect = node("button", "Inspect comparison →", "small-button"); inspect.addEventListener("click", () => showComparison(item.id)); row.append(copy, inspect); return row;
+  });
+  $("comparison-run-list").replaceChildren(...(rows.length ? rows : [node("p", comparisonCatalog ? "No recent comparisons. Save two local signup reviews, then choose their order." : "Current comparison records are unavailable.", "empty")]));
+}
+function refreshComparisonOptions() {
+  if (openedComparison?.kind !== "form") return;
+  for (const [role, key] of [["baseline", "baselineReviewId"], ["candidate", "candidateReviewId"]]) {
+    const select = $(`comparison-${role}`); if (!select) return;
+    const placeholder = node("option", `Choose ${role} review`); placeholder.value = "";
+    const options = eligibleReviews().map(job => { const option = node("option", `${job.variant} signup · ${date(job.createdAt)} · ${job.id.slice(0, 8)}`); option.value = job.id; return option; });
+    select.replaceChildren(placeholder, ...options); select.value = openedComparison[key];
+  }
+}
+function showComparisonForm() {
+  const attempt = beginDetail();
+  if (!comparisonCatalog || eligibleReviews().length < 2) { closeDetail(); toast("Save two available controlled signup reviews first.", true); return; }
+  openedComparison = { kind: "form", baselineReviewId: "", candidateReviewId: "" };
+  $("detail-title").textContent = "Compare saved reviews";
+  const form = node("form"); form.id = "comparison-form";
+  form.append(node("p", "Choose a baseline, then a later candidate. Only saved controlled signup evidence is compared. This starts no test, app action, or model call. It does not change action progress.", "fine-print"));
+  for (const [role, key] of [["baseline", "baselineReviewId"], ["candidate", "candidateReviewId"]]) {
+    const label = node("label", role === "baseline" ? "Baseline review" : "Candidate review"); label.htmlFor = `comparison-${role}`;
+    const select = node("select"); select.id = `comparison-${role}`; select.required = true;
+    select.addEventListener("change", () => { if (ownsDetail(attempt)) openedComparison[key] = select.value; }); form.append(label, select);
+  }
+  const message = node("p", "", "fine-print"); message.id = "comparison-form-status"; message.setAttribute("role", "alert");
+  const save = node("button", "Create comparison", "primary"); save.type = "submit";
+  form.append(message, save);
+  form.addEventListener("submit", async event => {
+    event.preventDefault(); if (!ownsDetail(attempt) || save.disabled) return;
+    const current = openedComparison;
+    if (!current.baselineReviewId || !current.candidateReviewId || current.baselineReviewId === current.candidateReviewId) { message.textContent = "Choose two different reviews."; return; }
+    if ([current.baselineReviewId, current.candidateReviewId].some(id => !codeEntry("browser-source", id))) { closeDetail(); toast("A selected review is unavailable.", true); return; }
+    save.disabled = true; message.textContent = "Checking saved source evidence. No tests are running.";
+    try {
+      const result = await api("/api/comparisons", { method: "POST", body: JSON.stringify({ baselineReviewId: current.baselineReviewId, candidateReviewId: current.candidateReviewId }), signal: attempt.signal });
+      if (!ownsDetail(attempt)) return;
+      await refresh(); if (!ownsDetail(attempt)) return;
+      await showComparison(result.id);
+    } catch (error) {
+      if (ownsDetail(attempt)) { closeDetail(); toast(`Save could not be confirmed. Read recent comparisons before retrying. ${error.message}`, true); }
+    } finally { if (ownsDetail(attempt)) save.disabled = false; }
+  });
+  $("detail-content").replaceChildren(form); refreshComparisonOptions();
+  if (!$("review-dialog").open) $("review-dialog").showModal(); $("comparison-baseline").focus({ preventScroll: true });
+}
+function comparisonSections(report) {
+  const result = section(comparisonLabel(report.verdict));
+  result.append(node("p", `Outcome: ${comparisonLabel(report.outcome)}.`), node("p", `Baseline: ${comparisonLabel(report.baselineState)}. Candidate: ${comparisonLabel(report.candidateState)}.`), node("p", "Saved source and publication hashes checked for this request. This is not a causal fix or an independently verified outcome."));
+  const scope = section("Matched requirement and study scope");
+  for (const [label, value] of [["Requirement", report.scope.requirementId], ["Requirement SHA-256", report.scope.requirementHash], ["Study SHA-256", report.scope.studyHash]]) scope.append(node("p", label), node("code", value ?? "Not matched or unavailable", "code-hash"));
+  const sections = [result, scope];
+  for (const role of ["baseline", "candidate"]) {
+    const pin = report[role], source = section(role === "baseline" ? "Pinned baseline evidence" : "Pinned candidate evidence");
+    source.append(node("p", `Review job: ${pin.reviewId}`), node("p", `Evidence run: ${pin.evidenceRunId}`), node("p", `Fixture: ${pin.variant}`), node("p", "Saved report SHA-256"), node("code", pin.reportSha256, "code-hash"), node("p", "Recorded build SHA-256"), node("code", report.scope[`${role}BuildHash`] ?? "Unavailable", "code-hash"));
+    sections.push(source);
+  }
+  const reasons = section("Coverage and consistency reasons");
+  if (!report.reasons.length) reasons.append(node("p", "The recorded scope and coverage checks passed for this saved pair."));
+  for (const reason of report.reasons) reasons.append(node("p", reason.replaceAll("_", " ")));
+  const limits = section("Comparison limits"); limits.append(node("p", "No tests, app code, or models were executed by comparison. Action progress and history are unchanged."));
+  for (const limitation of report.limitations) limits.append(node("p", limitation));
+  limits.append(node("p", "Source integrity is checked again during refresh, at most ten seconds between idle polls plus request time. Data already delivered cannot be recalled."));
+  return [result, reasons, ...sections.slice(1), limits];
+}
+async function showComparison(id) {
+  const attempt = beginDetail();
+  if (!comparisonEntry(id)) { closeDetail(); toast("Current comparison sources are unavailable.", true); return; }
+  openedComparison = { kind: "report", id, pending: true };
+  try {
+    const report = await api(`/api/comparisons/${id}`, { signal: attempt.signal });
+    if (!ownsDetail(attempt)) return;
+    if (!comparisonEntry(id)) { closeDetail(); toast("Comparison sources changed. The record was closed.", true); return; }
+    $("detail-title").textContent = "Saved controlled-review comparison";
+    $("detail-content").replaceChildren(...comparisonSections(report)); openedComparison.pending = false;
+    if (!$("review-dialog").open) $("review-dialog").showModal(); $("detail-title").focus({ preventScroll: true });
+  } catch (error) { if (ownsDetail(attempt)) { closeDetail(); toast(error.message, true); } }
+}
+$("compare-reviews").addEventListener("click", showComparisonForm);
 
 function section(title) { const element = node("section", undefined, "detail-section"); element.append(node("h3", title)); return element; }
 async function showActorReport(id) {

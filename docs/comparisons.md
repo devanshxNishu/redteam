@@ -1,6 +1,6 @@
 # Saved controlled-review comparison
 
-Version 0.13.0 adds comparison through the terminal and local API. It compares saved evidence from the two controlled signup fixtures. It does not run a review, app code, model, or follow-up action.
+Version 0.13.0 added comparison through the terminal and local API. It compares saved evidence from the two controlled signup fixtures. It does not run a review, app code, model, or follow-up action.
 
 ## Terminal
 
@@ -41,4 +41,14 @@ All routes require the current local bearer session and use the existing Host, O
 
 The private `.redteam/comparisons/COMPARISON_ID` directory holds immutable JSON and one source-pin artifact. The SQLite catalog pins their publication hash and both source hashes. Sources are checked again around publication and inside catalog insertion. A later source change makes the old comparison unavailable; it is not silently recalculated. A failed insertion can leave private orphan files. They are preserved and never adopted or automatically removed. Checks do not provide a transaction across external files or protect against a hostile local operator.
 
-Comparison does not change action status or revision history. Action completion remains an operator declaration. This feature adds no customer, participant, buying, investment, psychology, funding, or commercial outcome evidence. Arbitrary releases, semantic finding matching, external apps, structured experiments, and the dashboard comparison workflow remain unfinished.
+Comparison does not change action status or revision history. Action completion remains an operator declaration. This feature adds no customer, participant, buying, investment, psychology, funding, or commercial outcome evidence. Arbitrary releases, semantic finding matching, external apps, and structured experiments remain unfinished.
+
+## Dashboard in version 0.14
+
+Reviews now offers **Compare saved reviews** when at least two terminal local review jobs are available. Choose baseline and candidate explicitly. Using the same review twice is rejected before submission. Selection survives routine refresh. A selected job that becomes unavailable closes the managed form. The backend applies the complete scope and evidence policy; the selectors alone do not establish comparability.
+
+Saved comparisons show factual verdicts, baseline/candidate states, matched scope, source job/evidence IDs, report/build hashes, reason codes, and limitations. Catalog rows remain unverified until opened. Detail retrieval checks current saved bytes again. Open detail is checked during the normal refresh cycle, at most ten seconds between idle polls plus bounded request time. Source or publication rejection, failed metadata refresh, and parent unavailability close and clear managed detail. Old catalog responses are filtered against current parent-job metadata.
+
+The shared dialog uses request cancellation and an ownership generation. Closed views, navigation, and replaced views cannot be restored by an old response. Aborting a pending create does not undo a server commit. The client never repeats an uncertain save automatically. Read the recent catalog before deciding to retry. A committed record can appear there even if its original response was lost.
+
+Text is rendered with DOM text/value properties. Forms/reports use no local or session storage. Response data already delivered, unmanaged browser history, OS caches, screenshots, and backups cannot be recalled. The local service remains single-user. Comparison does not change action declarations or establish an independent engineering, behavioral, commercial, or causal outcome.

@@ -1,6 +1,6 @@
 # redteam: Implementation status
 
-Current build: 0.13.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
+Current build: 0.14.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
 
 This record separates implemented code from the broader product plan. The browser runner reviews one controlled signup journey. Registered actor models can be used through the configured path, but no independent human behavioral validation is recorded.
 
@@ -14,7 +14,7 @@ This record separates implemented code from the broader product plan. The browse
 | Job lifecycle | Queue, primary run, verifier run, reporting, completion, limited coverage, failure, interruption | One active review; up to eight active or queued jobs |
 | Startup recovery | Marks unfinished jobs interrupted | Does not replay browser actions automatically |
 | Access grants | Exact web origins or canonical directories; capabilities, expiry, and revocation | Local text capture is enabled; external runner and code execution remain unavailable |
-| Controlled comparison | Saved signup reports, pinned study/requirement/source hashes, complete distinct execution pairs, recorded instrumentation, explicit verdicts and coverage reasons | Terminal/API only; no new execution, causal fix, action promotion, or arbitrary release matching |
+| Controlled comparison | Saved signup reports, pinned study/requirement/source hashes, complete distinct execution pairs, recorded instrumentation, explicit verdicts and coverage reasons | Web/terminal/API; no new execution, causal fix, action promotion, or arbitrary release matching |
 | Tracked actions | Owner labels, next steps, validation methods, declared progress, source pins, revision history, atomic expected-revision writes, and current source access | Web/terminal/API; no external assignment/execution, independent outcome, or verified completion |
 | Engineering notes | Supplied requirements and notes, exact saved-file/range hashes, original input artifact, snapshot pin, private report, current access, and immutable catalog | Citation integrity only; statements/provenance remain unreviewed, execution not performed, defects not assessed |
 | Repository evidence | Exact `code:read` grant, bounded text artifacts, file hashes, exclusion counters, immutable catalog, and permission-checked inspection | Local plaintext, trusted operator, no code/test/model execution, no atomic revision or engineering judgment |
@@ -58,7 +58,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 272 passed, zero failed or skipped |
+| Full automated suite | 278 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -141,6 +141,27 @@ Type checking, build, and the full suite passed: 272 tests, zero failures or ski
 
 Contract: `docs/comparisons.md`. Dashboard comparison is the next ready milestone; current web behavior remains the 0.12.0 workflow, with only install-version text changed. The existing action and source-dashboard browser regressions passed in the current full suite. Arbitrary releases, semantic finding matching, independent outcomes, real research, calibrated stakeholder models, live-provider verification, commercial validation, worker isolation, and broad hierarchy remain open. Current metadata/hashes assume a trusted local operator, local clock, and filesystem; no external signatures or causal/behavioral validation are claimed. Failed publication/catalog attempts preserve private orphan bytes without automatic adoption or cleanup.
 
+
+## Version 0.14 verification
+
+The saved controlled-review comparison now has a dashboard workflow. Reviews provides explicit baseline/candidate selection, same-review rejection before submission, preserved selections during refresh, catalog inspection, checked factual results, coverage reasons, requirement/study scope, distinct job/evidence IDs, report/build hashes, and limits. Reasons appear before long provenance detail. Not-comparable records remain visible as that result. No review, app code, model, or follow-up action is executed by comparison, and action declarations/history remain unchanged.
+
+Exact files:
+
+- `web/index.html`: comparison card and create control in Reviews; install text uses 0.14.0.
+- `web/app.js`: protected comparison catalog refresh, current-parent filtering, explicit selection form, checked detail, normal-poll integrity recheck, and shared-dialog ownership/cancellation. Source rejection, parent unavailability, or failed metadata refresh clears managed content. A closed or replaced view cannot be restored by a late response. A committed create is not undone or automatically retried after response loss.
+- `web/styles.css`: bounded selection controls, wrapping, and form spacing.
+- `tests/comparison-dashboard.test.ts`: six real-browser checks for desktop/mobile creation and not-comparable reasons, unchanged declared actions, safe text, source tamper, delayed detail after navigation, delayed committed create after close, selected-parent loss, mixed catalog/workspace snapshots, metadata failure, and no persistent browser storage.
+- `docs/comparisons.md`, README, package metadata, status, backlog, and continuation describe the exact scope.
+
+Type checking and build passed. The full suite passed 278 tests, zero failures or skips, including existing source/action dashboard regressions and all 25 comparison backend checks. The focused six-check comparison browser suite also passed after the final copy/detail ordering change. Logs: `outputs/test-results-0.14.0.txt` and `outputs/comparison-dashboard-targeted.txt`.
+
+`outputs/redteam-0.14.0.tgz` contains 106 files and is installed into an isolated prefix. `work/verify-installed-0.14.0.mjs` checks compiled CLI/API behavior, real broken/fixed fixture evidence, fourteen source artifacts, explicit comparison creation in the installed dashboard, desktop/390 px layouts, source/scope identities, visible not-comparable reasons, unchanged action history, two unchanged review jobs, normal idle-poll source-tamper closure without a forced refresh, cleared detail, no persistent browser storage, and zero uncaught browser errors. Results: `outputs/installed-verification-0.14.0.json`. Four desktop/mobile screenshots are under `outputs/preview/comparison-*-0.14.0.png` and were visually inspected. Temporary browser and service resources are stopped. No live provider request or credential was used.
+
+U05 now supports saved controlled-signup evidence in web, terminal, and API. Arbitrary release matching, causal fixes, independent outcomes, live providers, researched stakeholder calibration, broad hierarchy, worker isolation, and commercial validation remain open. Current local clock, trusted-operator, plaintext/backups, refresh latency, and delivered-data limits remain explicit. No research, purchase, investment, or funding claim has been added.
+
+Next ready milestone: U04 immutable structured experiment plans linked to a checked action revision and source evidence. Capture hypothesis, intervention, metric/outcome definition, method, sample plan, planned horizon, owner, and limits before any later reported outcome. Keep supplied plans/provenance unreviewed and outcome collection unavailable until implemented; do not claim prospective human validation from timestamps or software fixtures. U06 independent outcome tracking remains separate.
+
 ## Remaining scope
 
 - Authorized external app execution and production worker isolation.
@@ -151,13 +172,13 @@ Contract: `docs/comparisons.md`. Dashboard comparison is the next ready mileston
 - Country adaptation, consumer buying models, and investor decision models.
 - Validated purchase, conversion, investment, or population predictions.
 - Hosted tenant authentication, durable distributed workers, analyst task leases, and integration of shared parent budgets with a specialist scheduler.
-- Dashboard comparison, arbitrary release matching, real-world outcome tracking, and commercial demand evidence.
+- Arbitrary release matching, structured experiment/outcome tracking, and commercial demand evidence.
 
 No real provider calls occurred in the recorded checks. Scripted runs report zero model spend. Configured runs retain rate-based estimates and unknown-usage markers. Infrastructure cost is not calculated.
 
 ## Next milestone
 
-U05 now has a bounded terminal/API comparison for saved controlled signup evidence. Add dashboard selection and checked comparison detail using the existing shared-dialog ownership and stale-response protections. Show source job/evidence identities, requirement scope, factual verdicts, coverage reasons, and explicit limits. A fresh read must deny changed sources, and late responses must not restore a closed or replaced view. Keep action declarations unchanged. Arbitrary release matching, structured experiments, semantic review, specialist scheduling, isolation, human research, and live providers remain open.
+U05 now compares saved controlled-signup evidence through the web, terminal, and API. Implement U04 immutable structured experiment plans linked to a checked action revision and source evidence. Record hypothesis, intervention, metric/outcome definition, method, sample plan, horizon, owner, and limits before later reported outcomes. Keep supplied research authority and semantic quality unreviewed; local timestamps and authored software fixtures establish no prospective human validation. Independent outcome collection and U06 validation remain separate. Arbitrary releases, semantic review, specialist scheduling, isolation, real research, commercial validation, and live providers remain open.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
 

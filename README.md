@@ -2,7 +2,7 @@
 
 Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
 
-Version 0.13.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.14.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -24,7 +24,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.13.0.tgz
+npm install --global ./redteam-0.14.0.tgz
 redteam --help
 ```
 
@@ -132,7 +132,7 @@ redteam comparisons list
 redteam comparisons show COMPARISON_ID
 ```
 
-The comparison requires matching study and requirement scope, checked artifacts, complete fresh execution pairs, and consistent recorded instrumentation. It reports the observed requirement states and explicit reasons when evidence is not comparable. It does not establish a causal fix or change action declarations. See the [comparison contract](docs/comparisons.md).
+The comparison requires matching study and requirement scope, checked artifacts, complete fresh execution pairs, and consistent recorded instrumentation. It reports the observed requirement states and explicit reasons when evidence is not comparable. It does not establish a causal fix or change action declarations. See the [comparison contract](docs/comparisons.md). Reviews also provides baseline/candidate selection, checked detail, source pins, coverage reasons, and refresh-time source-integrity rejection. Closing a pending save does not undo its commit; read recent comparisons before retrying.
 
 
 ## Development checks
