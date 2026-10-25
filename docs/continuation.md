@@ -51,3 +51,7 @@ Missing external inputs: actual provider configuration/key/permitted processing/
 Most recent relevant read after the natural reset allowed ordinary usage: primary6%, secondary26% consumed. No credit purchase or reset-credit redemption occurred. One reset credit remains unused. Do not recheck routinely; check once when relevant after waking or a limit response. Continuation remains active every30minutes because the product scope is unfinished. No user approval is pending. Keep working while ordinary usage is available, and checkpoint before stopping.
 
 The OpenAI Docs skill was already read and announced. No direct official-docs/key tool was available. Official-domain search and actual retrieval checked Structured Outputs and token-counting guides at developers.openai.com. Existing preparation uses required/closed/nullable strict schema and counts must cover the same complete instructions/input/schema. Refusals/incomplete/mistakes remain separate. No model/rate/account capability was selected. Re-fetch official primary sources if API details are uncertain or change.
+
+## Verified GitHub result
+
+0.30.0 source commit `b66c2c673b6c8c11fb6958a2ece77cfc02fc2330` was pushed normally to private origin/main. Exact remote SHA matched; visibility remained private. Final archive/source-byte checks passed with138files and462tests. Ignored proofs record the verified timestamp. No unfinished source work remained at that push. Continued work should build the separately typed analyst configuration/manifest boundary before any transport or result publication.

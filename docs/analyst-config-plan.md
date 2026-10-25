@@ -1,0 +1,9 @@
+# Next analyst slice: explicit configuration and manifest
+
+After 0.30.0, ownership is ready but no analyst runtime exists. Add a separately typed, strict public analyst configuration parser and a checked-source-bound, unwritten manifest preparation helper. Keep it separate from actor configuration and processing authority. No new CLI/API run command is planned in this slice.
+
+Require an explicit provider/model, operator-supplied rate estimates, exact brief/packet external-processing attestation with expiry and basis, separate nonzero count/generation caps, maximum input/output, timeout/finalization and lease policy. Count also transmits the packet; do not infer zero liability from a token count. Derive a conservative total cap from both phase reservations. Refuse impossible estimated generation budgets using integer arithmetic. Attestation records the local operator's declaration, not independent rights verification or research permission.
+
+Prepare through the fully checked generation helper; bind exact source/packet/instructions/schema/payload/configuration hashes, generated run/task identities, one attempt, timestamps/deadlines, phase caps and fixed unreviewed boundaries. Re-read the packet and require the same source before return. Freeze prepared public data. Load no environment, key, transport, task/budget store, source mutation or result writer. Saved URLs remain unopened.
+
+Meaningful tests must cover copied descriptor-safe parsing, wrong/expired processing identity, missing/unknown/credential fields, impossible caps/rounding/overflow, exact source/hash/deadline manifest, mutable-input rejection or copying, no state/model effects and changed-source denial. Verify the compiled module and full regressions before claiming release. Later transport/publication/recovery still require their own bounded integration and fake-transport tests.
