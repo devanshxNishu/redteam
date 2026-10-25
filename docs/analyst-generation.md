@@ -22,7 +22,7 @@ Supplied content is serialized only in input. It is not interpolated into truste
 
 ## Next runtime boundary
 
-I04b2 requires explicit provider/model/rates/processing configuration, exact source/packet checks, one fenced analyst task, durable reservations and unknown-liability handling, bounded transport and exclusive factual publication/recovery. The existing stakeholder adapter accepts inspect/decide actions and must not receive a cast analytical packet. Generic task and budget primitives can be reused where their authority and types fit.
+Version 0.30.0 adds an isolated [analyst ownership handle](analyst-task.md). It is not connected to this command. The rest of I04b2 requires explicit provider/model/rates/processing configuration, exact source/packet checks, one fenced analyst task, durable reservations and unknown-liability handling, bounded transport and exclusive factual publication/recovery. The existing stakeholder adapter accepts inspect/decide actions and must not receive a cast analytical packet. Generic task and budget primitives can be reused where their authority and types fit.
 
 Count the complete same instructions/input/schema together before generation; the official [token counting guide](https://developers.openai.com/api/docs/guides/token-counting) describes this payload relationship. Byte bounds are not token estimates, provider billing caps or measured cost. No model/rate/account availability is inferred from these documents. Refusal, incomplete output, invalid citations, unknown usage and interrupted requests cannot produce an accepted analytical conclusion or trigger automatic replay.
 

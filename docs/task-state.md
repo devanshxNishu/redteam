@@ -1,6 +1,6 @@
 # Fenced task-state foundation
 
-Status: integrated with one configured terminal actor. It does not launch specialist agents or subagents. Provider checks use fake transport; no live provider run is recorded.
+Status: integrated with one configured terminal actor; an isolated coordinator-only analyst ownership handle is also implemented. It does not launch specialist agents or subagents. Provider checks use fake transport; no live provider run is recorded.
 
 ## Stored contract
 
@@ -28,7 +28,7 @@ Each claim increments the attempt and ownership fence. A stale worker cannot sta
 
 Sealing removes worker ownership and records one artifact reference and SHA-256 digest. Later workers cannot replace it. `complete` checks the coordinator's expected digest against the sealed record. This is a metadata guard: the coordinator must independently resolve and verify the artifact bytes before calling it. It does not verify a claim or establish report truth.
 
-Cancellation invalidates active ownership and preserves existing output metadata. Expiry recovery marks unfinished tasks interrupted. An unpublished sealed result is interrupted when its coordinator deadline expires, while its output digest remains unchanged. Recovery preserves attempts, fences, and dispatch intents, and never requeues automatically.
+Cancellation invalidates active ownership and preserves existing output metadata. A caller can supply an expected fence; that check occurs inside the cancellation transaction and rejects a stale owner. Expiry recovery marks unfinished tasks interrupted. An unpublished sealed result is interrupted when its coordinator deadline expires, while its output digest remains unchanged. Recovery preserves attempts, fences, and dispatch intents, and never requeues automatically.
 
 ## Retry and budget boundary
 
@@ -87,3 +87,7 @@ Global worker counts, hierarchy depth, child permissions, parent budgets, phase 
 The prototype assumes a trusted local coordinator and clock. SQLite lock waits can delay local operations. Production isolation and distributed-clock behavior remain open.
 
 JSON publication uses a flushed private staging file and an exclusive final link. Process interruption cannot expose a partially written final JSON record through that path. Publication still does not establish behavioral truth. See the [evidence publication contract](evidence-publication.md) for filesystem requirements and error boundaries.
+
+## Isolated analyst ownership
+
+Version 0.30.0 adds a separate coordinator-only `AnalystTask` handle. It checks synchronous current-source authority, one attempt, leases, deadlines, dispatch intent and exact sealed fence/digest. It grants no provider, budget, tool or semantic approval. See [analyst ownership](analyst-task.md). Actor dispatch and recovery remain separate and unchanged.

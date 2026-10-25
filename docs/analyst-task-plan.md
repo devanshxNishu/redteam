@@ -1,6 +1,6 @@
 # Next isolated slice: fenced analyst ownership
 
-Repository-only continuation design after verified 0.29.0. No analyst task wrapper or dispatch is implemented by this plan. Read the generation and analytical contracts first.
+Repository-only design after verified 0.29.0. The isolated wrapper is implemented in 0.30.0; see `docs/analyst-task.md`. Configured dispatch remains open. This design does not enable it. Read the generation and analytical contracts first.
 
 ## Fit with existing code
 

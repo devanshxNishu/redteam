@@ -159,9 +159,10 @@ export class TaskStore {
     if (!["adapter_failed", "policy_denied", "invalid_output", "limit_reached"].includes(reason)) throw new Error("Unsupported task failure reason.");
     this.transaction(() => { const task = this.current(lease); task.state = "failed"; task.lease = null; task.stopReason = reason; this.save(task, "failed"); });
   }
-  cancel(id: string): void {
+  cancel(id: string, expectedFence?: number): void {
     this.transaction(() => {
       const task = this.task(id);
+      if (expectedFence !== undefined && task.fence !== expectedFence) throw new Error("Cancellation requires the current ownership fence.");
       if (["completed", "cancelled", "failed", "interrupted"].includes(task.state)) return;
       task.state = "cancelled"; task.lease = null; task.stopReason = "cancelled"; this.save(task, "cancelled");
     });

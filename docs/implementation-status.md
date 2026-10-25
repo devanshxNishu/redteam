@@ -1,6 +1,6 @@
 # redteam: Implementation status
 
-Current build: 0.29.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
+Current build: 0.30.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
 
 This record separates implemented code from the broader product plan. The browser runner reviews one controlled signup journey. Registered actor models can be used through the configured path, but no independent human behavioral validation is recorded.
 
@@ -8,6 +8,7 @@ This record separates implemented code from the broader product plan. The browse
 
 | Area | Current behavior | Boundary |
 |---|---|---|
+| Analyst ownership | Isolated coordinator handle: one fenced attempt, synchronous current-source checks, heartbeat/deadline, dispatch intents, sealed digest/fence and conditional cancellation | No run route/provider/budget/publication/recovery integration or semantic acceptance |
 | Idea/app intake | Web form/literal checked detail, terminal preview/add/list/show, and protected local API creation/catalog/detail; strict supplied input; immutable local input/provenance/hash; deterministic missing-input and six-track question preview | Intake only; not a review, no references opened, grants, execution or stakeholder decisions |
 | Web dashboard | Overview, reviews, source snapshot/note inspection, findings, evidence, access, models, and terminal instructions | Local single-user service; source notes remain unreviewed |
 | Installable CLI | Compiled JavaScript package; UI startup, review submission, run list, grants, artifact checks | npm archive; not published to a registry |
@@ -287,14 +288,14 @@ Next ready milestone: implement U16 read-only local installation preflight and s
 - A verified live provider run, empirical actor calibration, analyst leads, subagents, and the roundtable.
 - Country adaptation, consumer buying models, and investor decision models.
 - Validated purchase, conversion, investment, or population predictions.
-- Hosted tenant authentication, durable distributed workers, analyst task leases, and integration of shared parent budgets with a specialist scheduler.
+- Hosted tenant authentication, durable distributed workers, integrated analyst runtime/recovery, and integration of shared parent budgets with a specialist scheduler.
 - Arbitrary release matching, independent outcome tracking, and commercial demand evidence.
 
 No real provider calls occurred in the recorded checks. Scripted runs report zero model spend. Configured runs retain rate-based estimates and unknown-usage markers. Infrastructure cost is not calculated.
 
 ## Next milestone
 
-The active subject scope is **ideas and apps only**, as confirmed by the user. The checked evidence-link export is implemented in 0.24.0. I01 strict terminal idea/app briefs and deterministic scope preview are now implemented. I02 now adds the protected brief API. I03 explicit web intake is implemented. I04a checked-brief analytical packet and structure/citation checks are implemented. I04b1 local generation preparation is also implemented. Next, add I04b2 a separately configured bounded analyst runtime and I04c semantic review/report from `docs/idea-and-app-scope.md`. Saving a brief is not a completed review. Do not fetch supplied URLs/files, grant access, execute tools/models, fabricate app evidence for ideas, or infer demand/investment. Independent human outcomes, external isolation, real research/pilot/provider inputs, C03 paid demand, and broader hierarchy remain open. Continue normal verified GitHub pushes.
+The active subject scope is **ideas and apps only**, as confirmed by the user. The checked evidence-link export is implemented in 0.24.0. I01 strict terminal idea/app briefs and deterministic scope preview are now implemented. I02 now adds the protected brief API. I03 explicit web intake is implemented. I04a checked-brief analytical packet and structure/citation checks are implemented. I04b1 local generation preparation and the isolated analyst ownership handle are also implemented. Next, finish I04b2 a separately configured bounded analyst runtime and I04c semantic review/report from `docs/idea-and-app-scope.md`. Saving a brief is not a completed review. Do not fetch supplied URLs/files, grant access, execute tools/models, fabricate app evidence for ideas, or infer demand/investment. Independent human outcomes, external isolation, real research/pilot/provider inputs, C03 paid demand, and broader hierarchy remain open. Continue normal verified GitHub pushes.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
 
@@ -501,3 +502,21 @@ Typecheck, JS syntax, build and full suite passed: **445 tests, zero failed/skip
 Archive whitelist/size/SHA512/all installed-source bytes/credential-pattern checks and normal private GitHub push/exact SHA are recorded in ignored release/GitHub proofs. No npm registry publication. The preview has no execution authority, processing approval, token estimate, cost cap, live compatibility or behavioral validity. Source/citation integrity does not approve analysis or demonstrate customer demand.
 
 Next ready work: I04b2 analyst-specific fenced ownership/dispatch, explicit configured provider/rates/processing and durable unknown-liability handling, bounded response parsing/current source checks, exclusive publication and conservative recovery. Reuse `TaskStore(kind: analyst)`/general `BudgetLedger`; actor adapters/task wrappers/acceptance/recovery remain type- and authority-specific. Keep one attempt and no automatic replay. Fake transport precedes a separately recorded live check. I04c semantic review/report and real research/pilot/provider/demand/isolation/hierarchy gates remain open.
+
+
+## Version 0.30 verification
+
+The isolated I04b2 ownership slice is implemented. It is a coordinator-only building block, not an executable analyst run. Existing `analysis prepare` remains local and creates no task or request.
+
+- `src/analyst-task.ts`: strict copied identity/policy, exactly one analyst attempt, immutable manifest pin, current running owner/fence/deadline, synchronous undefined-returning source authority, bounded heartbeat, abort signal, same-attempt idempotent dispatch intent, opaque seal and explicit digest/fence completion after lease removal. Source/state checks continue while sealed. Supported stop reasons, idempotent close and factual unfinished records preserve recovery boundaries. No adapter, credential, model, rate, budget, tool or publisher is acquired.
+- `src/tasks.ts`: optional expected fence checked inside the cancellation transaction. Existing unqualified callers retain their behavior. The analyst wrapper uses the explicit fence, so a stale owner cannot cancel a replacement.
+- `tests/analyst-task.test.ts`: 17 actual SQLite/controlled-timer cases cover pre-acquisition source/policy/accessor denial, input pinning, one owner/attempt, idempotent intent, withdrawal before dispatch/seal/complete, callback cancellation, heartbeat/source/lease/deadline failure, sealed completion and wrong hash, async guard change, invalid output, supported failures, atomic replacement cancellation and cleanup. Generic task/actor regressions remain unchanged.
+- `docs/analyst-task.md`, task/generation/analytical plans, README, package/version/backlog/checkpoint record exact scope. The ownership plan remains repository-only. Web archive-version text changes only.
+
+Typecheck, web JavaScript syntax, build and full suite passed: **462 tests, zero failed/skipped**, `outputs/test-results-0.30.0.txt` (182.8 seconds). Focused analyst/generic task **26 passed**, `outputs/analyst-task-targeted.txt`.
+
+Archive `outputs/redteam-0.30.0.tgz` has **138 files**; manifest `outputs/package-manifest-0.30.0.json`. Final installed prefix is `work/install-release-0.30.0/node_modules/redteam`. Installed script `work/verify-installed-0.30.0.mjs` and `outputs/installed-verification-0.30.0.json` verify compiled isolated ownership, source denial before state, one attempt/pinned manifest/idempotent intent, mechanical seal/completion, withdrawal after seal and fenced cancellation, cancelled dispatch denial and closed connections/timers. Authored candidates do not represent model or human outcomes. The script repeats checked terminal/API/web intake and preparation, genuine controlled prospective captures, 14 source/2 link artifacts, five-kind exact native JSON/Markdown export, actual old installed 0.23 v1 compatibility, historical action revision, normal idle source-loss clearing/restoration and zero browser errors/storage. All services/browsers close. No real provider/key or analytical model ran. The visually inspected 0.27 intake baseline remains; no new ownership UI exists.
+
+Manifest whitelist, archive size/SHA512, all installed/source bytes and high-confidence credential-pattern checks pass through `work/verify-release-files.mjs`. Ignored release/GitHub proofs record exact source/remote SHA and private visibility after ordinary push; no npm publication occurs.
+
+Next ready work: the rest of I04b2 requires an analyst-specific provider/processing/model/rate contract, bounded count/generation transport, durable reservations for every possible transmission and unknown liability, current source/packet checks, exclusive publication and conservative analyst recovery. This wrapper does not replace that integration. I04c semantic review/report, actual provider compatibility, human research/pilot/usefulness/paid demand, arbitrary app isolation, empirical buying/investment behavior and the broader hierarchy remain open.
