@@ -59,3 +59,5 @@ The OpenAI Docs skill was already read and announced. No direct official-docs/ke
 ## Verified GitHub result
 
 0.30.0 source commit `b66c2c673b6c8c11fb6958a2ece77cfc02fc2330` was pushed normally to private origin/main. Exact remote SHA matched; visibility remained private. Final archive/source-byte checks passed with138files and462tests. Ignored proofs record the verified timestamp. No unfinished source work remained at that push. Continued work should build the separately typed analyst configuration/manifest boundary before any transport or result publication.
+
+Latest verified 0.31.0 source push: `774900ebe02bc2b3ac8c12e7d080ac21a3a032c8`, exact origin/main matched and private visibility confirmed. Full472, final142-file installed/source/archive checks passed. Next isolated implementation is analyst-specific durable count/generation invocation control before HTTP transport; count completion alone must retain unknown spend. See `docs/analyst-invocation-plan.md`.
