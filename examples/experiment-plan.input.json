@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "experiment_plan_input",
+  "actionId": "00000000-0000-0000-0000-000000000000",
+  "expectedActionRevision": 1,
+  "title": "Replace with a bounded experiment plan",
+  "owner": "Local operator label",
+  "hypothesis": "Replace with a testable hypothesis; no result is established.",
+  "intervention": "Replace with the planned change; freezing does not perform it.",
+  "outcome": {
+    "measure": "Replace with the defined measurement.",
+    "successRule": "Replace with a rule chosen before collecting results.",
+    "collectionMethod": "Replace with a separate collection and verification method."
+  },
+  "samplePlan": {
+    "population": "Replace with the intended scope; this is not a participant record.",
+    "recruitment": "Replace with the planned selection method; no recruitment occurs.",
+    "targetCount": 2
+  },
+  "horizon": {
+    "startsAt": "REPLACE_WITH_FUTURE_UTC_YYYY-MM-DDTHH:mm:ss.sssZ",
+    "endsAt": "REPLACE_WITH_LATER_UTC_YYYY-MM-DDTHH:mm:ss.sssZ"
+  }
+}

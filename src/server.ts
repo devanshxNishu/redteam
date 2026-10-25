@@ -15,6 +15,7 @@ import { authorizedEngineeringRuns, readEngineeringReport } from "./engineering.
 import { ActionConflictError } from "./domain/actions.ts";
 import { authorizedActionSummaries, createTrackedAction, readTrackedAction, updateTrackedAction } from "./actions.ts";
 import { comparisonSummaries, createStoredComparison, readStoredComparison } from "./comparisons.ts";
+import { experimentPlanSummaries, freezeExperimentPlan, readExperimentPlan } from "./experiments.ts";
 
 async function body(request: IncomingMessage): Promise<Record<string, unknown>> {
   if (request.headers["content-type"]?.split(";")[0] !== "application/json") throw new Error("Use application/json.");
@@ -75,6 +76,18 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
       const supplied = Buffer.from(authorization.startsWith("Bearer ") ? authorization.slice(7) : "");
       const expected = Buffer.from(token);
       if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) { send(response, 401, { error: "A local Redteam session is required." }); return; }
+      if (request.method === "GET" && url.pathname === "/api/experiments") { send(response, 200, { recentWindow: 100, experimentPlans: experimentPlanSummaries(store) }); return; }
+      if (request.method === "POST" && url.pathname === "/api/experiments") {
+        try { send(response, 201, await freezeExperimentPlan(store, await body(request))); }
+        catch (error) { send(response, error instanceof ActionConflictError ? 409 : 400, { code: error instanceof ActionConflictError ? "experiment_action_changed" : "experiment_not_frozen", error: error instanceof ActionConflictError ? "The action changed. Read it again before deliberately freezing a plan." : "Plan not frozen. Check the supplied plan, future window, action revision, and current source access." }); }
+        return;
+      }
+      const experimentDetail = /^\/api\/experiments\/([a-f0-9-]{36})$/.exec(url.pathname);
+      if (request.method === "GET" && experimentDetail) {
+        try { send(response, 200, await readExperimentPlan(store, experimentDetail[1]!)); }
+        catch { send(response, 404, { code: "experiment_unavailable", error: "Experiment plan unavailable. Current source, action history, or publication checks failed." }); }
+        return;
+      }
       if (request.method === "GET" && url.pathname === "/api/comparisons") { send(response, 200, { recentWindow: 100, comparisons: comparisonSummaries(store) }); return; }
       if (request.method === "POST" && url.pathname === "/api/comparisons") {
         if (comparisonActive) { send(response, 409, { error: "A saved-evidence comparison is already running." }); return; }

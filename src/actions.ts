@@ -3,10 +3,11 @@ import { basename } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { authorizeGrant } from "./access.ts";
 import { readFixtureEvidence } from "./browser-evidence.ts";
+import { sha256 } from "./evidence.ts";
 import { readEngineeringReport } from "./engineering.ts";
 import type { WorkspaceStore } from "./workspace.ts";
 import { ActionConflictError } from "./domain/actions.ts";
-import type { ActionInput, ActionOrigin, ActionOriginPin, ActionRecord, ActionStatus } from "./domain/actions.ts";
+import type { ActionInput, ActionOrigin, ActionOriginPin, ActionRecord, ActionStatus, ActionEvent } from "./domain/actions.ts";
 
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const identifier = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/;
@@ -61,9 +62,9 @@ async function verifyOrigin(store: WorkspaceStore, pin: ActionOriginPin): Promis
   checkOriginAccess(store, pin);
 }
 
-function checkedRecord(store: WorkspaceStore, id: string) {
+function checkedSnapshot(store: WorkspaceStore, id: string, snapshot: { record: ActionRecord | null; events: ActionEvent[] }) {
   if (!uuid.test(id)) throw new Error("Supply an action UUID.");
-  const { record: action, events } = store.actionSnapshot(id); if (!action) throw new Error("Action not found.");
+  const { record: action, events } = snapshot; if (!action) throw new Error("Action not found.");
   checkOriginAccess(store, action.origin);
   if (!Number.isInteger(action.revision) || action.revision < 1 || action.revision > 100 || events.length !== action.revision || !isDeepStrictEqual(events.at(-1)?.after, action)) throw new Error("The action revision history is inconsistent.");
   for (const [index, event] of events.entries()) {
@@ -71,6 +72,18 @@ function checkedRecord(store: WorkspaceStore, id: string) {
       || event.after.createdAt !== action.createdAt || event.after.authorship !== "operator_supplied" || event.after.verificationStatus !== "not_independently_verified" || event.after.execution !== "not_performed_by_tracking" || !statuses.includes(event.after.status)) throw new Error("The action revision history is inconsistent.");
   }
   return { record: action, events };
+}
+
+function checkedRecord(store: WorkspaceStore, id: string) { return checkedSnapshot(store, id, store.actionSnapshot(id)); }
+
+export interface ActionVersionPin { id: string; revision: number; sha256: string; origin: ActionOriginPin }
+/** Synchronous so the caller can recheck the pin inside its own write transaction. */
+export function checkActionVersionAccess(store: WorkspaceStore, pin: ActionVersionPin, requireLatest = false): undefined {
+  const current = checkedSnapshot(store, pin.id, { record: store.action(pin.id), events: store.actionEvents(pin.id) });
+  const version = current.events[pin.revision - 1]?.after;
+  if (!Number.isSafeInteger(pin.revision) || !version || version.revision !== pin.revision || sha256(JSON.stringify(version)) !== pin.sha256 || !isDeepStrictEqual(version.origin, pin.origin)) throw new Error("The frozen action version no longer matches its history.");
+  if (requireLatest && current.record.revision !== pin.revision) throw new ActionConflictError("The action changed before the plan was frozen. Read its current revision.");
+  return undefined;
 }
 
 export async function createTrackedAction(store: WorkspaceStore, value: unknown): Promise<ActionRecord> {

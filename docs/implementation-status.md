@@ -1,6 +1,6 @@
 # redteam: Implementation status
 
-Current build: 0.14.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
+Current build: 0.15.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
 
 This record separates implemented code from the broader product plan. The browser runner reviews one controlled signup journey. Registered actor models can be used through the configured path, but no independent human behavioral validation is recorded.
 
@@ -14,6 +14,7 @@ This record separates implemented code from the broader product plan. The browse
 | Job lifecycle | Queue, primary run, verifier run, reporting, completion, limited coverage, failure, interruption | One active review; up to eight active or queued jobs |
 | Startup recovery | Marks unfinished jobs interrupted | Does not replay browser actions automatically |
 | Access grants | Exact web origins or canonical directories; capabilities, expiry, and revocation | Local text capture is enabled; external runner and code execution remain unavailable |
+| Frozen experiment plans | Exact supplied plan and action revision, hypothesis/intervention/metric/sample/window/owner, immutable artifacts, current source rights, historical action integrity | Terminal/API; unreviewed protocol, local clock only, no execution or collected/independent outcome |
 | Controlled comparison | Saved signup reports, pinned study/requirement/source hashes, complete distinct execution pairs, recorded instrumentation, explicit verdicts and coverage reasons | Web/terminal/API; no new execution, causal fix, action promotion, or arbitrary release matching |
 | Tracked actions | Owner labels, next steps, validation methods, declared progress, source pins, revision history, atomic expected-revision writes, and current source access | Web/terminal/API; no external assignment/execution, independent outcome, or verified completion |
 | Engineering notes | Supplied requirements and notes, exact saved-file/range hashes, original input artifact, snapshot pin, private report, current access, and immutable catalog | Citation integrity only; statements/provenance remain unreviewed, execution not performed, defects not assessed |
@@ -58,7 +59,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 278 passed, zero failed or skipped |
+| Full automated suite | 295 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -162,6 +163,26 @@ U05 now supports saved controlled-signup evidence in web, terminal, and API. Arb
 
 Next ready milestone: U04 immutable structured experiment plans linked to a checked action revision and source evidence. Capture hypothesis, intervention, metric/outcome definition, method, sample plan, planned horizon, owner, and limits before any later reported outcome. Keep supplied plans/provenance unreviewed and outcome collection unavailable until implemented; do not claim prospective human validation from timestamps or software fixtures. U06 independent outcome tracking remains separate.
 
+
+## Version 0.15 verification
+
+U04 now has immutable structured experiment plans through the terminal and protected local API. Each supplied hypothesis, intervention, outcome measure, success rule, collection method, population/recruitment/count plan, future UTC window, owner, and title is frozen against an exact checked action revision and original source pin. Two private artifacts preserve the parsed input and historical action. Later declared action updates preserve the frozen version; new freezes require the latest revision. Source access, complete action history, historical content hashes, and artifact integrity govern retrieval. A passed window does not imply execution or an outcome.
+
+Exact files:
+
+- `src/experiments.ts`: strict plain-JSON contract without accessor/custom-serializer execution, policy `local-experiment-plan-v1`, input/text/sample/time bounds, local future-window and revision checks around publication and inside insertion, immutable evidence, fixed unreviewed/unassessed labels, current-source reads, and bounded unverified catalog summaries.
+- `src/actions.ts`: shared checked-history routine and synchronous historical action-version pin/access check. Action tracking semantics remain operator declarations.
+- `src/workspace.ts`: immutable experiment-plan catalog, synchronous guards, atomic insert/audit.
+- `src/cli.ts`: `experiments freeze FILE`, list, and show. `src/server.ts`: session/Host/Origin/no-store list/freeze/detail routes, revision-conflict 409, static invalid-input 400 and unavailable-detail 404. No experiment execution, result, mutation, or artifact-download route exists.
+- `examples/experiment-plan.input.json` and `docs/experiment-plans.md`: packaged template and full bounds, lineage, access, chronology, and epistemic limits. Replace placeholder IDs/timestamps before use.
+- `tests/experiments.test.ts`: 17 checks covering exact input/action preservation, later revisions, stale expectations, authority/outcome escalation, getters/serialization, invalid windows, elapsed-window state, revocation/expiry, source/publication/artifact/history tamper, unsafe links, insertion withdrawal/revision/time races, atomic audit/immutability, CLI/API, and a real browser finding with distinct job/evidence IDs. All plans and negative cases are authored software fixtures.
+
+Type checking, build, and the full suite passed: 295 tests, zero failures or skips. Log: `outputs/test-results-0.15.0.txt`. `outputs/redteam-0.15.0.tgz` contains 110 files and is installed into an isolated prefix. `work/verify-installed-0.15.0.mjs` verifies compiled help/version/template, exact input and action pin, two checked artifacts, historical readability after a real CLI update, stale-revision denial, preserved source and action/job/actor state, protected API, fixed unreviewed/uncollected labels, unsupported outcome-route denial, and terminal revocation denying both API and CLI without private detail leaks. Results are `outputs/installed-verification-0.15.0.json`. The temporary service is stopped; no browser, credential, or live provider request was used by that installed check. The full suite includes the actual browser-plan fixture and all dashboard regressions.
+
+The existing dashboard remains the verified 0.14.0 comparison/action workflow; only install-version text changed. Its installed desktop/mobile and normal-poll comparison checks remain in `outputs/installed-verification-0.14.0.json`. Experiment controls are next. Local timestamps do not prove prospective research, unknown prior outcomes, external registration, or consent/protocol approval. No human, purchase, investment, funding, causal, commercial, or independent-outcome validation is established. No orphan adoption, automatic retry/cleanup, execution, recruitment, collection, or action-status promotion is enabled.
+
+Next ready milestone: U04 web creation and inspection of supplied frozen experiment plans, with deliberate revision conflicts, source access/expiry/integrity checks, safe text, desktop/mobile layout, and late-response guards. U06 independent outcome collection/adjudication, arbitrary releases, human research, live providers, worker isolation, paid demand, and broader specialist hierarchy remain open.
+
 ## Remaining scope
 
 - Authorized external app execution and production worker isolation.
@@ -172,13 +193,13 @@ Next ready milestone: U04 immutable structured experiment plans linked to a chec
 - Country adaptation, consumer buying models, and investor decision models.
 - Validated purchase, conversion, investment, or population predictions.
 - Hosted tenant authentication, durable distributed workers, analyst task leases, and integration of shared parent budgets with a specialist scheduler.
-- Arbitrary release matching, structured experiment/outcome tracking, and commercial demand evidence.
+- Web experiment controls, arbitrary release matching, independent outcome tracking, and commercial demand evidence.
 
 No real provider calls occurred in the recorded checks. Scripted runs report zero model spend. Configured runs retain rate-based estimates and unknown-usage markers. Infrastructure cost is not calculated.
 
 ## Next milestone
 
-U05 now compares saved controlled-signup evidence through the web, terminal, and API. Implement U04 immutable structured experiment plans linked to a checked action revision and source evidence. Record hypothesis, intervention, metric/outcome definition, method, sample plan, horizon, owner, and limits before later reported outcomes. Keep supplied research authority and semantic quality unreviewed; local timestamps and authored software fixtures establish no prospective human validation. Independent outcome collection and U06 validation remain separate. Arbitrary releases, semantic review, specialist scheduling, isolation, real research, commercial validation, and live providers remain open.
+U04 now freezes immutable supplied experiment plans through terminal/API. Add web creation and checked inspection from action detail, preserving declared provenance, exact historical revision/source pins, explicit future windows, unchanged action state, and uncollected outcomes. Apply deliberate revision conflicts, current rights/expiry/integrity refresh, managed-content clearing, safe text, desktop/mobile layout, and late-response ownership. U06 independent outcome collection and adjudication remain separate. Arbitrary releases, semantic review, specialist scheduling, isolation, real research, commercial validation, and live providers remain open.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
 

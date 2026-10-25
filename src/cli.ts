@@ -25,6 +25,7 @@ import { captureRepository, authorizedRepositoryRuns, readRepositorySnapshot } f
 import { registerEngineeringObservations, authorizedEngineeringRuns, readEngineeringReport } from "./engineering.ts";
 import { createTrackedAction, readTrackedAction, updateTrackedAction, authorizedActionSummaries } from "./actions.ts";
 import { createStoredComparison, readStoredComparison, comparisonSummaries } from "./comparisons.ts";
+import { freezeExperimentPlan, readExperimentPlan, experimentPlanSummaries } from "./experiments.ts";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspace = resolve(process.cwd());
@@ -50,6 +51,9 @@ redteam actions update ACTION_ID FILE
 redteam comparisons create --baseline REVIEW_ID --candidate REVIEW_ID
 redteam comparisons list
 redteam comparisons show COMPARISON_ID
+redteam experiments freeze FILE
+redteam experiments list
+redteam experiments show PLAN_ID
 redteam verify RUN_DIRECTORY
 redteam research demo
 redteam research sources|models
@@ -305,6 +309,18 @@ async function main(): Promise<void> {
       if (operation === "snapshot") print(await captureRepository(store, { grantId: options["--grant"]!, target: options["--path"]! }));
       else if (operation === "list") print(authorizedRepositoryRuns(store));
       else print(await readRepositorySnapshot(store, rest[0]!));
+    } finally { store.close(); }
+    return;
+  }
+  if (command === "experiments") {
+    const [operation, parameter, ...extra] = args;
+    if (extra.length || !["freeze", "list", "show"].includes(operation ?? "") || (operation === "list" ? parameter !== undefined : !parameter)) throw new Error("Usage: redteam experiments freeze FILE|list|show PLAN_ID");
+    const value = operation === "freeze" ? await readInput(parameter!) : undefined;
+    const store = new WorkspaceStore(workspace);
+    try {
+      if (operation === "freeze") print(await freezeExperimentPlan(store, value));
+      else if (operation === "list") print({ recentWindow: 100, experimentPlans: experimentPlanSummaries(store) });
+      else print(await readExperimentPlan(store, parameter!));
     } finally { store.close(); }
     return;
   }
