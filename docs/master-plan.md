@@ -1,8 +1,8 @@
 # Redteam: Master Plan
 
-Version: 1.3
+Version: 1.4
 
-Date: October 25, 2026
+Date: October 26, 2026
 
 Status: Planning baseline for development
 
@@ -23,6 +23,8 @@ All market choices, operating limits, schedules, and commercial targets below ar
 The system helps startup teams make specific decisions about ideas and apps with better evidence. It combines structured idea analysis, scoped app tests, stakeholder research, controlled simulations, and independent review. The active subject scope is ideas and apps only. CVs, general services, and universal subject review are outside current development. See the [scope and intake plan](idea-and-app-scope.md).
 
 The long-term product can support launch, product changes, pricing, market entry, operations, and investor preparation. Each review must address a defined decision.
+
+A dated global-context layer is required for relevant news, technology, competitors, market conditions and policy. Each review must show its as-of time, inspected sources, regional/language coverage, freshness and unresolved conflicts. News does not establish country psychology or purchase/investment intent. The implementation sequence and release gates are in the [global context plan](global-context-plan.md). This capability is planned; no active news collection is claimed.
 
 The first decision is: **What must this team fix or learn before a paid pilot?**
 

@@ -44,6 +44,10 @@ The later investor module uses a stated stage, sector, mandate, portfolio constr
 
 Specialists and subagents may later separate evidence collection, objections, and verification. Task count must follow useful work and bounded authority. Broad hierarchy stays behind C03 paid concierge demand, operating budgets, isolation, and the research/evaluation gates already in the master plan.
 
+## Global context requirement
+
+As requested on October 26, 2026, idea/app reviews must use relevant dated global news and trends with inspected sources, region/language applicability, explicit freshness and coverage limits, and conflicts. A headline is not demand, psychology or investor intent. The [global context plan](global-context-plan.md) defines source collection, immutable snapshots, packet integration and evaluation gates. This is planned; the current packet still contains only the checked supplied brief. No current-awareness or perfect-review claim is enabled.
+
 ## Report and next actions
 
 The eventual report starts with the requested decision and the evidence available. It records material findings, objections, contradictions, unknowns, and the next useful experiment. Each material conclusion needs a source or an explicit assumption label. It states which tracks did not run.

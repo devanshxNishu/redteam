@@ -1,6 +1,6 @@
 # Next integration: saved analyst runs and conservative recovery
 
-After verified 0.33.0, preparation, ownership, phase accounting and bounded HTTP are ready internal components. Implement a checked record contract, coordinator and recovery before enabling a terminal run command. Keep actor acceptance/recovery and generic app execution unchanged. No predictive or semantic approval is included.
+After verified 0.34.0, preparation, ownership, phase accounting, bounded HTTP and checked manifest/generation storage are ready internal components. `src/analyst-artifacts.ts` implements the save-before-ownership and task-bound historical manifest reader; its result grants no execution authority. Implement a checked record contract, coordinator and recovery before enabling a terminal run command. Keep actor acceptance/recovery and generic app execution unchanged. No predictive or semantic approval is included.
 
 ## Records and publication
 
