@@ -131,3 +131,7 @@ No real provider calls occurred in the recorded checks. Scripted runs report zer
 Repository intake and operator-supplied source notes now have explicit integrity and interpretation boundaries. Protected metadata/report APIs now support these records. Next, add their dashboard controls. Keep unreviewed labels and unknown expectations visible, deny revoked links, and clear an open report after access changes. Use the existing review view without enabling model processing or broad specialist fan-out. Semantic verification, shared scheduling, all-resource budgets, production isolation, human research, and live provider verification remain open.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
+
+## Latest continuation preparation
+
+October 25, 04:14 UTC: product source remains 0.9.1 (`42bbc97`), with its recorded 232 passing tests. `docs/dashboard-code-review-plan.md` now specifies the remaining U15 UI and race/access verification work. This is a documentation-only checkpoint; no new product verification is claimed. Usage was 99% used, with a reported natural reset at 04:33:09 UTC. Scheduled continuation remains active. No credits or reset credits were used.

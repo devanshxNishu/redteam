@@ -198,9 +198,15 @@ Type checking, build, and all 232 tests passed with zero failures or skips. The 
 
 These APIs cannot recall data already delivered. Client refresh, cached-detail removal, dialog closure on access changes, text escaping, and desktop/mobile verification remain required before U15 is complete. Local trusted-operator and non-atomic cross-process permission/write limits remain. No source execution, model processing, stakeholder validity, or approved engineering finding is added.
 
+## Usage and UI preparation: October 25, 04:14 UTC
+
+The account check reported ordinary usage allowed with 99% of the five-hour window used. The reported natural reset is October 25, 2026 at 04:33:09 UTC. No credit was purchased or reset credit redeemed. The existing half-hour continuation remains active and can resume after that reset.
+
+`docs/dashboard-code-review-plan.md` records the inspected DOM, API, and refresh integration points, exact rendering labels, request-generation guards, expiry timers, fresh detail integrity checks, fail-closed network handling, and installed browser verification cases. The plan was prepared from the current `web/app.js` and `web/index.html`; no product source was changed. The verified product remains 0.9.1 at commit `42bbc97`, with 232 passing tests and its existing release archive. No tests were rerun for this documentation-only preparation. No service or browser was started. U15 dashboard controls are still unfinished.
+
 ## Next sequence
 
-1. Finish U15: show repository snapshots and engineering notes in the existing local review view. Use the implemented `/api/code-runs` list and `repositories/RUN_ID` / `observations/RUN_ID` detail GET routes; do not add an unverified raw-file path. Keep copied source text out of the initial dashboard response. Make supplied/unverified, unreviewed, not-executed, not-assessed, and unknown expectation labels visible.
+1. Read `docs/dashboard-code-review-plan.md`, then finish U15: show repository snapshots and engineering notes in the existing local review view. Use the implemented `/api/code-runs` list and `repositories/RUN_ID` / `observations/RUN_ID` detail GET routes; do not add an unverified raw-file path. Keep copied source text out of the initial dashboard response. Make supplied/unverified, unreviewed, not-executed, not-assessed, and unknown expectation labels visible.
 2. Follow the existing actor-report revocation pattern: deny stale links, refresh access state, close and clear an open report on expiry/revocation, and avoid retaining restricted detail in managed caches. Verify the actual installed dashboard at desktop and 390 px, including text escaping, hash failures, and live revocation. Do not conflate listing metadata with a verified report.
 3. Semantic engineering review requires captured requirements, a bounded engineering tool policy, separate external-processing permission where relevant, and independent verification before defect approval. Source/requirement/note text cannot authorize tools. Do not execute app scripts or send content to the stakeholder runtime through this path.
 4. Preserve sealed actor outputs, invocation identities, uncataloged repository/engineering records, and unowned `.pending` files. No automatic repair, replay, retry, cleanup, or cost release is authorized by inspection.
