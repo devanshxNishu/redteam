@@ -1,5 +1,7 @@
 # redteam
 
+Private source repository: [devanshxNishu/redteam](https://github.com/devanshxNishu/redteam). Verified development milestones are pushed to `main`.
+
 Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
 
 Version 0.18.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.

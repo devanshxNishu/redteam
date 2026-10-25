@@ -8,6 +8,10 @@ Recurring continuation is enabled in this chat every 30 minutes. Automation ID: 
 
 The local computer and app must remain available for local scheduled work. Do not purchase credits or redeem reset credits.
 
+## Standing GitHub instruction
+
+Push each verified milestone to the private repository https://github.com/devanshxNishu/redteam using this checkout's `origin/main`. Preserve remote work and never force-push. Verify the pushed SHA and exclude local evidence, vaults, credentials, sessions, dependencies, caches, and generated files. See `docs/github-sync.md`.
+
 ## Project location
 
 `/Users/devansh/Documents/ChatGPT/RedTeam`
@@ -411,3 +415,11 @@ Dashboard behavior remains the verified 0.16.0 workflow, with only install-versi
 Next ready milestone: implement the protected export dashboard selection, checked inspection, and JSON/Markdown download workflow in `docs/report-export-dashboard-plan.md`. Preserve all existing managed-view protections and keep exported source scope unchanged. U06 independent outcomes, actor/research export, real research/pilot/provider inputs, C03 paid demand, and broader scheduling/isolation remain open.
 
 During this continuing run, a later account check reported ordinary usage available, primary 24% used and secondary 4% used. No credits or reset credits were purchased or redeemed. Continue useful work; do not stop at an individual release checkpoint.
+
+## GitHub synchronization enabled
+
+The user authorized ongoing GitHub pushes. Created and verified the private repository `https://github.com/devanshxNishu/redteam`, attached it as this checkout's HTTPS `origin`, and set `main` to track `origin/main`. The initial remote SHA matched product commit `4778e08a3d3df5f315e4eba56cc83b140ff3936a` exactly. Source history and ignored-path checks completed before the first push; generated evidence, workspaces, local vaults, dependencies, caches, archives, sessions, and `.env` remain outside Git. Existing GitHub CLI authentication is used through a repo-local helper; no credential is committed or embedded in the remote URL.
+
+`docs/github-sync.md` records the standing workflow. After every verified milestone, inspect and commit only ready source/tests/docs, push ordinary commits, and verify the remote `main` SHA. Preserve remote contributions; never force-push. The existing `continue-redteam-development` heartbeat prompt was updated through the automation tool and reread to confirm GitHub instructions are saved, status remains ACTIVE, cadence remains every 30 minutes, and the target chat is unchanged. No credits or reset credits were used.
+
+This synchronization checkpoint changes documentation only. Product verification remains 0.18.0 with 321 passing tests and its installed evidence. No extra test run is needed for the GitHub/documentation setup. Continue the planned export dashboard work; the broader product is not complete.
