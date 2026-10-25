@@ -1,6 +1,6 @@
 # redteam: Implementation status
 
-Current build: 0.15.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
+Current build: 0.16.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
 
 This record separates implemented code from the broader product plan. The browser runner reviews one controlled signup journey. Registered actor models can be used through the configured path, but no independent human behavioral validation is recorded.
 
@@ -14,7 +14,7 @@ This record separates implemented code from the broader product plan. The browse
 | Job lifecycle | Queue, primary run, verifier run, reporting, completion, limited coverage, failure, interruption | One active review; up to eight active or queued jobs |
 | Startup recovery | Marks unfinished jobs interrupted | Does not replay browser actions automatically |
 | Access grants | Exact web origins or canonical directories; capabilities, expiry, and revocation | Local text capture is enabled; external runner and code execution remain unavailable |
-| Frozen experiment plans | Exact supplied plan and action revision, hypothesis/intervention/metric/sample/window/owner, immutable artifacts, current source rights, historical action integrity | Terminal/API; unreviewed protocol, local clock only, no execution or collected/independent outcome |
+| Frozen experiment plans | Exact supplied plan and action revision, hypothesis/intervention/metric/sample/window/owner, immutable artifacts, current source rights, historical action integrity | Web/terminal/API; unreviewed protocol, local clock only, no execution or collected/independent outcome |
 | Controlled comparison | Saved signup reports, pinned study/requirement/source hashes, complete distinct execution pairs, recorded instrumentation, explicit verdicts and coverage reasons | Web/terminal/API; no new execution, causal fix, action promotion, or arbitrary release matching |
 | Tracked actions | Owner labels, next steps, validation methods, declared progress, source pins, revision history, atomic expected-revision writes, and current source access | Web/terminal/API; no external assignment/execution, independent outcome, or verified completion |
 | Engineering notes | Supplied requirements and notes, exact saved-file/range hashes, original input artifact, snapshot pin, private report, current access, and immutable catalog | Citation integrity only; statements/provenance remain unreviewed, execution not performed, defects not assessed |
@@ -59,7 +59,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 295 passed, zero failed or skipped |
+| Full automated suite | 302 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -183,6 +183,28 @@ The existing dashboard remains the verified 0.14.0 comparison/action workflow; o
 
 Next ready milestone: U04 web creation and inspection of supplied frozen experiment plans, with deliberate revision conflicts, source access/expiry/integrity checks, safe text, desktop/mobile layout, and late-response guards. U06 independent outcome collection/adjudication, arbitrary releases, human research, live providers, worker isolation, paid demand, and broader specialist hierarchy remain open.
 
+
+## Version 0.16 verification
+
+U04 supplied experiment plans now support creation and checked inspection in the dashboard. Open a checked action and freeze a plan against its displayed revision. The form captures hypothesis, intervention, measurement/success/collection method, intended population/selection/count, title, owner, and local-time start/end with a UTC preview. Client bounds prevent ordinary empty/oversized/invalid-window saves; the server retains its full policy. Plans execute no work, recruit nobody, and collect no outcomes.
+
+Exact files:
+
+- `web/index.html`: frozen-plan catalog in Reviews; install text uses 0.16.0.
+- `web/app.js`: five-endpoint refresh, current-source filtering of mixed plan/workspace metadata, shared permission/expiry/detail checks, supplied-plan form, exact expected revision, local-time-to-UTC conversion, checked historical/source detail, fixed unreviewed/uncollected labels, draft-preserving conflicts, explicit discard/fresh-read control, and no automatic retry. Late committed responses cannot restore closed/restricted views.
+- `web/styles.css`: bounded form controls, wrapped titles, and spacing.
+- `src/experiments.ts`: authorized summaries add minimal origin IDs for client filtering against current source rights. No private source bytes or full plan are added to catalogs.
+- `tests/experiment-dashboard.test.ts`: seven real-browser checks for exact UTC storage from an Asia/Kolkata browser context, desktop/mobile safe text and wrapping, unchanged action state, historical pin after later declared completion, conflict preservation/deliberate reload, revocation, delayed committed response, known expiry, mixed metadata, failed refresh, and absent persistent browser storage.
+- `docs/experiment-plans.md`, README, package metadata, status, backlog, and continuation describe the implemented workflow and timing/time-zone limits.
+
+Type checking, build, and the full suite passed: 302 tests, zero failures or skips. Log: `outputs/test-results-0.16.0.txt`. The focused seven-check browser log is `outputs/experiment-dashboard-targeted.txt`. Existing action, code, comparison, actor, registry, source, budget, publication, and recovery regressions pass.
+
+`outputs/redteam-0.16.0.tgz` contains 110 files and is installed into an isolated prefix. `work/verify-installed-0.16.0.mjs` verifies compiled CLI/API/template behavior, two checked plan artifacts, web freezing against action revision 2, exact UTC timestamps, checked historical detail, HTML-like/long supplied text, desktop/390 px layouts, no overflow, a real CLI change causing preserved-draft 409 without another plan, deliberate fresh read, normal idle-poll terminal revocation without a forced refresh, cleared private detail/catalog, no persistent browser storage, unchanged source, zero review/actor jobs, and zero uncaught browser errors. Results are in `outputs/installed-verification-0.16.0.json`. Five form/detail/conflict screenshots under `outputs/preview/experiment-*-0.16.0.png` were visually inspected. Browser and temporary service are stopped. No live credential or provider request was used.
+
+U04 and U05 now provide their scoped local action/plan/comparison workflows across web, terminal, and API. This does not establish prospective human research, consent/protocol approval, independent outcomes, causal fixes, researched psychology, actual purchase/investment demand, funding probabilities, paid commercial validation, production isolation, or broader hierarchy. Current rights/integrity, local clocks and time-zone conversion, trusted operator/filesystem, polling, plaintext/backups, response-loss, and delivered-data limitations remain explicit.
+
+Next ready work: a bounded U08 report export workflow for checked local review/action/plan/comparison records, preserving source/provenance labels and current permission checks without exporting sessions, provider secrets, raw source snapshots, or research content. Independent outcome intake/adjudication remains a separate U06 milestone and must not be inferred from frozen plans or synthetic checks. External research, real pilot access, credentials, and C03 paid demand remain missing inputs; continue independent work without claiming those gates passed.
+
 ## Remaining scope
 
 - Authorized external app execution and production worker isolation.
@@ -193,13 +215,13 @@ Next ready milestone: U04 web creation and inspection of supplied frozen experim
 - Country adaptation, consumer buying models, and investor decision models.
 - Validated purchase, conversion, investment, or population predictions.
 - Hosted tenant authentication, durable distributed workers, analyst task leases, and integration of shared parent budgets with a specialist scheduler.
-- Web experiment controls, arbitrary release matching, independent outcome tracking, and commercial demand evidence.
+- Checked report export, arbitrary release matching, independent outcome tracking, and commercial demand evidence.
 
 No real provider calls occurred in the recorded checks. Scripted runs report zero model spend. Configured runs retain rate-based estimates and unknown-usage markers. Infrastructure cost is not calculated.
 
 ## Next milestone
 
-U04 now freezes immutable supplied experiment plans through terminal/API. Add web creation and checked inspection from action detail, preserving declared provenance, exact historical revision/source pins, explicit future windows, unchanged action state, and uncollected outcomes. Apply deliberate revision conflicts, current rights/expiry/integrity refresh, managed-content clearing, safe text, desktop/mobile layout, and late-response ownership. U06 independent outcome collection and adjudication remain separate. Arbitrary releases, semantic review, specialist scheduling, isolation, real research, commercial validation, and live providers remain open.
+U04 and U05 now provide scoped local action/plan/comparison workflows through web, terminal, and API. Build bounded U08 report export with checked source/provenance labels and current permission/integrity checks. Exclude sessions, provider credentials, raw code snapshots, and research content. Make the inability to recall delivered copies explicit. U06 independent outcome intake/adjudication remains separate; frozen plans and synthetic checks establish no independent or prospective human result. Arbitrary releases, semantic review, specialist scheduling, isolation, real research, paid demand, and live providers remain open.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
 

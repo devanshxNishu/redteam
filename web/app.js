@@ -8,6 +8,7 @@ let openedActorRun = null;
 let openedCodeRun = null;
 let codeCatalog = null;
 let actionCatalog = null;
+let experimentCatalog = null;
 let comparisonCatalog = null;
 let openedComparison = null;
 let detailGeneration = 0;
@@ -131,12 +132,12 @@ async function refresh() {
   refreshController?.abort(); refreshController = new AbortController();
   const signal = refreshController.signal;
   try {
-    const [workspace, catalog, actions, comparisons] = await Promise.all([api("/api/workspace", { signal }), api("/api/code-runs", { signal }), api("/api/actions", { signal }), api("/api/comparisons", { signal })]);
+    const [workspace, catalog, actions, comparisons, experiments] = await Promise.all([api("/api/workspace", { signal }), api("/api/code-runs", { signal }), api("/api/actions", { signal }), api("/api/comparisons", { signal }), api("/api/experiments", { signal })]);
     if (generation !== refreshGeneration) return;
-    data = workspace; codeCatalog = catalog; actionCatalog = actions; comparisonCatalog = comparisons;
+    data = workspace; codeCatalog = catalog; actionCatalog = actions; comparisonCatalog = comparisons; experimentCatalog = experiments;
     $("connection-status").textContent = "Local service connected";
     $("connection-dot").style.background = "#7ba595";
-    render(); renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog();
+    render(); renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog(); renderExperimentCatalog();
     if (openedCodeRun) {
       if (!codeEntry(openedCodeRun.kind, openedCodeRun.id)) clearCodeState("Code access changed. The record was closed.");
       else {
@@ -205,6 +206,11 @@ function beginDetail() {
 function ownsDetail(attempt) { return detailGeneration === attempt.generation && !attempt.signal.aborted; }
 function codeEntry(kind, id) {
   if (kind === "browser-source") { const job = data?.jobs.find(item => item.id === id && ["completed", "limited_coverage"].includes(item.status)); return job ? { entry: job, grant: null } : null; }
+  if (kind === "experiments") {
+    const plan = experimentCatalog?.experimentPlans.find(item => item.id === id);
+    const parent = plan && codeEntry(plan.origin.kind === "engineering_observation" ? "observations" : "browser-source", plan.origin.runId);
+    return parent ? { entry: plan, grant: parent.grant } : null;
+  }
   if (kind === "actions") {
     const action = actionCatalog?.actions.find(item => item.id === id);
     const parent = action && codeEntry(action.origin.kind === "engineering_observation" ? "observations" : "browser-source", action.origin.runId);
@@ -228,7 +234,7 @@ function renderCodeCatalog() {
   }
 }
 function clearCodeState(message) {
-  codeCatalog = null; actionCatalog = null; comparisonCatalog = null; renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog();
+  codeCatalog = null; actionCatalog = null; comparisonCatalog = null; experimentCatalog = null; renderCodeCatalog(); renderActionCatalog(); renderComparisonCatalog(); renderExperimentCatalog();
   if (openedCodeRun || openedActorRun || openedComparison) { closeDetail(); if (message) toast(message, true); }
 }
 function armCodeExpiry() {
@@ -244,6 +250,7 @@ function armCodeExpiry() {
 }
 function codeSections(kind, report) {
   if (kind === "actions") return actionSections(report);
+  if (kind === "experiments") return experimentSections(report);
   const scope = section(kind === "repositories" ? "Captured source scope" : "Operator-supplied notes");
   scope.append(node("p", "Limited coverage. No source code, app test, or model was executed by this workflow."), node("p", `Captured: ${date(report.createdAt)} · Run: ${report.runId}`), node("p", `Target: ${report.target}`), node("p", "Saved evidence hashes checked for this request. This is not semantic verification or an approved finding."));
   const sections = [scope];
@@ -282,7 +289,7 @@ async function showCodeReport(kind, id) {
     const report = await api(detailRoute(kind, id), { signal: attempt.signal });
     if (!ownsDetail(attempt)) return;
     if (!codeEntry(kind, id)) { clearCodeState("Code access changed. The record was closed."); return; }
-    $("detail-title").textContent = kind === "actions" ? "Tracked follow-up action" : kind === "repositories" ? "Local repository snapshot" : "Engineering source notes";
+    $("detail-title").textContent = kind === "experiments" ? "Frozen experiment plan" : kind === "actions" ? "Tracked follow-up action" : kind === "repositories" ? "Local repository snapshot" : "Engineering source notes";
     $("detail-content").replaceChildren(...codeSections(kind, report));
     openedCodeRun.pending = false; if (kind === "actions") openedCodeRun.revision = report.record.revision;
     if (!$("review-dialog").open) $("review-dialog").showModal(); $("detail-title").focus({ preventScroll: true }); armCodeExpiry();
@@ -291,7 +298,7 @@ async function showCodeReport(kind, id) {
   }
 }
 
-function detailRoute(kind, id) { return kind === "actions" ? `/api/actions/${id}` : kind === "browser-source" ? `/api/reviews/${id}` : `/api/code-runs/${kind}/${id}`; }
+function detailRoute(kind, id) { return kind === "experiments" ? `/api/experiments/${id}` : kind === "actions" ? `/api/actions/${id}` : kind === "browser-source" ? `/api/reviews/${id}` : `/api/code-runs/${kind}/${id}`; }
 function renderActionCatalog() {
   const rows = (actionCatalog?.actions ?? []).filter(action => codeEntry("actions", action.id)).map(action => {
     const row = node("div", undefined, "grant-item action-record"); row.dataset.actionId = action.id;
@@ -312,7 +319,9 @@ function actionSections(result) {
   const limits = section("Tracking limits"); for (const limitation of result.limitations) limits.append(node("p", limitation));
   const edit = node("button", "Edit declared action", "primary"); edit.addEventListener("click", () => showActionForm(null, record));
   const actions = node("div", undefined, "detail-actions"); actions.append(edit);
-  return [scope, plan, origin, history, limits, actions];
+  const experiment = node("button", "Freeze an experiment plan", "small-button"); experiment.addEventListener("click", () => showExperimentForm(record));
+  const experimentActions = node("div", undefined, "detail-actions"); experimentActions.append(experiment);
+  return [scope, plan, origin, history, limits, actions, experimentActions];
 }
 function planButton(origin) { const button = node("button", "Plan a next step", "small-button"); button.addEventListener("click", () => showActionForm(origin)); return button; }
 function showActionForm(origin, record = null) {
@@ -452,6 +461,74 @@ async function showComparison(id) {
   } catch (error) { if (ownsDetail(attempt)) { closeDetail(); toast(error.message, true); } }
 }
 $("compare-reviews").addEventListener("click", showComparisonForm);
+
+function renderExperimentCatalog() {
+  const rows = (experimentCatalog?.experimentPlans ?? []).filter(item => codeEntry("experiments", item.id)).map(item => {
+    const row = node("div", undefined, "grant-item experiment-record"); row.dataset.experimentId = item.id;
+    const copy = node("div", undefined, "grant-main"); copy.append(node("strong", item.title), node("p", `Owner label: ${item.owner} · action revision ${item.actionRevision}`), node("small", `${date(item.frozenAt)} · Supplied plan · Outcome not collected · Cataloged, unverified`));
+    const inspect = node("button", "Inspect experiment plan →", "small-button"); inspect.addEventListener("click", () => showCodeReport("experiments", item.id)); row.append(copy, inspect); return row;
+  });
+  $("experiment-plan-list").replaceChildren(...(rows.length ? rows : [node("p", experimentCatalog ? "No permitted recent experiment plans. Open an action to freeze a supplied plan." : "Current experiment plan access cannot be established.", "empty")]));
+}
+function experimentSections(report) {
+  const plan = report.plan, summary = section(plan.title);
+  summary.append(node("p", `Owner label: ${plan.owner}. No external person is assigned or notified.`), node("p", "Supplied plan frozen. Semantic review: unreviewed. Protocol review: not assessed."), node("p", "Execution: not started by tracking. Outcome: not collected. Independent outcome verification: not assessed."));
+  const hypothesis = section("Supplied hypothesis and intervention"); hypothesis.append(node("h4", "Hypothesis"), node("p", plan.hypothesis), node("h4", "Planned intervention"), node("p", plan.intervention));
+  const outcome = section("Planned measurement · no result collected"); outcome.append(node("h4", "Measure"), node("p", plan.outcome.measure), node("h4", "Success rule chosen in the plan"), node("p", plan.outcome.successRule), node("h4", "Separate collection method"), node("p", plan.outcome.collectionMethod));
+  const sample = section("Intended sample · unreviewed"); sample.append(node("p", plan.samplePlan.population), node("p", plan.samplePlan.recruitment), node("p", `Intended count: ${plan.samplePlan.targetCount}. This is not a participant or observation count.`));
+  const window = section("Frozen record and planned window"); window.append(node("p", `Frozen: ${report.frozenAt}`), node("p", `Planned start (UTC): ${plan.horizon.startsAt}`), node("p", `Planned end (UTC): ${plan.horizon.endsAt}`), node("p", "Chronology: local clock only. This does not prove that outcomes were unknown or that independent research was registered."));
+  const source = section("Pinned historical action and source"); source.append(node("p", `Action: ${report.actionVersion.id} · revision ${report.actionVersion.revision}`), node("code", report.actionVersion.sha256, "code-hash"), node("p", `${report.actionVersion.origin.kind.replaceAll("_", " ")}: ${report.actionVersion.origin.runId} · ${report.actionVersion.origin.itemId}`), node("p", `Evidence run: ${report.actionVersion.origin.evidenceRunId}`), node("code", report.actionVersion.origin.reportSha256, "code-hash"));
+  const limits = section("Plan limits and current access"); for (const limitation of report.limitations) limits.append(node("p", limitation));
+  limits.append(node("p", "Source permission and saved bytes are checked again during refresh, at most ten seconds between idle polls plus request time. Known access expiry clears managed detail locally. Data already delivered cannot be recalled."));
+  return [summary, hypothesis, outcome, sample, window, source, limits];
+}
+function showExperimentForm(record) {
+  const attempt = beginDetail();
+  if (!codeEntry("actions", record.id)) { closeDetail(); toast("Current action source access is unavailable.", true); return; }
+  openedCodeRun = { kind: "actions", id: record.id, pending: false, editing: true, revision: record.revision }; armCodeExpiry();
+  $("detail-title").textContent = "Freeze a supplied experiment plan";
+  const form = node("form"); form.id = "experiment-form";
+  form.append(node("p", `Freezing preserves this supplied plan against action revision ${record.revision}. No intervention, recruitment, or outcome collection occurs. Semantic and protocol review remain unassessed.`, "fine-print"));
+  const fields = {};
+  for (const [key, label, max, multiline] of [["title", "Plan title", 200, false], ["owner", "Owner label · no external assignment", 120, false], ["hypothesis", "Testable hypothesis", 2000, true], ["intervention", "Planned intervention", 2000, true], ["measure", "Outcome measure", 1000, true], ["successRule", "Success rule chosen before collection", 1000, true], ["collectionMethod", "Separate collection method", 2000, true], ["population", "Intended population or fixture scope", 1000, true], ["recruitment", "Planned selection or recruitment method", 1000, true]]) {
+    const labelNode = node("label", label); labelNode.htmlFor = `experiment-${key}`;
+    const input = node(multiline ? "textarea" : "input"); input.id = `experiment-${key}`; input.name = key; input.required = true; input.maxLength = max; input.autocomplete = "off"; if (multiline) input.rows = 2;
+    if (key === "owner") input.value = record.owner;
+    fields[key] = input; form.append(labelNode, input);
+  }
+  const countLabel = node("label", "Intended sample count · not observed participants"); countLabel.htmlFor = "experiment-targetCount";
+  const count = node("input"); count.id = "experiment-targetCount"; count.type = "number"; count.min = "1"; count.max = "100000"; count.step = "1"; count.required = true; fields.targetCount = count; form.append(countLabel, count);
+  for (const [key, label] of [["startsAt", "Planned start · your local time"], ["endsAt", "Planned end · your local time"]]) {
+    const labelNode = node("label", label); labelNode.htmlFor = `experiment-${key}`;
+    const input = node("input"); input.id = `experiment-${key}`; input.type = "datetime-local"; input.step = "1"; input.required = true; fields[key] = input; form.append(labelNode, input);
+  }
+  const windowPreview = node("p", "Choose a future start and later end. Saved timestamps use UTC. The local clock cannot establish independent research chronology.", "fine-print");
+  const preview = () => { const start = new Date(fields.startsAt.value), end = new Date(fields.endsAt.value); windowPreview.textContent = Number.isFinite(start.getTime()) && Number.isFinite(end.getTime()) ? `UTC to be saved: ${start.toISOString()} → ${end.toISOString()}. Local clock only; no independent registration or outcome is established.` : "Choose a future start and later end. Saved timestamps use UTC. The local clock cannot establish independent research chronology."; };
+  fields.startsAt.addEventListener("input", preview); fields.endsAt.addEventListener("input", preview);
+  const message = node("p", "", "fine-print"); message.id = "action-form-status"; message.setAttribute("role", "alert");
+  const reload = node("button", "Read latest action · discard this plan draft", "small-button"); reload.type = "button"; reload.id = "action-reload"; reload.hidden = true; reload.addEventListener("click", () => showCodeReport("actions", record.id));
+  const save = node("button", "Freeze supplied plan", "primary"); save.type = "submit"; form.append(windowPreview, message, reload, save);
+  form.addEventListener("submit", async event => {
+    event.preventDefault(); if (!ownsDetail(attempt) || save.disabled) return;
+    const starts = new Date(fields.startsAt.value), ends = new Date(fields.endsAt.value);
+    if (Object.values(fields).some(input => !input.value.trim())) { message.textContent = "Complete each supplied plan field before freezing."; return; }
+    if (!Number.isFinite(starts.getTime()) || !Number.isFinite(ends.getTime()) || starts.getTime() <= Date.now() || starts.getTime() - Date.now() > 730 * 86400000 || ends <= starts || ends - starts > 366 * 86400000) { message.textContent = "Choose a future start within 730 days and a later end no more than 366 days after it."; return; }
+    save.disabled = true; for (const input of Object.values(fields)) input.disabled = true;
+    try {
+      const payload = { schemaVersion: "1.0", kind: "experiment_plan_input", actionId: record.id, expectedActionRevision: record.revision, title: fields.title.value, owner: fields.owner.value, hypothesis: fields.hypothesis.value, intervention: fields.intervention.value, outcome: { measure: fields.measure.value, successRule: fields.successRule.value, collectionMethod: fields.collectionMethod.value }, samplePlan: { population: fields.population.value, recruitment: fields.recruitment.value, targetCount: Number(fields.targetCount.value) }, horizon: { startsAt: starts.toISOString(), endsAt: ends.toISOString() } };
+      if (new TextEncoder().encode(JSON.stringify(payload)).length > 32768) { message.textContent = "Shorten the supplied text. The plan must fit within 32 KiB."; return; }
+      const result = await api("/api/experiments", { method: "POST", body: JSON.stringify(payload), signal: attempt.signal });
+      if (!ownsDetail(attempt)) return;
+      await refresh(); if (!ownsDetail(attempt)) return;
+      await showCodeReport("experiments", result.id);
+    } catch (error) {
+      if (!ownsDetail(attempt)) return;
+      if (error.status === 409) { message.textContent = "This action changed. Read its latest revision before deliberately freezing another plan. Your draft was not submitted again."; reload.hidden = false; }
+      else { closeDetail(); toast(`Freeze could not be confirmed. Read recent plans before retrying. ${error.message}`, true); }
+    } finally { if (ownsDetail(attempt)) { save.disabled = false; for (const input of Object.values(fields)) input.disabled = false; } }
+  });
+  $("detail-content").replaceChildren(form); if (!$("review-dialog").open) $("review-dialog").showModal(); fields.title.focus({ preventScroll: true });
+}
 
 function section(title) { const element = node("section", undefined, "detail-section"); element.append(node("h3", title)); return element; }
 async function showActorReport(id) {

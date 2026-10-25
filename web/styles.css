@@ -11,3 +11,5 @@ textarea{width:100%;padding:12px;border:1px solid #dbe0da;border-radius:5px;back
 .detail-section h3,.detail-section details p,#toast{overflow-wrap:anywhere}
 
 #comparison-form .primary{margin-top:18px}.comparison-record .grant-main strong{overflow-wrap:anywhere}#comparison-form select{max-width:100%}
+
+#experiment-form .primary{margin-top:18px}#experiment-form .small-button{margin-top:10px;white-space:normal}#experiment-form input{max-width:100%;min-width:0}.experiment-record .grant-main strong{overflow-wrap:anywhere}

@@ -100,7 +100,7 @@ export async function freezeExperimentPlan(store: WorkspaceStore, value: unknown
   store.saveExperimentPlan(summary, authorize); return summary;
 }
 export function experimentPlanSummaries(store: WorkspaceStore) {
-  return store.recentExperimentPlans().flatMap(item => { try { checkActionVersionAccess(store, item.actionVersion); return [{ id: item.id, frozenAt: item.frozenAt, title: item.title, owner: item.owner, actionId: item.actionVersion.id, actionRevision: item.actionVersion.revision, recordStatus: "cataloged_unverified" as const }]; } catch { return []; } });
+  return store.recentExperimentPlans().flatMap(item => { try { checkActionVersionAccess(store, item.actionVersion); const origin = item.actionVersion.origin; return [{ id: item.id, frozenAt: item.frozenAt, title: item.title, owner: item.owner, actionId: item.actionVersion.id, actionRevision: item.actionVersion.revision, origin: { kind: origin.kind, runId: origin.runId, itemId: origin.itemId }, recordStatus: "cataloged_unverified" as const }]; } catch { return []; } });
 }
 export async function readExperimentPlan(store: WorkspaceStore, id: string): Promise<ExperimentPlanReport> {
   if (!uuid.test(id)) throw new Error("Supply an experiment plan UUID."); const summary = store.experimentPlan(id); if (!summary) throw new Error("Experiment plan not found.");
