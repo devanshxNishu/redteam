@@ -99,6 +99,8 @@ No real provider calls occurred in the recorded checks. Scripted runs report zer
 
 ## Next milestone
 
-Coordinator constraints and durable inference reservations are implemented and packaged. Next, add task identities, guarded transitions, leases, and crash recovery without automatic replay of uncertain invocations. Browser time, tool fees, and infrastructure cost are outside the inference ledger. Broader hierarchy still depends on commercial evidence. A live provider smoke test requires configured credentials, selected model access, and current pricing. Keep scripted fixtures, mock responses, live model output, and human observations distinct.
+Coordinator constraints and durable inference reservations are implemented and packaged. An unreleased task-state prototype is now in `src/tasks.ts`, with nine focused tests in `tests/tasks.test.ts` and its contract in `docs/task-state.md`. Type checking and the compiled build passed. Four competing processes could claim a task only once. Tests cover stale fences, expiry, explicit pre-dispatch retry, sealed metadata, cancellation, restart, permissions, and symlinks. The released 0.6.0 archive does not contain this later prototype; it is not wired to actor execution and does not launch workers.
+
+Next, integrate task ownership with dispatch and output acceptance under the sequence in `docs/task-state.md`. Browser time, tool fees, and infrastructure cost are outside the inference ledger. Broader hierarchy still depends on commercial evidence. A live provider smoke test requires configured credentials, selected model access, and current pricing. Keep scripted fixtures, mock responses, live model output, and human observations distinct.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.

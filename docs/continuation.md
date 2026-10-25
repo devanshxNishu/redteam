@@ -64,8 +64,12 @@ Use synthetic fixtures for software verification. Keep them visibly separate fro
 
 ## Next sequence
 
-1. Add task identities, guarded transitions, lease ownership, and restart recovery. Keep uncertain invocation identities immutable; never replay a possibly dispatched provider call automatically. The ledger now protects inference token and estimated-cost allocation, but it does not schedule workers or cover browser/tool/infrastructure fees.
-2. Integrate task fencing with dispatcher permissions before accepting worker outputs. A lease timeout must not release unknown spend or permit duplicate side effects. Sealed outputs must remain immutable.
+An unreleased task-state prototype is implemented in `src/tasks.ts`. `tests/tasks.test.ts` passed all nine checks; type checking and the compiled build passed. Its transition and integration contract is `docs/task-state.md`. It is not connected to configured actor execution and is not in the existing 0.6.0 archive. The last full released-path suite passed 125 tests before this independent prototype; the new task suite was verified separately. No new live calls or real credentials were used.
+
+The prototype stores immutable task specifications/question keys, bounded attempts, fenced leases, dispatch intents, sealed artifact metadata, and transition events. Four competing processes could claim only once. Expired ownership cannot publish or heartbeat, recovery never requeues, and any dispatch intent blocks the pre-dispatch retry method. Task cancellation does not free budget liability. Sealed metadata is not artifact-byte or semantic verification.
+
+1. Integrate one configured actor task with the durable wrapper using `docs/task-state.md`. Freeze a manifest, protect current ownership before dispatch, preserve the same invocation identity, renew leases, and verify artifacts before accepting outputs. Keep a separate bounded coordinator finalization allowance so actor timeout does not require unsafe lease resurrection.
+2. Test ownership expiry during a fake provider call, stale output, cancellation, and restart. Do not automatically replay a possibly dispatched invocation. The ledger protects inference allocation but does not schedule workers or cover browser/tool/infrastructure fees.
 3. Add bounded analyst task coordination when prerequisites permit. The commercial hierarchy gate remains unproven; do not enable broad specialist fan-out or claim the roundtable is complete.
 4. A live API smoke test needs explicit model configuration, valid credentials, current rates, and processing permission. Do not reuse desktop authentication or invent pricing. Continue independent work if these inputs are missing.
 5. Continue external runner work after isolation and access prerequisites are met.
@@ -79,6 +83,8 @@ Use synthetic fixtures for software verification. Keep them visibly separate fro
 - Dangling symlinks for workspace and research databases are rejected before target creation. Target authorization rejects credentials embedded in URLs.
 
 The temporary preview service is stopped during turn teardown. Reopen it with `npm run ui` when needed. Runtime data remains in `.redteam/` and is excluded from Git and release archives.
+
+Release commits from this continuation are `13ac283` (scenario constraints) and `56d13cc` (durable inference ledger). `outputs/release-verification.json` now records the installed 0.6.0 release (71 packaged files). No preview service was started during this continuation.
 
 ## External inputs still required
 
