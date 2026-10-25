@@ -1,6 +1,6 @@
 # Durable analyst phase accounting
 
-Version 0.32.0 adds `AnalystInvocations` in `src/analyst-invocation.ts`. It runs trusted coordinator callbacks under durable reservations. No HTTP transport, terminal/API run route or analytical result publisher is integrated yet. Authored callbacks in tests do not establish provider compatibility or real spend.
+Version 0.32.0 adds `AnalystInvocations` in `src/analyst-invocation.ts`. It runs trusted coordinator callbacks under durable reservations. Version 0.33.0 adds an internal bounded HTTP transport over these callbacks; no terminal/API run route or analytical result publisher is integrated yet. Authored callbacks in tests do not establish provider compatibility or real spend.
 
 ## Ownership and budget
 
@@ -34,4 +34,6 @@ Late trusted generation receipts can settle factual liability after cancellation
 
 Eighteen authored tests use actual task/budget databases. They cover manifest/source/workspace mismatch, exact phase caps, count held liability, callback ordering and duplicate denial, invalid counts, redacted failures, reservation denial, source loss immediately after reserve with exact release, cancellation, deadline, late receipts, malformed receipts, overrun, closure and no adoption/replay. Installed verification exercises the compiled modules. The full actor/budget/task regressions remain required.
 
-Next: bounded analyst-specific HTTP transport, complete trusted usage parsing, source/processing rechecks at transmission and response, exclusive factual publication and conservative analyst recovery. I04c semantic review, live verification, human behavioral research and commercial gates remain separate.
+Next: complete coordinator integration, source/processing rechecks at transmission and response, exclusive factual publication and conservative analyst recovery. I04c semantic review, live verification, human behavioral research and commercial gates remain separate.
+
+The coordinator-only `assertManifest` method checks exact run/task/manifest identity and current authority before a transport uses the phases. See [bounded transport](analyst-transport.md).

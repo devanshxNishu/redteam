@@ -38,6 +38,7 @@ export class AnalystInvocations {
   private readonly runId: string;
   private readonly taskId: string;
   private readonly pricingRef: string;
+  private readonly manifestHash: string;
   private readonly deadline: number;
   private readonly expiry: number;
   private readonly caps: { count: Readonly<BudgetAmount>; generation: Readonly<BudgetAmount> };
@@ -63,7 +64,7 @@ export class AnalystInvocations {
       || Date.parse(manifest.inferenceDeadlineAt) - Date.parse(manifest.preparedAt) !== config.limits.timeoutMs
       || Date.parse(manifest.coordinatorDeadlineAt) - Date.parse(manifest.inferenceDeadlineAt) !== config.limits.finalizationMs
       || Date.parse(config.processing.expiresAt) < Date.parse(manifest.coordinatorDeadlineAt)) throw new AnalystInvocationError("Analyst phase accounting requires the exact prepared manifest and matching task.");
-    this.workspace = pinnedWorkspace; this.task = task; this.runId = manifest.runId; this.taskId = manifest.taskId; this.pricingRef = manifest.configurationSha256;
+    this.workspace = pinnedWorkspace; this.task = task; this.runId = manifest.runId; this.taskId = manifest.taskId; this.pricingRef = manifest.configurationSha256; this.manifestHash = preparation.manifestSha256;
     this.deadline = Date.parse(manifest.inferenceDeadlineAt); this.expiry = Date.parse(config.processing.expiresAt);
     const remaining = this.deadline - Date.now();
     if (!Number.isSafeInteger(remaining) || remaining < 1 || remaining > 300000) throw new AnalystInvocationError("Analyst inference deadline is unavailable.");
@@ -76,6 +77,10 @@ export class AnalystInvocations {
     try { this.assertActive(); }
     catch (error) { this.controller.abort(); ledger(this.workspace, store => store.closeRun(this.runId, "analyst_initialization_failed")); throw error; }
     this.deadlineTimer = setTimeout(() => this.controller.abort(), Math.max(1, this.deadline - Date.now())); this.deadlineTimer.unref();
+  }
+  assertManifest(identity: { runId: string; taskId: string; sha256: string }): void {
+    if (identity.runId !== this.runId || identity.taskId !== this.taskId || identity.sha256 !== this.manifestHash) throw new AnalystInvocationError("Analyst transport must match this exact manifest.");
+    this.assertActive();
   }
   private assertActive(): void {
     if (this.closed || this.signal.aborted || Date.now() >= this.deadline || Date.now() >= this.expiry) throw new AnalystInvocationError("Analyst phase authority is no longer current.");

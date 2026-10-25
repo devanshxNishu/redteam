@@ -1,6 +1,6 @@
 # Next analyst slice: bounded HTTP transport
 
-After 0.32.0, the source-bound preparation, ownership and durable callback accounting are available. None is an end-to-end analytical run. Add analyst-specific transport before CLI execution or publication. Preserve the actor adapter and its regressions; no cast to actor actions or research authority.
+Implemented as the isolated 0.33.0 transport slice; see `docs/analyst-transport.md`. The source-bound preparation, ownership and durable callback accounting are available. None is an end-to-end analytical run. Add analyst-specific transport before CLI execution or publication. Preserve the actor adapter and its regressions; no cast to actor actions or research authority.
 
 ## Request boundary
 
