@@ -1,6 +1,6 @@
 # redteam: Implementation status
 
-Current build: 0.28.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
+Current build: 0.29.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, requirement-linked source notes, and scoped operator action records. The provider path is mock-verified; no live API smoke test is recorded.
 
 This record separates implemented code from the broader product plan. The browser runner reviews one controlled signup journey. Registered actor models can be used through the configured path, but no independent human behavioral validation is recorded.
 
@@ -61,7 +61,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 439 passed, zero failed or skipped |
+| Full automated suite | 445 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -294,7 +294,7 @@ No real provider calls occurred in the recorded checks. Scripted runs report zer
 
 ## Next milestone
 
-The active subject scope is **ideas and apps only**, as confirmed by the user. The checked evidence-link export is implemented in 0.24.0. I01 strict terminal idea/app briefs and deterministic scope preview are now implemented. I02 now adds the protected brief API. I03 explicit web intake is implemented. I04a checked-brief analytical packet and structure/citation checks are implemented. Next, add I04b a separately configured bounded analyst and I04c semantic review/report from `docs/idea-and-app-scope.md`. Saving a brief is not a completed review. Do not fetch supplied URLs/files, grant access, execute tools/models, fabricate app evidence for ideas, or infer demand/investment. Independent human outcomes, external isolation, real research/pilot/provider inputs, C03 paid demand, and broader hierarchy remain open. Continue normal verified GitHub pushes.
+The active subject scope is **ideas and apps only**, as confirmed by the user. The checked evidence-link export is implemented in 0.24.0. I01 strict terminal idea/app briefs and deterministic scope preview are now implemented. I02 now adds the protected brief API. I03 explicit web intake is implemented. I04a checked-brief analytical packet and structure/citation checks are implemented. I04b1 local generation preparation is also implemented. Next, add I04b2 a separately configured bounded analyst runtime and I04c semantic review/report from `docs/idea-and-app-scope.md`. Saving a brief is not a completed review. Do not fetch supplied URLs/files, grant access, execute tools/models, fabricate app evidence for ideas, or infer demand/investment. Independent human outcomes, external isolation, real research/pilot/provider inputs, C03 paid demand, and broader hierarchy remain open. Continue normal verified GitHub pushes.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
 
@@ -483,3 +483,21 @@ Typecheck, JS syntax, build and full suite passed: **439 tests, zero failures/sk
 The release helper checks archive whitelist/size/SHA512/every installed source byte/credential patterns. Normal private GitHub push/exact remote SHA are recorded in ignored release/GitHub proofs. No npm registry publication. Packet existence/citation matching establishes no truth, useful reasoning, researched psychology, actual app finding, buyer/investor decision, demand or commercial validation. No external packet authenticity is claimed.
 
 Next ready work: I04b one explicitly configured bounded analyst, then I04c semantic review/report. Inspection confirms the current `src/adapters/openai.ts` and `withDurableBudget` use actor-specific views/actions; do not cast an analytical packet into that contract. `TaskStore` already supports `kind: analyst` and `BudgetLedger` is general, but actor recovery/acceptance remain actor-specific. Introduce an analyst-specific adapter/lifecycle/processing policy and conservative recovery, reusing tested lower-level controls only where types and authority fit. Preserve one attempt, fenced ownership, exact source/packet checks, durable unknown liability, exclusive publication and fixed unreviewed outputs. Fake-transport verification precedes a separately configured live check. Real keys, permitted processing and held-out research/pilot/demand inputs remain missing; no broad hierarchy is enabled.
+
+
+## Version 0.29 verification
+
+I04b1 now prepares a local model-independent generation preview for a checked idea/app brief. It builds analytical instructions/input/schema, not a provider request or completed review. No credential/model/rate/count/reservation/task is selected or dispatched.
+
+- `src/analyst-generation.ts`: analytical instructions separate from supplied serialized packet; basic strict closed/required/nullable response schema; exact metadata enums; one citation alternative per exact field/hash pair; qualified analytical tracks and fixed unreviewed protocol/status; deterministic packet/instruction/schema/preview hashes; 200,000-byte pretty preview bound without truncation; explicit no-dispatch/readiness/semantic limits. No HTTP client, key/environment lookup, grant, source change or result writer.
+- `src/cli.ts`: `analysis prepare BRIEF_ID`, with strict argument shape beside packet/check.
+- `tests/analyst-generation.test.ts`: six checks for idea/app deterministic source/payload hashes and no-state effects; closed/required/basic schema shape; every supplied/unknown field/hash citation pair agreeing with the local checker; untrusted prompt/command/URL text separated from trusted instructions/schema with no tools; source tamper/another brief's identity; actual terminal local preview and no environment key/model disclosure or implicit selection.
+- `docs/analyst-generation.md`, README/retained plan/package/backlog/status/checkpoint: preparation-only boundaries and official Structured Outputs/token-counting sources. The OpenAI Docs skill was read; direct documentation/key tools were not available, so official-domain search and actual page retrieval were used. No model/pricing choice or account capability was inferred. Web version text only.
+
+Typecheck, JS syntax, build and full suite passed: **445 tests, zero failed/skipped**, `outputs/test-results-0.29.0.txt`. Combined packet/generation20 passed, `outputs/analyst-generation-targeted.txt`. Existing browser/API/actor/research/budget/publication/recovery regressions pass.
+
+`outputs/redteam-0.29.0.tgz` has 135 files. Final prefix: `work/install-release-0.29.0/node_modules/redteam`. `work/verify-installed-0.29.0.mjs` checks compiled idea/app generation previews, exact packet/instruction/schema/base hashes and source/field identity, data/instruction separation, absent model/tools/key, explicit not-dispatched readiness, byte bound, saved-source tamper denial/restoration, packet/response checks with fixed unreviewed semantics and no jobs/actors/grants/source promotion. It repeats CLI/API/web idea/app intake, eight-endpoint draft/literal desktop/mobile checks, genuine controlled prospective capture/evidence, exact native five-kind JSON/Markdown, old installed 0.23 v1 compatibility, later action update and normal idle source-loss clearing/restoration, no storage/browser errors. Proof: `outputs/installed-verification-0.29.0.json`. All services/browsers stop; no real key/provider/participant/human outcome. The visually inspected 0.27 intake baseline remains recorded; current UI only changes archive text.
+
+Archive whitelist/size/SHA512/all installed-source bytes/credential-pattern checks and normal private GitHub push/exact SHA are recorded in ignored release/GitHub proofs. No npm registry publication. The preview has no execution authority, processing approval, token estimate, cost cap, live compatibility or behavioral validity. Source/citation integrity does not approve analysis or demonstrate customer demand.
+
+Next ready work: I04b2 analyst-specific fenced ownership/dispatch, explicit configured provider/rates/processing and durable unknown-liability handling, bounded response parsing/current source checks, exclusive publication and conservative recovery. Reuse `TaskStore(kind: analyst)`/general `BudgetLedger`; actor adapters/task wrappers/acceptance/recovery remain type- and authority-specific. Keep one attempt and no automatic replay. Fake transport precedes a separately recorded live check. I04c semantic review/report and real research/pilot/provider/demand/isolation/hierarchy gates remain open.

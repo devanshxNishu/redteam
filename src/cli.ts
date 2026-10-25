@@ -28,6 +28,7 @@ import { createStoredComparison, readStoredComparison, comparisonSummaries } fro
 import { freezeExperimentPlan, readExperimentPlan, experimentPlanSummaries } from "./experiments.ts";
 import { createReviewBrief, previewReviewBrief, readReviewBrief, readReviewBriefInput, reviewBriefSummaries } from "./review-briefs.ts";
 import { readAnalyticalPacket, readAnalyticalResponseInput, checkStoredAnalyticalResponse } from "./analytical-review.ts";
+import { prepareAnalystGeneration } from "./analyst-generation.ts";
 import { createReportExport, readReportExport, reportExportSummaries } from "./report-export.ts";
 import { inspectInstallation } from "./installation.ts";
 import { outcomeEvidenceSummaries, readOutcomeEvidence, registerOutcomeEvidence } from "./outcome-evidence.ts";
@@ -71,6 +72,7 @@ redteam briefs add FILE
 redteam briefs list
 redteam briefs show BRIEF_ID
 redteam analysis packet BRIEF_ID
+redteam analysis prepare BRIEF_ID
 redteam analysis check BRIEF_ID FILE
 redteam verify RUN_DIRECTORY
 redteam research demo
@@ -339,10 +341,10 @@ async function main(): Promise<void> {
   }
   if (command === "analysis") {
     const [operation, id, file, ...extra] = args;
-    if (extra.length || !id || !["packet", "check"].includes(operation ?? "") || (operation === "packet" ? file !== undefined : !file)) throw new Error("Usage: redteam analysis packet BRIEF_ID|check BRIEF_ID FILE");
+    if (extra.length || !id || !["packet", "prepare", "check"].includes(operation ?? "") || (operation === "check" ? !file : file !== undefined)) throw new Error("Usage: redteam analysis packet BRIEF_ID|prepare BRIEF_ID|check BRIEF_ID FILE");
     const value = operation === "check" ? await readAnalyticalResponseInput(file!) : undefined;
     const store = new WorkspaceStore(workspace);
-    try { print(operation === "packet" ? await readAnalyticalPacket(store, id) : await checkStoredAnalyticalResponse(store, id, value)); } finally { store.close(); }
+    try { print(operation === "packet" ? await readAnalyticalPacket(store, id) : operation === "prepare" ? await prepareAnalystGeneration(store, id) : await checkStoredAnalyticalResponse(store, id, value)); } finally { store.close(); }
     return;
   }
   if (command === "briefs") {
