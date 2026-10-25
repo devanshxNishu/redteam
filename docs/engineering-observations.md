@@ -67,7 +67,7 @@ No source text or submitted note is sent to a model by this feature. The actor r
 
 ## Local inspection API
 
-Version 0.9.1 prepares the API for later dashboard controls. It adds three GET routes behind the existing bearer session, Host/Origin checks, and `no-store` response policy:
+Version 0.9.1 introduced the inspection API. Version 0.10.0 adds its dashboard controls. It adds three GET routes behind the existing bearer session, Host/Origin checks, and `no-store` response policy:
 
 - `/api/code-runs` returns authorized repository and engineering catalog summaries.
 - `/api/code-runs/repositories/RUN_ID` verifies current access and saved snapshot integrity before returning snapshot metadata.
@@ -75,4 +75,4 @@ Version 0.9.1 prepares the API for later dashboard controls. It adds three GET r
 
 Catalog entries have `recordStatus: cataloged_unverified`. Listing does not read every artifact or certify integrity. It omits note statements and storage directories. Detail requests perform the checks. A missing, expired, revoked, unsafe, or changed record returns the same 404 body with code `code_record_unavailable`. Denials do not return source/notes text, parser errors, or filesystem paths.
 
-No copied source excerpts, source artifact download, capture, or note-registration endpoint is provided. The detail response intentionally includes supplied operator text; a future dashboard must render it as text. Current permission applies on every request. A response already delivered cannot be recalled. Dashboard rendering and open-dialog/cache invalidation remain a separate unfinished step; these routes alone do not provide those UI controls.
+No copied source excerpts, source artifact download, capture, or note-registration endpoint is provided. The detail response intentionally includes supplied operator text; the dashboard renders it as text. Current permission applies on every request. A response already delivered cannot be recalled. The dashboard now refreshes access and detail integrity, closes denied records, checks known expiry locally, and clears managed detail DOM. See the [dashboard contract](code-dashboard.md) for timing and cache limits.

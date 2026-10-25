@@ -1,6 +1,6 @@
 # redteam: Implementation status
 
-Current build: 0.9.1, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, and requirement-linked source notes. The provider path is mock-verified; no live API smoke test is recorded.
+Current build: 0.10.0, local web and terminal workspace with configured actor ownership, coordinator acceptance, durable inference reservations, atomic JSON publication, factual recovery, terminal diagnostics, bounded local repository snapshots, and requirement-linked source notes. The provider path is mock-verified; no live API smoke test is recorded.
 
 This record separates implemented code from the broader product plan. The browser runner reviews one controlled signup journey. Registered actor models can be used through the configured path, but no independent human behavioral validation is recorded.
 
@@ -8,7 +8,7 @@ This record separates implemented code from the broader product plan. The browse
 
 | Area | Current behavior | Boundary |
 |---|---|---|
-| Web dashboard | Overview, live jobs, review history, findings, evidence, access, and terminal instructions | Local single-user service |
+| Web dashboard | Overview, reviews, source snapshot/note inspection, findings, evidence, access, models, and terminal instructions | Local single-user service; source notes remain unreviewed |
 | Installable CLI | Compiled JavaScript package; UI startup, review submission, run list, grants, artifact checks | npm archive; not published to a registry |
 | Shared workspace | SQLite jobs, grants, audit events, and one coordinator | `.redteam/` under the current directory |
 | Job lifecycle | Queue, primary run, verifier run, reporting, completion, limited coverage, failure, interruption | One active review; up to eight active or queued jobs |
@@ -17,7 +17,7 @@ This record separates implemented code from the broader product plan. The browse
 | Engineering notes | Supplied requirements and notes, exact saved-file/range hashes, original input artifact, snapshot pin, private report, current access, and immutable catalog | Citation integrity only; statements/provenance remain unreviewed, execution not performed, defects not assessed |
 | Repository evidence | Exact `code:read` grant, bounded text artifacts, file hashes, exclusion counters, immutable catalog, and permission-checked inspection | Local plaintext, trusted operator, no code/test/model execution, no atomic revision or engineering judgment |
 | Browser sessions | CLI import; encrypted local storage; metadata-only API responses | Local key beside the database; no OS keychain integration |
-| Local API | Bearer session, Host and Origin checks, CSP, and protected code catalog/detail inspection | No remote tenant authentication; code dashboard controls remain unfinished |
+| Local API | Bearer session, Host and Origin checks, CSP, and protected code catalog/detail inspection | No remote tenant authentication; refresh/expiry timing is explicit |
 | Study contract | Approved signup steps and valid input preconditions | Local fixtures only; one final text assertion |
 | Expected result | Captured requirement identifier and source | Documented fixture oracle |
 | Browser evidence | Actual screenshots, traces, events, execution records, hashes | Missing evidence restricts coverage |
@@ -56,7 +56,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Check | Result |
 |---|---|
 | Type checking | Passed |
-| Full automated suite | 232 passed, zero failed or skipped |
+| Full automated suite | 233 passed, zero failed or skipped |
 | Build | Compiled JavaScript and declarations emitted |
 | Packaged installation | npm archive installed into an isolated prefix; installed help and version worked |
 | Web and terminal sharing | CLI review connected to the running dashboard service and saved one reproduced defect with seven artifacts |
@@ -87,6 +87,7 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 | Atomic file publication | Nine checks passed for flush/close order, storage failures, unsupported links, six competing processes, and real writers killed at three publication boundaries |
 | Evidence store | Six checks passed for artifact integrity, immutable records, serialization failure, final symlinks, and parent-directory escape |
 | Read-only diagnostic | Thirteen checks passed for malformed/unsupported records, privacy, file and inventory bounds, unsafe references, staging, CLI behavior, and unchanged live task/budget/SQLite files |
+| Code dashboard lifecycle | A real-browser integration check passed empty/populated cards, safe text, desktop/390 px, expiry, visible/pending revocation, changed evidence, network failure, and stale detail/catalog responses |
 | Code inspection API | Six checks passed for session/Host/Origin, no-store JSON, minimal unverified lists, current permission, expiry/revocation, dependent tamper denial, static errors, and absent write/download routes |
 | Engineering observations | Eleven checks passed for exact UTF-8/BOM/newline ranges, strict fields/types/bounds, stale references, fixed unreviewed labels, unknown expectations, input/report/source tampering, expiry/revocation, partial publication, snapshot pins, unsafe paths, and CLI commands |
 | Repository snapshot | Fifteen checks passed for exact grants, expiry, revocation during reads/publication, root replacement, source preservation, no execution, private output, exclusions, file/byte/entry/depth/deadline bounds, changed evidence, and CLI behavior |
@@ -96,9 +97,11 @@ Environment: Node v24.16.0, npm 11.13.0, installed Google Chrome 155.0.8059.86.
 
 An initial test pass attempt exposed browser shutdown deadlines under load. The implementation now closes contexts explicitly and uses the documented bounded cleanup allowance. The full suite passed after that correction. An installed-build review from before that correction correctly reported limited coverage; it did not report an app defect.
 
-The current installable archive is `outputs/redteam-0.9.1.tgz`. `work/verify-installed-0.9.1.mjs` verified the compiled CLI and local server, protected minimal catalogs, no-store JSON, no copied source text, preserved unreviewed/unknown/not-assessed labels, dependent evidence-change denial, static error bodies, current revocation, and absence of write actions. Results are `outputs/installed-verification-0.9.1.json`. The temporary service is stopped. No target code, provider request, real credential, or browser was used in this installed check. The full suite log is `outputs/test-results-0.9.1.txt`.
+The current installable archive is `outputs/redteam-0.10.0.tgz`. `work/verify-installed-0.10.0.mjs` verified the installed dashboard at desktop and 390 px, empty/populated code catalogs, source-note labels, literal HTML-like text, long paths/hashes, no overflow, terminal revocation detected by the normal poll, cleared detail DOM, denied restricted links, and no persistent browser storage. Existing scripted actor detail and a real fixed browser review with its captured screenshot also passed. Results are `outputs/installed-verification-0.10.0.json`; desktop/mobile screenshots are under `outputs/preview/` and were visually inspected. No uncaught browser error, real credential, or provider request occurred. The browser and service are stopped. The full suite log is `outputs/test-results-0.10.0.txt`.
 
-The 0.9.0 CLI checks remain in `outputs/installed-verification-0.9.0.json`. They cover note registration, exact range hashes, snapshot/input pins, fixed result labels, and revocation. Dashboard JavaScript remains unchanged in 0.9.1; only install-version text changed. Code catalog/detail APIs are implemented, but their dashboard controls and open-view/cache invalidation remain unfinished. The browser baseline remains the verified 0.7.3 release.
+The 0.9.1 API checks remain in `outputs/installed-verification-0.9.1.json`. They cover protected code catalogs/detail, current access, hash checks, static denials, and absent write/download actions. U15 local inspection is now implemented; it does not provide source execution or semantic review. Cross-process permission changes are detected by refresh and known local expiry, with explicit timing limits.
+
+The 0.9.0 CLI checks remain in `outputs/installed-verification-0.9.0.json`. They cover note registration, exact range hashes, snapshot/input pins, fixed result labels, and revocation. That release predated the current dashboard controls; its earlier browser baseline was 0.7.3.
 
 The 0.8.0 installed checks remain in `outputs/installed-verification-0.8.0.json`. They cover repository capture, metadata inspection, source preservation, private artifacts, hashes, exclusions, and revocation. The current suite also passed all fifteen original snapshot checks after extracting the common bounded local-file reader. Dashboard JavaScript remains unchanged in 0.9.0; only install-version text changed. Its browser baseline remains the verified 0.7.3 release.
 
@@ -128,10 +131,12 @@ No real provider calls occurred in the recorded checks. Scripted runs report zer
 
 ## Next milestone
 
-Repository intake and operator-supplied source notes now have explicit integrity and interpretation boundaries. Protected metadata/report APIs now support these records. Next, add their dashboard controls. Keep unreviewed labels and unknown expectations visible, deny revoked links, and clear an open report after access changes. Use the existing review view without enabling model processing or broad specialist fan-out. Semantic verification, shared scheduling, all-resource budgets, production isolation, human research, and live provider verification remain open.
+U15 now exposes existing code records with permission checks, integrity checks, explicit result labels, and managed-view invalidation. Next, implement U04 scoped action records: an owner, next step, validation method, progress, and a link to a permitted browser finding or engineering note. These are tracked operator declarations, not automatic external actions or measured product outcomes. Preserve source permissions on dependent records. Semantic verification, shared scheduling, all-resource budgets, production isolation, human research, and live provider verification remain open.
 
 App review, grounded scenarios, and validated prediction retain separate release gates. Current software tests establish neither behavioral validity nor production readiness.
 
-## Latest continuation preparation
+## Earlier continuation preparation
 
 October 25, 04:14 UTC: product source remains 0.9.1 (`42bbc97`), with its recorded 232 passing tests. `docs/dashboard-code-review-plan.md` now specifies the remaining U15 UI and race/access verification work. This is a documentation-only checkpoint; no new product verification is claimed. Usage was 99% used, with a reported natural reset at 04:33:09 UTC. Scheduled continuation remains active. No credits or reset credits were used.
+
+The natural five-hour usage reset was observed on the 04:44 UTC continuation (0% used). No credits or reset credits were used. Product development resumed within the same chat and checkout.

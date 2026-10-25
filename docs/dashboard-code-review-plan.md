@@ -1,6 +1,6 @@
 # U15 dashboard implementation checkpoint
 
-Prepared against version 0.9.1 on October 25, 2026. This is implementation planning, not a completed UI or a new verified product release.
+Prepared against version 0.9.1 on October 25, 2026. This was the implementation plan. Version 0.10.0 implements the controls and records verification in `docs/continuation.md` and `docs/implementation-status.md`. The required checks below remain useful regression coverage.
 
 ## Current integration points
 

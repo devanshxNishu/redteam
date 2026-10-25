@@ -182,7 +182,7 @@ Type checking and build passed. The full suite passed 226 tests with zero failur
 
 The feature does not authenticate requirement provenance, inspect a note's semantic truth, execute source/tests, approve defects, or feed content to a model. Supplied notes can be wrong despite matching citations. Unknown expectations remain unknown. Local plaintext, file access-time changes, trusted-operator assumptions, non-atomic cross-process access/write boundaries, and preserved uncataloged partial files remain explicit. Revocation denies supported retrieval but does not erase copied bytes or backups. No automatic recovery, retry, adoption, cleanup, or actor access is enabled.
 
-## Current milestone: Version 0.9.1
+## Version 0.9.1 verification
 
 The API portion of U15 is implemented. Dashboard controls are not yet implemented. This release creates the protected read path needed before UI rendering and cache/permission transitions.
 
@@ -204,13 +204,32 @@ The account check reported ordinary usage allowed with 99% of the five-hour wind
 
 `docs/dashboard-code-review-plan.md` records the inspected DOM, API, and refresh integration points, exact rendering labels, request-generation guards, expiry timers, fresh detail integrity checks, fail-closed network handling, and installed browser verification cases. The plan was prepared from the current `web/app.js` and `web/index.html`; no product source was changed. The verified product remains 0.9.1 at commit `42bbc97`, with 232 passing tests and its existing release archive. No tests were rerun for this documentation-only preparation. No service or browser was started. U15 dashboard controls are still unfinished.
 
+## Current milestone: Version 0.10.0
+
+U15 local dashboard inspection is implemented. Reviews now lists repository snapshots and engineering notes, with unverified catalog labels and protected detail retrieval. Supplied requirements, unknown expectations, unreviewed notes, not-executed checks, and not-assessed defects stay explicit. Copied source text and download controls remain absent.
+
+Exact files:
+
+- `web/index.html`: two record cards in the existing Reviews view, empty-state terminal instructions, and updated install version. The five navigation views remain.
+- `web/app.js`: fresh workspace/catalog polling, current exact-grant checks, known-expiry timers, detail integrity rechecks, safe text rendering, and code metadata/detail clearing on failure. Detail requests share generation ownership and abort guards across browser, actor, and code reports. Old successful detail/catalog responses cannot restore a newer cleared view. Focus/visibility changes recheck access. Full reports are not saved in persistent storage or a global detail cache. Close clears managed DOM and image URLs.
+- `web/styles.css`: wrapping for long paths/hashes, code cards, and responsive headings. `docs/code-dashboard.md` is included in the package and describes polling, timeout, local expiry, cache, and trusted-operator limits. README, API contract, backlog, status, and the earlier dashboard plan reflect the current build.
+- `tests/dashboard.test.ts`: one real-browser integration test with assertions for empty/populated records, literal HTML-like notes, no source text, labels, desktop/390 px overflow, snapshot display, changed dependent evidence, network failure, pending and visible external revocation, known expiry, navigation during a pending request, and stale catalog responses. Existing source API/repository tests remain unchanged.
+
+Type checking and build passed. The full suite passed 233 tests, zero failures or skips. The focused browser lifecycle test passed. Log: `outputs/test-results-0.10.0.txt`.
+
+`outputs/redteam-0.10.0.tgz` is installed under `work/install-release-0.10.0`. `work/verify-installed-0.10.0.mjs` verified compiled CLI, actual installed desktop/390 px views, empty/populated catalogs, literal operator text, correct supplied/unknown/unreviewed/not-executed/not-assessed labels, long paths/hashes, no overflow, terminal revocation detected by the normal idle poll, cleared detail DOM, denied restricted links, and empty local/session storage. It also exercised the existing scripted actor report and an actual fixed browser review with a captured screenshot. No uncaught error, real credential, or provider request occurred. The browser and temporary service are stopped. Results are `outputs/installed-verification-0.10.0.json`; its owned fixture workspace is recorded there.
+
+Screenshots `outputs/preview/code-notes-desktop-0.10.0.png`, `code-notes-mobile-0.10.0.png`, and `code-snapshot-mobile-0.10.0.png` were visually inspected. The installed verifier's first run stopped at an ambiguous test locator shared by the hidden activity panel and review table. Scoping that locator to `#reviews-body` corrected the verifier; product source did not change for that issue.
+
+Idle polls wait ten seconds after refresh, with five-second client request timeouts. Known expiry has a local timer. Delivered responses, unmanaged browser history/screenshots, and OS caches cannot be recalled. This is not instant remote revocation, production tenant authentication, worker isolation, semantic code verification, stakeholder research, or approved findings. Partial records and unknown inference liability remain preserved.
+
 ## Next sequence
 
-1. Read `docs/dashboard-code-review-plan.md`, then finish U15: show repository snapshots and engineering notes in the existing local review view. Use the implemented `/api/code-runs` list and `repositories/RUN_ID` / `observations/RUN_ID` detail GET routes; do not add an unverified raw-file path. Keep copied source text out of the initial dashboard response. Make supplied/unverified, unreviewed, not-executed, not-assessed, and unknown expectation labels visible.
-2. Follow the existing actor-report revocation pattern: deny stale links, refresh access state, close and clear an open report on expiry/revocation, and avoid retaining restricted detail in managed caches. Verify the actual installed dashboard at desktop and 390 px, including text escaping, hash failures, and live revocation. Do not conflate listing metadata with a verified report.
-3. Semantic engineering review requires captured requirements, a bounded engineering tool policy, separate external-processing permission where relevant, and independent verification before defect approval. Source/requirement/note text cannot authorize tools. Do not execute app scripts or send content to the stakeholder runtime through this path.
-4. Preserve sealed actor outputs, invocation identities, uncataloged repository/engineering records, and unowned `.pending` files. No automatic repair, replay, retry, cleanup, or cost release is authorized by inspection.
-5. Broad specialist fan-out remains gated by C03 paid concierge demand. Live provider verification needs valid explicit configuration/credentials/current rates and processing permission. External execution needs isolation/access prerequisites. Continue independent work while these inputs are missing.
+1. Define and implement U04 scoped action records. Start with an operator-supplied owner, next step, validation method, progress, and exact originating browser finding or engineering note. Treat progress as a declaration; do not claim execution, independent validation, product improvement, research outcomes, or business impact from a status change.
+2. Dependent actions must retain current source access and immutable origin identity. A revoked source must restrict dependent metadata/detail and managed views. Do not enable external messaging, task assignment to another person/app, code execution, or model processing by creating an action.
+3. Use owned synthetic findings/notes and verify terminal plus web inspection. Preserve the current code dashboard's request ownership, expiry, integrity rechecks, and browser regression coverage.
+4. Semantic engineering review needs a bounded tool/processing policy and independent verification. Broad specialist fan-out still depends on C03. Live providers need explicit configuration, credentials, current rates, and processing permission; external execution needs isolation. Continue independent work while inputs are absent.
+5. Preserve sealed actor outputs, invocation identities, uncataloged source/note records, and unowned staging files. No automatic adoption, replay, retry, repair, cleanup, or unknown-cost release is enabled by inspection or action tracking.
 
 ## Last substantive fixes
 
@@ -222,7 +241,7 @@ The account check reported ordinary usage allowed with 99% of the five-hour wind
 
 The temporary preview service is stopped during turn teardown. Reopen it with `npm run ui` when needed. Runtime data remains in `.redteam/` and is excluded from Git and release archives.
 
-Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), `a999dfb` (normal publication catalog repair), `7f96811` (atomic publication), and `e379e38` (completed-task publication gaps and permission protection). Version 0.7.4 is committed as `cd93137`. Version 0.8.0 is committed as `42d663b`. Version 0.9.0 is committed as `71e2bf4`. The 0.9.1 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.9.1.json` record its final package and checks. `outputs/test-results-0.9.1.txt` records the full suite. Preview services and test browsers are stopped.
+Earlier release commits are `13ac283` (scenario constraints), `56d13cc` (durable inference ledger), `f770971` (task-state foundation), `3da6b62` (guarded actor integration and factual recovery), `a999dfb` (normal publication catalog repair), `7f96811` (atomic publication), and `e379e38` (completed-task publication gaps and permission protection). Version 0.7.4 is committed as `cd93137`. Version 0.8.0 is committed as `42d663b`. Version 0.9.0 is committed as `71e2bf4`. Version 0.9.1 is committed as `42bbc97`; documentation preparation is `733838c`. The 0.10.0 verification is complete. `outputs/release-verification.json` and `outputs/release-verification-0.10.0.json` record its final package and checks. `outputs/test-results-0.10.0.txt` records the full suite. Preview services and test browsers are stopped.
 
 ## External inputs still required
 
