@@ -2,7 +2,7 @@
 
 Evidence-based app review and researched stakeholder decision models, available through a web dashboard and terminal CLI.
 
-Version 0.12.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
+Version 0.13.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live smoke test and the agent roundtable remain development milestones.
 
 ## Start from source
 
@@ -24,7 +24,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.12.0.tgz
+npm install --global ./redteam-0.13.0.tgz
 redteam --help
 ```
 
@@ -123,6 +123,17 @@ redteam actions update ACTION_ID ./action.update.json
 Templates are under `redteam examples`. Link a plan to an existing controlled-browser finding or engineering note. Record an owner label, next step, and validation method. Updates use an expected revision and preserve history. Source revocation and expiry restrict dependent plans.
 
 Progress is operator-declared, including `completed_declared`. Tracking sends no message, assigns no external task, executes no code, and verifies no outcome. Reviews now supports source-linked plan creation, action/history inspection, and revision-aware declared updates. Conflicts preserve the draft and require a deliberate fresh read; source expiry or denial clears managed views. See the [action contract](docs/actions.md).
+
+Saved controlled reviews can also be compared without executing another test:
+
+```sh
+redteam comparisons create --baseline BASELINE_REVIEW_ID --candidate CANDIDATE_REVIEW_ID
+redteam comparisons list
+redteam comparisons show COMPARISON_ID
+```
+
+The comparison requires matching study and requirement scope, checked artifacts, complete fresh execution pairs, and consistent recorded instrumentation. It reports the observed requirement states and explicit reasons when evidence is not comparable. It does not establish a causal fix or change action declarations. See the [comparison contract](docs/comparisons.md).
+
 
 ## Development checks
 

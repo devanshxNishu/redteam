@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { ActionRecord, ActionEvent } from "./domain/actions.ts";
 import { ActionConflictError } from "./domain/actions.ts";
+import type { ComparisonSummary } from "./comparisons.ts";
 
 export type GrantCapability = "browser:read" | "browser:interact" | "code:read" | "code:test";
 export interface AccessGrant {
@@ -92,6 +93,7 @@ export class WorkspaceStore {
       CREATE TABLE IF NOT EXISTS engineering_runs (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS actions (id TEXT PRIMARY KEY, revision INTEGER NOT NULL, document TEXT NOT NULL, updated_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS action_events (action_id TEXT NOT NULL, revision INTEGER NOT NULL, document TEXT NOT NULL, PRIMARY KEY(action_id, revision));
+      CREATE TABLE IF NOT EXISTS comparisons (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
     `);
   }
 
@@ -280,6 +282,25 @@ export class WorkspaceStore {
       this.audit(expectedRevision === 0 ? "action_created" : "action_updated", action.id);
       this.db.exec("COMMIT");
     } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+  }
+
+  saveComparison(summary: ComparisonSummary, authorize: () => undefined): void {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const authorization: unknown = authorize();
+      if (authorization !== undefined) { if (authorization instanceof Promise) void authorization.catch(() => undefined); throw new Error("Comparison source checks must finish synchronously."); }
+      this.db.prepare("INSERT INTO comparisons(id, document, created_at) VALUES (?, ?, ?)").run(summary.id, JSON.stringify(summary), summary.createdAt);
+      this.audit("comparison_saved", summary.id); this.db.exec("COMMIT");
+    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+  }
+
+  comparison(id: string): ComparisonSummary | null {
+    const row = this.db.prepare("SELECT document FROM comparisons WHERE id=?").get(id);
+    return row ? JSON.parse(String(row.document)) as ComparisonSummary : null;
+  }
+
+  recentComparisons(): ComparisonSummary[] {
+    return this.db.prepare("SELECT document FROM comparisons ORDER BY created_at DESC LIMIT 100").all().map(row => JSON.parse(String(row.document)) as ComparisonSummary);
   }
 
   close(): void { this.db.close(); }

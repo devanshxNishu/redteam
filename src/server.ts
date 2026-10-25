@@ -14,6 +14,7 @@ import { authorizedRepositoryRuns, readRepositorySnapshot } from "./repository.t
 import { authorizedEngineeringRuns, readEngineeringReport } from "./engineering.ts";
 import { ActionConflictError } from "./domain/actions.ts";
 import { authorizedActionSummaries, createTrackedAction, readTrackedAction, updateTrackedAction } from "./actions.ts";
+import { comparisonSummaries, createStoredComparison, readStoredComparison } from "./comparisons.ts";
 
 async function body(request: IncomingMessage): Promise<Record<string, unknown>> {
   if (request.headers["content-type"]?.split(";")[0] !== "application/json") throw new Error("Use application/json.");
@@ -49,6 +50,7 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
   const token = randomBytes(32).toString("hex");
   let origin = "";
   let actorDemoActive: Promise<unknown> | null = null;
+  let comparisonActive = false;
   let closing = false;
   const server = createServer((request, response) => {
     response.setHeader("Cache-Control", "no-store");
@@ -73,6 +75,21 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
       const supplied = Buffer.from(authorization.startsWith("Bearer ") ? authorization.slice(7) : "");
       const expected = Buffer.from(token);
       if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) { send(response, 401, { error: "A local Redteam session is required." }); return; }
+      if (request.method === "GET" && url.pathname === "/api/comparisons") { send(response, 200, { recentWindow: 100, comparisons: comparisonSummaries(store) }); return; }
+      if (request.method === "POST" && url.pathname === "/api/comparisons") {
+        if (comparisonActive) { send(response, 409, { error: "A saved-evidence comparison is already running." }); return; }
+        comparisonActive = true;
+        try { send(response, 201, await createStoredComparison(store, await body(request))); }
+        catch { send(response, 400, { code: "comparison_not_created", error: "Comparison not created. Supply two different supported review IDs with available, intact source evidence." }); }
+        finally { comparisonActive = false; }
+        return;
+      }
+      const comparisonDetail = /^\/api\/comparisons\/([a-f0-9-]{36})$/.exec(url.pathname);
+      if (request.method === "GET" && comparisonDetail) {
+        try { send(response, 200, await readStoredComparison(store, comparisonDetail[1]!)); }
+        catch { send(response, 404, { code: "comparison_unavailable", error: "Comparison unavailable. Current source or publication integrity checks failed." }); }
+        return;
+      }
       if (request.method === "GET" && url.pathname === "/api/actions") { send(response, 200, { recentWindow: 100, actions: authorizedActionSummaries(store) }); return; }
       if (request.method === "POST" && url.pathname === "/api/actions") { send(response, 201, await createTrackedAction(store, await body(request))); return; }
       const actionDetail = /^\/api\/actions\/([a-f0-9-]{36})$/.exec(url.pathname);

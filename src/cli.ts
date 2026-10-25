@@ -24,6 +24,7 @@ import { diagnoseActorPublication } from "./actor-diagnostics.ts";
 import { captureRepository, authorizedRepositoryRuns, readRepositorySnapshot } from "./repository.ts";
 import { registerEngineeringObservations, authorizedEngineeringRuns, readEngineeringReport } from "./engineering.ts";
 import { createTrackedAction, readTrackedAction, updateTrackedAction, authorizedActionSummaries } from "./actions.ts";
+import { createStoredComparison, readStoredComparison, comparisonSummaries } from "./comparisons.ts";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const workspace = resolve(process.cwd());
@@ -46,6 +47,9 @@ redteam actions add FILE
 redteam actions list
 redteam actions show ACTION_ID
 redteam actions update ACTION_ID FILE
+redteam comparisons create --baseline REVIEW_ID --candidate REVIEW_ID
+redteam comparisons list
+redteam comparisons show COMPARISON_ID
 redteam verify RUN_DIRECTORY
 redteam research demo
 redteam research sources|models
@@ -301,6 +305,21 @@ async function main(): Promise<void> {
       if (operation === "snapshot") print(await captureRepository(store, { grantId: options["--grant"]!, target: options["--path"]! }));
       else if (operation === "list") print(authorizedRepositoryRuns(store));
       else print(await readRepositorySnapshot(store, rest[0]!));
+    } finally { store.close(); }
+    return;
+  }
+  if (command === "comparisons") {
+    const [operation, ...rest] = args;
+    if (!["create", "list", "show"].includes(operation ?? "") || (operation === "list" && rest.length) || (operation === "show" && rest.length !== 1)) throw new Error("Usage: redteam comparisons create --baseline REVIEW_ID --candidate REVIEW_ID|list|show COMPARISON_ID");
+    const options = operation === "create" ? flags(rest, ["--baseline", "--candidate"]) : {};
+    if (operation === "create" && (!options["--baseline"] || !options["--candidate"])) throw new Error("Supply --baseline REVIEW_ID and --candidate REVIEW_ID.");
+    const store = new WorkspaceStore(workspace);
+    try {
+      if (operation === "create") {
+        const result = await createStoredComparison(store, { baselineReviewId: options["--baseline"], candidateReviewId: options["--candidate"] });
+        print(result); if (result.outcome === "not_comparable") process.exitCode = 1;
+      } else if (operation === "list") print({ recentWindow: 100, comparisons: comparisonSummaries(store) });
+      else print(await readStoredComparison(store, rest[0]!));
     } finally { store.close(); }
     return;
   }

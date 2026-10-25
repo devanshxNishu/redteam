@@ -1,10 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { lstat, realpath } from "node:fs/promises";
-import { basename, isAbsolute, resolve } from "node:path";
+import { basename } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { authorizeGrant } from "./access.ts";
-import { boundedBytes, checkedParents } from "./local-files.ts";
-import { sha256 } from "./evidence.ts";
+import { readFixtureEvidence } from "./browser-evidence.ts";
 import { readEngineeringReport } from "./engineering.ts";
 import type { WorkspaceStore } from "./workspace.ts";
 import { ActionConflictError } from "./domain/actions.ts";
@@ -50,30 +48,10 @@ async function resolveOrigin(store: WorkspaceStore, origin: ActionOrigin): Promi
     if (report.observations.filter(item => item.id === origin.itemId).length !== 1) throw new Error("The engineering observation does not exist.");
     return { ...origin, evidenceRunId: report.runId, directory: catalog.directory, reportSha256: catalog.reportSha256, sourceStatus: "unreviewed", access: { grantId: catalog.grantId, target: catalog.target } };
   }
-  const job = store.job(origin.runId);
-  if (!job?.reportDirectory || !["completed", "limited_coverage"].includes(job.status)) throw new Error("The browser finding is unavailable.");
-  const workspace = await realpath(resolve(store.directory, ".."));
-  if (!isAbsolute(job.reportDirectory) || (await lstat(job.reportDirectory)).isSymbolicLink()) throw new Error("The browser finding directory is unsafe.");
-  const directory = await realpath(job.reportDirectory);
-  const evidenceRunId = basename(directory);
-  if (!uuid.test(evidenceRunId) || ![resolve(workspace, ".redteam/runs", evidenceRunId), resolve(workspace, "outputs/runs", evidenceRunId)].includes(directory)) throw new Error("The browser finding directory is outside the supported workspace roots.");
-  await checkedParents(workspace, resolve(directory, "report.json"));
-  const bytes = await boundedBytes(directory, resolve(directory, "report.json"), 2_000_000), report: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
-  object(report); object(report.manifest);
-  if (report.schemaVersion !== "1.0" || report.runId !== evidenceRunId || report.manifest.runId !== evidenceRunId || report.manifest.mode !== "deterministic_local_fixture" || report.manifest.fixtureVariant !== job.variant || typeof report.outcome !== "string" || !["completed", "findings_found", "limited_coverage"].includes(report.outcome)
-    || !Array.isArray(report.findings) || report.findings.length > 100 || !Array.isArray(report.artifacts) || report.artifacts.length < 1 || report.artifacts.length > 20) throw new Error("The browser finding record is invalid.");
-  const findings = report.findings.filter(item => item && typeof item === "object" && item.id === origin.itemId);
-  if (findings.length !== 1 || findings[0].type !== "observed_requirement_mismatch" || !["reproduced", "not_reproduced", "inconclusive"].includes(findings[0].status)) throw new Error("The browser finding does not resolve uniquely.");
-  const ids = new Set<string>(), paths = new Set<string>(); let total = 0;
-  for (const item of report.artifacts) {
-    object(item);
-    if (typeof item.id !== "string" || !uuid.test(item.id) || ids.has(item.id) || typeof item.path !== "string" || !/^artifacts\/[a-f0-9-]{36}\.[a-z]{1,10}$/.test(item.path) || paths.has(item.path)
-      || typeof item.sha256 !== "string" || !/^[a-f0-9]{64}$/.test(item.sha256) || !Number.isSafeInteger(item.bytes) || Number(item.bytes) < 0 || Number(item.bytes) > 5_000_000 || (total += Number(item.bytes)) > 20_000_000) throw new Error("Browser evidence exceeds the supported integrity boundaries.");
-    ids.add(item.id); paths.add(item.path);
-    const content = await boundedBytes(directory, resolve(directory, item.path), 5_000_000);
-    if (content.length !== item.bytes || sha256(content) !== item.sha256) throw new Error("The browser finding evidence has changed.");
-  }
-  return { ...origin, evidenceRunId, directory: job.reportDirectory, reportSha256: sha256(bytes), sourceStatus: findings[0].status, access: null };
+  const { pin, report } = await readFixtureEvidence(store, origin.runId);
+  const findings = report.findings.filter(item => item?.id === origin.itemId);
+  if (findings.length !== 1 || findings[0]!.type !== "observed_requirement_mismatch" || !["reproduced", "not_reproduced", "inconclusive"].includes(findings[0]!.status)) throw new Error("The browser finding does not resolve uniquely.");
+  return { ...origin, evidenceRunId: pin.evidenceRunId, directory: pin.directory, reportSha256: pin.reportSha256, sourceStatus: findings[0]!.status, access: null };
 }
 
 async function verifyOrigin(store: WorkspaceStore, pin: ActionOriginPin): Promise<void> {

@@ -297,3 +297,20 @@ Run `npm run typecheck` and tests appropriate to each change. The complete suite
 Use `npm run demo`, `npm run demo:fixed`, and `npm run verify -- RUN_DIRECTORY` when browser behavior changes.
 
 Update this checkpoint with exact results, remaining work, and blockers. Avoid repeated work without new evidence.
+
+## Version 0.13 verification
+
+Bounded comparison of saved controlled-signup evidence is implemented through the terminal and protected local API. This is a scoped U05 prototype. It does not run another browser review, source code, model, or tracked action. Baseline/candidate review job IDs and their distinct evidence IDs are pinned with report hashes. Matching parsed study and captured requirement hashes, recorded runtime/browser identity, chronology, complete primary/verifier coverage, distinct execution/dataset IDs, consistent assertions/findings, checked artifact bytes, required capture signatures, and matching execution JSON are required before a result is comparable. An empty finding list cannot imply that the requirement passed. Different observations on the same recorded build receive a distinct verdict. Causal improvement and wider release correctness remain unknown.
+
+Exact implementation files:
+
+- `src/browser-evidence.ts`: shared bounded identity/artifact reader for controlled fixtures; `src/actions.ts` uses it without upgrading action semantics.
+- `src/comparisons.ts`: coverage and consistency assessment, static reason codes, six factual verdicts, immutable private publication, source-pin artifact, checked retrieval, and bounded unverified catalog summaries.
+- `src/workspace.ts`: immutable comparison catalog, synchronous source-pin check inside an atomic insert/audit transaction.
+- `src/cli.ts`: `comparisons create --baseline REVIEW_ID --candidate REVIEW_ID`, list, and show. A saved `not_comparable` create exits with status 1.
+- `src/server.ts`: authenticated no-store list/create/detail routes, one active comparison per service, static creation/detail denials. No source download or arbitrary execution is added.
+- `tests/comparisons.test.ts`: 25 checks, including actual broken/fixed fixture pairs, all four observed state combinations, unchanged action/history/source records, incomplete/altered coverage, missing and reused datasets, changed scope/instrumentation, inconsistent assertions/sealed records, chronology, aliases, tampered/symlink artifacts, publication/source changes, guarded catalog insertion, preserved orphan bytes, strict input, compiled-by-build CLI paths, and protected API behavior. Negative metadata cases are authored software fixtures.
+
+Type checking, build, and the full suite passed: 272 tests, zero failures or skips. Log: `outputs/test-results-0.13.0.txt`. The package contains 106 files and is installed into an isolated prefix. `work/verify-installed-0.13.0.mjs` verifies the compiled CLI and API with actual broken/fixed captures, fourteen source artifacts, job/evidence identity separation, source pins, declared-action preservation, no extra review jobs, a saved reversed-time not-comparable result with exit 1, static changed-source denial, session/Origin controls, and no-store responses. Results are in `outputs/installed-verification-0.13.0.json`. All temporary browser/server resources are stopped. No live provider request or credential was used.
+
+Contract: `docs/comparisons.md`. Dashboard comparison is the next ready milestone; current web behavior remains the 0.12.0 workflow, with only install-version text changed. The existing action and source-dashboard browser regressions passed in the current full suite. Arbitrary releases, semantic finding matching, independent outcomes, real research, calibrated stakeholder models, live-provider verification, commercial validation, worker isolation, and broad hierarchy remain open. Current metadata/hashes assume a trusted local operator, local clock, and filesystem; no external signatures or causal/behavioral validation are claimed. Failed publication/catalog attempts preserve private orphan bytes without automatic adoption or cleanup.
