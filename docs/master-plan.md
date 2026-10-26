@@ -942,3 +942,5 @@ The first demonstration must show an actual app result, its captured evidence, i
 The first stakeholder demonstration must additionally show research provenance, realistic information limits, and comparison with an independent human outcome.
 
 No application implementation is included in this planning package.
+
+Version0.45 adds separate [exclusive context manifest publication and pre-ownership verification](context-analyst-manifests.md), with canonical reconstruction, current full rights/files and a successful in-process publication receipt. It creates no task or provider request. Task-bound historical reader and runtime integration remain open.
