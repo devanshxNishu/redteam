@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "global_context_input",
+  "scope": {
+    "asOf": "2026-10-01T12:00:00.000Z",
+    "regions": [
+      "in"
+    ],
+    "languages": [
+      "en"
+    ],
+    "topics": [
+      "software"
+    ]
+  },
+  "policy": {
+    "maximumRetrievalAgeHours": 24,
+    "maximumPublicationAgeHours": {
+      "news": 72,
+      "release": 168,
+      "research": 8760,
+      "dataset": 2160,
+      "forecast": 720
+    },
+    "minimumDeclaredOriginsForTrend": 2
+  },
+  "sources": [],
+  "claims": []
+}

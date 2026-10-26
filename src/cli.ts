@@ -28,6 +28,7 @@ import { createStoredComparison, readStoredComparison, comparisonSummaries } fro
 import { freezeExperimentPlan, readExperimentPlan, experimentPlanSummaries } from "./experiments.ts";
 import { createReviewBrief, previewReviewBrief, readReviewBrief, readReviewBriefInput, reviewBriefSummaries } from "./review-briefs.ts";
 import { readAnalyticalPacket, readAnalyticalResponseInput, checkStoredAnalyticalResponse } from "./analytical-review.ts";
+import { assessGlobalContext, readGlobalContextInput } from "./global-context.ts";
 import { prepareAnalystGeneration } from "./analyst-generation.ts";
 import { createReportExport, readReportExport, reportExportSummaries } from "./report-export.ts";
 import { inspectInstallation } from "./installation.ts";
@@ -39,6 +40,7 @@ const help = `redteam — evidence-first app review
 
 redteam ui [--port 4317]
 redteam doctor
+redteam context assess FILE
 redteam review --demo broken|fixed
 redteam runs list
 redteam access grant --target ORIGIN [--name NAME] [--allow browser:read,browser:interact] [--session FILE] [--hours 24]
@@ -171,6 +173,12 @@ async function main(): Promise<void> {
   if (!command || command === "--help" || command === "help") { console.log(help); return; }
   if (command === "--version") { console.log((JSON.parse(await readFile(resolve(root, "package.json"), "utf8")) as { version: string }).version); return; }
   if (command === "examples") { if (args.length) throw new Error("Usage: redteam examples"); console.log(resolve(root, "examples")); return; }
+  if (command === "context") {
+    const [operation, file, ...extra] = args;
+    if (operation !== "assess" || !file || extra.length) throw new Error("Usage: redteam context assess FILE");
+    print(assessGlobalContext(await readGlobalContextInput(file)));
+    return;
+  }
   if (command === "doctor") {
     if (args.length) throw new Error("Usage: redteam doctor");
     const report = await inspectInstallation({ projectRoot: root, workspace });
