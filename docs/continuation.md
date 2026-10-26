@@ -1,6 +1,6 @@
 # Redteam continuation checkpoint
 
-Latest verified product: **0.45.0**. Previous0.43 source `32204476d4978d78bf9ae8bb61388e12050ff78d` and checkpoint `b9d26af527845bcf9c8ce8d78fbeb42483234f9a` were verified exact/private. Previous0.44 source `b025965ef3449be34a1ede7e639db2e729c7d5b8` and checkpoint `93cb8a0be0a3326f72417b38d6f6eebff51bee26` were verified private. Current0.45 source/full suite/final package/installed checks pass; final private sync is pending below. Preserve `/Users/devansh/Documents/ChatGPT/RedTeam`. Read implementation status, backlog, master plan, this file and `docs/context-analyst-configuration.md`.
+Latest verified product: **0.45.0**. Previous0.43 source `32204476d4978d78bf9ae8bb61388e12050ff78d` and checkpoint `b9d26af527845bcf9c8ce8d78fbeb42483234f9a` were verified exact/private. Previous0.44 source `b025965ef3449be34a1ede7e639db2e729c7d5b8` and checkpoint `93cb8a0be0a3326f72417b38d6f6eebff51bee26` were verified private. Current0.45 source `470e8ed4f4fc69203aa0895d0a99ab7f8941b80e` was pushed normally and matched exact private origin/main. Final archive/installed checks pass. Preserve `/Users/devansh/Documents/ChatGPT/RedTeam`. Read implementation status, backlog, master plan, this file and `docs/context-analyst-configuration.md`.
 
 ## Latest0.45 milestone and verification
 
@@ -9,7 +9,7 @@ Latest verified product: **0.45.0**. Previous0.43 source `32204476d4978d78bf9ae8
 - tests/context-analyst-artifacts.test.ts adds15 authored cases. New packaged docs/context-analyst-manifests.md and README/package/lock/web archive/master/scope/global/backlog/status/companion docs updated. Source and plan policies0.44 remain byte-compatible.
 - Typecheck/web syntax/build pass. Final full **743pass, zero failed/cancelled/skipped**, outputs/test-results-0.45.0.txt,264.1sec. Focused47pass, outputs/context-artifacts-targeted.txt. Earlier742pass preceded the receipt guard and is not the final release result. Current full suite includes browser regressions.
 - work/verify-installed-0.45.0.mjs preview/final checks pass against actual installed0.44 source/snapshot/grant/packet/preview/plan bytes. Canonical reconstruction preserves historical identity without capability; actual fresh preparation saves/verifies; duplicate/copy/complete failed publication adoption denied; revocation/withdrawal deny delivery. Original source/packet/preview/v1 normalized configuration and manifest core unchanged. HTTP/HTTPS/fetch traps0, CLI denial preload, no native public GET/model/task/ledger/research/job/actor/browser/service. Proof outputs/installed-verification-0.45.0.json, final outputs/installed-smoke-0.45.0.txt. Prior0.43 unexplained denial did not recur; evidence remains below.
-- Archive outputs/redteam-0.45.0.tgz, manifest outputs/package-manifest-0.45.0.json, **202files**, installed work/install-release-0.45.0/node_modules/redteam. Final documented archive/installed byte/size/SHA512/credential whitelist checked by work/verify-release-files.mjs0.45.0/202/743. Recheck after last backlog wording correction; stage only18ready source/test/doc files, scan exact whitelist/credentials and actual logs, fetch/reconcile remote, ordinary commit/push and exact private-main verification. No npm publication/deployment.
+- Archive outputs/redteam-0.45.0.tgz, manifest outputs/package-manifest-0.45.0.json, **202files**, installed work/install-release-0.45.0/node_modules/redteam. Final documented archive/installed byte/size/SHA512/credential whitelist checked by work/verify-release-files.mjs0.45.0/202/743. Final backlog wording correction was repackaged into a fresh standard prefix, preserving the earlier installation as work/install-pre-sync-0.45.0. Explicit18-file staged whitelist/path/credential scan and743/47 logs passed; fetched0/0 divergence and private visibility. Source `470e8ed4f4fc69203aa0895d0a99ab7f8941b80e` matched exact private main. This checkpoint-only follow-up changes no packaged file; verify its exact private push too. No npm publication/deployment.
 
 ## Current next work
 
@@ -19,7 +19,7 @@ Then declaration-bound task/accounting/transport and coordinator/results/recover
 
 ## Current usage / continuation
 
-Initial0.45 heartbeat observed90% primary/25% secondary; source/package checks completed before a natural limit pause. Resumed heartbeat observed ordinary usage allowed, primary0%/secondary26% consumed after natural reset. No reset credits/paid credits were used. Complete private sync before starting next slice. No new API/prompt/schema or price claims/research capture occurred; this is local immutable storage/validation. No approval is pending.
+Initial0.45 heartbeat observed90% primary/25% secondary; source/package checks completed before a natural limit pause. Resumed heartbeat observed ordinary usage allowed, primary0%/secondary26% consumed after natural reset. No reset credits/paid credits were used. Private source sync completed; continue with task-bound historical reading after checkpoint sync. No new API/prompt/schema or price claims/research capture occurred; this is local immutable storage/validation. No approval is pending.
 
 ## Standing instructions
 
