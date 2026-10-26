@@ -5,7 +5,7 @@ import { isDeepStrictEqual } from "node:util";
 import { checkedParents } from "./local-files.ts";
 import { sha256 } from "./evidence.ts";
 import { ContextDataError, recordDirectory, privateDirectory, privateBytes, publish, freeze, fields, uuid, digest, timestamp, json } from "./context-data.ts";
-import { checkContextAnalystPreparationAccess, checkContextAnalystManifestBytes } from "./context-analyst-config.ts";
+import { checkContextAnalystPreparationAccess, checkContextAnalystFinalizationAccess, checkContextAnalystManifestBytes } from "./context-analyst-config.ts";
 import type { ContextAnalystPreparation } from "./context-analyst-config.ts";
 import type { WorkspaceStore } from "./workspace.ts";
 
@@ -27,13 +27,18 @@ export async function saveContextAnalystManifest(store: WorkspaceStore, preparat
 export async function verifySavedContextAnalystManifest(store: WorkspaceStore, preparation: ContextAnalystPreparation) {
   try { if (publications.get(preparation)?.store !== store) throw new ContextDataError(); return await verifyFiles(store, preparation); } catch { throw new ContextDataError(); }
 }
-async function verifyFiles(store: WorkspaceStore, preparation: ContextAnalystPreparation) {
+/** Original successful publication only. Data/file checks for finalization do not authorize task creation or another send. */
+export async function verifyContextAnalystFinalizationFiles(store: WorkspaceStore, preparation: ContextAnalystPreparation) {
+  try { if (publications.get(preparation)?.store !== store) throw new ContextDataError(); return await verifyFiles(store, preparation, "finalization"); } catch { throw new ContextDataError(); }
+}
+async function verifyFiles(store: WorkspaceStore, preparation: ContextAnalystPreparation, phase: "inference" | "finalization" = "inference") {
   try {
-    checkContextAnalystPreparationAccess(store, preparation); const { state, directory } = await recordDirectory(store.directory, "context-analyst-runs", preparation.manifest.runId);
+    const guard = () => phase === "inference" ? checkContextAnalystPreparationAccess(store, preparation) : checkContextAnalystFinalizationAccess(store, preparation);
+    guard(); const { state, directory } = await recordDirectory(store.directory, "context-analyst-runs", preparation.manifest.runId);
     const manifestBytes = await privateBytes(state, resolve(directory, "manifest.json"), 24000), generationBytes = await privateBytes(state, resolve(directory, "generation.json"), 500000);
     if (sha256(manifestBytes) !== preparation.manifestSha256 || sha256(generationBytes) !== preparation.manifest.generationSha256 || !manifestBytes.equals(Buffer.from(JSON.stringify(preparation.manifest))) || !generationBytes.equals(Buffer.from(JSON.stringify(preparation.generation)))) throw new ContextDataError();
     const checked = await checkContextAnalystManifestBytes(store, manifestBytes, generationBytes);
-    if (!(await privateBytes(state, resolve(directory, "manifest.json"), 24000)).equals(manifestBytes) || !(await privateBytes(state, resolve(directory, "generation.json"), 500000)).equals(generationBytes)) throw new ContextDataError(); checked.checkCurrent(); checkContextAnalystPreparationAccess(store, preparation);
+    if (!(await privateBytes(state, resolve(directory, "manifest.json"), 24000)).equals(manifestBytes) || !(await privateBytes(state, resolve(directory, "generation.json"), 500000)).equals(generationBytes)) throw new ContextDataError(); checked.checkCurrent(); guard();
     return freeze({ schemaVersion: "2.0", kind: "verified_context_analyst_manifest", runId: preparation.manifest.runId, taskId: preparation.manifest.taskId, directory, manifestSha256: preparation.manifestSha256, generationSha256: preparation.manifest.generationSha256, manifest: checked.preparation.manifest, generation: checked.preparation.generation, executionAuthority: "not_granted", ownership: "not_acquired" });
   } catch { throw new ContextDataError(); }
 }

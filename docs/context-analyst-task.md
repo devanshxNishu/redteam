@@ -1,0 +1,41 @@
+# Context analyst ownership and phase boundaries
+
+Version0.47 adds an internal coordinator-only `ContextAnalystTask` in `src/context-analyst-task.ts`. It owns one exact context task attempt. It sends no model request and creates no budget, candidate file, report or accepted analytical result. No CLI/API run route is added. Source declarations remain operator statements; this does not establish real provider compatibility or stakeholder validity.
+
+## Creation
+
+`ContextAnalystTask.create(store, preparation, owner)` requires the actual current same-Store preparation and successful in-process manifest publication receipt. It fully checks the saved context manifest/generation and current source/declaration files before opening a task writer. Copies, historical-reader results, foreign Store objects, expired preparations, failed publications and existing queued/running/terminal tasks cannot acquire or recreate ownership.
+
+Existing task database/main/optional WAL/SHM paths must be canonical private regular single-link files. An absent database is allowed only with no orphan sidecars. Existing tasks/task_events column contracts and WAL mode are checked with a read-only connection. Existing task/run bindings cause denial. Database identity, privacy, schema and bindings are rechecked after asynchronous source reads, before any writer constructor can normalize permissions or create schema. Missing/malformed existing tables are rejected rather than repaired. A fresh authorized workspace can create its task store.
+
+The handle composes the existing fenced ownership mechanism with the exact context task/run/question/hash/one-attempt/coordinator-deadline and configured lease policy. No context manifest is cast into a v1 configuration, artifact, accounting or transport contract. The task database identity is pinned for the handle. Initial construction must finish before the frozen inference deadline. A private in-process attempt marker consumes the preparation before the task writer starts. A failure before a row is visible or after task creation/claim preserves factual records and cannot reuse that preparation. There is no automatic retry, task adoption, orphan repair or second attempt.
+
+A module-private construction key prevents direct runtime construction from copied arguments. Do not send the handle, stores, callbacks or operational snapshots to a model.
+
+## Inference and finalization
+
+`signal` covers task ownership. `inferenceSignal` combines that signal with the frozen inference timer. `assertInference` requires the original preparation, current source/declaration metadata, active lease/fence and inference window. `beforeDispatch` additionally reads full saved/source files and the exact task-bound historical manifest, then records a fenced intent. An intent is not a provider request or budget reservation. Future accounting must separately bind one count and one generation operation.
+
+At the inference deadline, new sends stop. The owned task retains its reserved finalization window. Heartbeats check current metadata and the frozen coordinator deadline; they do not substitute for full file reads. `seal` and `complete` perform full current saved/source/task checks, then use the exact active lease or sealed fence/digest. Source loss, withdrawal, correction, processing revocation, expiry, task cancellation, altered input/spec/database identity or elapsed coordinator deadline denies the relevant operation.
+
+`checkContextAnalystFinalizationAccess` requires the original preparation identity and current metadata/rights within its coordinator window. `verifyContextAnalystFinalizationFiles` also requires the original successful publication receipt and complete current files. Both remain distinct from inference authority. Neither enables new task creation, file publication or another send after inference expiry. The pre-task verification API still uses the original inference deadline. Backward time before preparation is denied; no deadline moves.
+
+A seal/completion is mechanical. It does not authenticate a provider response, prove timely inference, validate the candidate file or approve reasoning. The future coordinator must establish those facts before accepting any analysis. Supplied diagnostic candidate references remain unaccepted. A failed sealed finalization stays sealed for factual deadline recovery; it cannot be promoted automatically.
+
+`stop` preserves conditional fencing and supported failure/cancellation semantics. `close` aborts signals, clears timers and closes ownership without inferring an outcome. A later process can read checked historical input but cannot resume this handle or recreate its receipt.
+
+## Managed input read stability
+
+Repeated installed checks exposed a ctime-only change during protected context reads. Diagnostic copies retained the original checks and captured unchanged inode, permissions, link count, size and modification time. The external actor that changed ctime is unidentified. Old denials were preserved and not replayed.
+
+The managed context reader now permits one anchored confirmation read under that precise condition. Both full buffers must match and the confirmation must be stable; other metadata/content/path changes are rejected. Mutable input readers remain strict. This is bounded read-only confirmation, not task/write/model retry. Source hashes and current permission checks still apply. The original0.43 generic denial has not been causally attributed by this trace.
+
+The installed test creates old-version fixtures in a canonical OS temporary directory, keeping unchanged old strict code independent of unrelated Documents metadata activity. It then deliberately changes source ctime during NEW ownership validation and requires exact original bytes and successful checked ownership. The condition is tested explicitly rather than inferred from a passing run.
+
+## Verification and remaining work
+
+Authored idea/app fixtures cover original receipt/identity, exact bindings, duplicate/concurrent denial, unsafe/malformed/changing databases, no adoption/repair, distinct deadline signals, source/file/permission loss, cancellation during reads, task-spec mutation, conditional stop, mechanical sealing and post-start uncertain failures. No participant, demand, investment or real model evidence is created.
+
+Next add separate context phase accounting and bounded transport, with exact task/manifest/workspace/payload/resource binding, positive count liability and unknown/late spend preservation. Full rights/file checks remain required around every transmission, response, seal, publication and later delivery. Coordinator/catalog/report/recovery and explicit terminal operations follow. Actual model/key/rates/current permission/live compatibility and human usefulness/behavioral validation remain missing.
+
+Local runtime/operator/clock/database/filesystem trust, SQLite sidecar bookkeeping and changes after the last observed check remain boundaries. No atomic transaction across files and databases or independent fact/rights authentication is claimed.

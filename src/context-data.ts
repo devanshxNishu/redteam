@@ -1,6 +1,6 @@
 import { lstat, mkdir, realpath } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
-import { boundedBytes, checkedDirectory, checkedParents } from "./local-files.ts";
+import { boundedBytes, confirmedBytes, checkedDirectory, checkedParents } from "./local-files.ts";
 import { publishExclusive } from "./publication.ts";
 
 export class ContextDataError extends Error { constructor() { super("The context record, current source rights or bounded input is unavailable."); } }
@@ -29,7 +29,7 @@ export function bytes(value: unknown, max: number): Buffer { const result = Buff
 export async function inputBytes(file: string, max: number): Promise<Buffer> { const path = resolve(file), root = await realpath(dirname(path)); return boundedBytes(root, resolve(root, basename(path)), max); }
 export async function privateDirectory(path: string): Promise<void> { await checkedDirectory(path); if ((await lstat(path)).mode & 0o077) throw new ContextDataError(); }
 export async function privateBytes(state: string, file: string, max: number): Promise<Buffer> {
-  if ((await lstat(file)).mode & 0o077) throw new ContextDataError(); const result = await boundedBytes(state, file, max);
+  if ((await lstat(file)).mode & 0o077) throw new ContextDataError(); const result = await confirmedBytes(state, file, max);
   if ((await lstat(file)).mode & 0o077) throw new ContextDataError(); return result;
 }
 export async function recordDirectory(stateDirectory: string, prefix: "context-sources" | "context-snapshots" | "context-processing" | "context-analyst-runs", id: string, create = false): Promise<{ state: string; directory: string }> {

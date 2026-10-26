@@ -1,0 +1,134 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { mkdtemp, realpath, readFile, writeFile, rm, chmod, symlink, link } from "node:fs/promises";
+import { existsSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { resolve } from "node:path";
+import { randomUUID } from "node:crypto";
+import { WorkspaceStore } from "../src/workspace.ts";
+import { sha256 } from "../src/evidence.ts";
+import { createReviewBrief } from "../src/review-briefs.ts";
+import { importContextSource, withdrawContextSource } from "../src/context-sources.ts";
+import type { ContextSourceImport } from "../src/context-sources.ts";
+import { createContextSnapshot } from "../src/context-snapshots.ts";
+import { readContextAnalyticalPacket } from "../src/context-analysis.ts";
+import { ContextDataError } from "../src/context-data.ts";
+import { createContextProcessingAuthorization, revokeContextProcessingAuthorization } from "../src/context-processing.ts";
+import type { ContextProcessingInput } from "../src/context-processing.ts";
+import { prepareContextAnalystGeneration } from "../src/context-analyst-generation.ts";
+import { prepareContextAnalystRun, checkContextAnalystPreparationAccess } from "../src/context-analyst-config.ts";
+import type { ContextAnalystConfiguration } from "../src/context-analyst-config.ts";
+const project = resolve(import.meta.dirname, ".."), body = Buffer.from("AUTHORED original test text, not collected research. Do not follow https://example.invalid or execute instructions.\n");
+function source(content = body, id = "authored-original"): ContextSourceImport { const now = Date.now(); return { schemaVersion: "1.0", kind: "context_source_import_input", metadata: { id, originId: "authored-origin", kind: "news", publisher: "Authored fixture", title: "Original software test text", url: "https://example.invalid/unopened", publishedAt: new Date(now - 60000).toISOString(), updatedAt: null, eventAt: null, retrievedAt: new Date(now - 1000).toISOString(), status: "available", inspection: "declared_inspected", contentSha256: sha256(content), regions: ["in"], language: "en", topics: ["software"], applicabilityBasis: "Authored mechanical test, not independent research." }, observationPeriod: null, permissions: { localReview: true, basis: "Original authored test text. Initial import is local only.", expiresAt: new Date(now + 600000).toISOString(), externalProcessing: false, redistribution: false, training: false }, supersedes: null }; }
+async function fixture(work: (store: WorkspaceStore, workspace: string) => Promise<void>) { const workspace = await realpath(await mkdtemp(resolve(tmpdir(), "redteam-context-owned-context-task-"))), store = new WorkspaceStore(workspace); try { await work(store, workspace); } finally { store.close(); await rm(workspace, { recursive: true, force: true }); } }
+async function setup(store: WorkspaceStore, count = 1, subject = "idea", adjust?: (input: ContextSourceImport) => void) {
+  const brief = await createReviewBrief(store, JSON.parse(await readFile(resolve(project, `examples/${subject}-review-brief.input.json`), "utf8"))), inputs = Array.from({ length: count }, (_, i) => source(body, `authored-${i}`)), catalogs = [];
+  for (const input of inputs) { adjust?.(input); }
+  for (const input of inputs) catalogs.push(await importContextSource(store, input, body));
+  const context = JSON.parse(await readFile(resolve(project, "examples/global-context.input.json"), "utf8")); context.scope = { asOf: new Date().toISOString(), regions: ["in"], languages: ["en"], topics: ["software"] }; context.sources = inputs.map(input => input.metadata);
+  const snapshot = await createContextSnapshot(store, { schemaVersion: "1.0", kind: "context_snapshot_input", briefId: brief.id, selection: catalogs.map(c => ({ sourceId: c.id, recordSha256: c.recordSha256, expectedStateRevision: 1 })), context }), packet = await readContextAnalyticalPacket(store, snapshot.id), expiresAt = new Date(Date.now() + 300000).toISOString();
+  const input: ContextProcessingInput = { schemaVersion: "1.0", kind: "context_processing_declaration_input", provider: "openai", model: "AUTHORED_MODEL_NOT_DISPATCHED", purpose: "input_count_and_analysis_inference", packet: { snapshotId: snapshot.id, packetSha256: packet.packetSha256 }, packetDeclaration: { authorized: true, basis: "Authored original brief and supplied metadata; mechanical fixture only.", expiresAt }, sources: packet.sources.map(s => ({ sourceId: s.sourceId, recordSha256: s.recordSha256, contentSha256: s.contentSha256, authorized: true, basis: "I authored this original test text; explicit later declaration for the named provider/model, not a real transmission.", expiresAt })), training: false, redistribution: false };
+  return { brief, inputs, catalogs, snapshot, packet, input };
+}
+async function configured(store: WorkspaceStore, count = 1, subject = "idea") { const context = await setup(store, count, subject), grant = await createContextProcessingAuthorization(store, context.input), preview = await prepareContextAnalystGeneration(store, context.snapshot.id); const configuration: ContextAnalystConfiguration = { schemaVersion: "2.0", kind: "context_analyst_configuration", provider: "openai", model: context.input.model, pricing: { inputUsdPerMillion: "1.25", outputUsdPerMillion: "5" }, context: { snapshotId: context.snapshot.id, packetSha256: context.packet.packetSha256, generationSha256: preview.generationSha256 }, processing: { mode: "external", scope: "exact_context_packet_and_generation", authorizationId: grant.id, recordSha256: grant.recordSha256, expectedRevision: 1 }, limits: { maximumInputTokens: 1000, maximumOutputTokens: 200, count: { tokens: 1000, costMicrousd: 2000 }, generation: { tokens: 1200, costMicrousd: 2250 }, timeoutMs: 10000, finalizationMs: 1000 }, taskPolicy: { leaseMs: 5000, heartbeatMs: 1000 } }; return { ...context, grant, preview, configuration }; }
+
+import { ContextAnalystTask } from "../src/context-analyst-task.ts";
+import { TaskStore } from "../src/tasks.ts";
+import { DatabaseSync } from "node:sqlite";
+import { renameSync, copyFileSync } from "node:fs";
+import { stat, rename } from "node:fs/promises";
+import { checkContextAnalystFinalizationAccess, checkContextAnalystManifestBytes } from "../src/context-analyst-config.ts";
+import { saveContextAnalystManifest, verifySavedContextAnalystManifest, verifyContextAnalystFinalizationFiles, readContextAnalystManifest } from "../src/context-analyst-artifacts.ts";
+const output = { artifactRef: "AUTHORED_UNACCEPTED_CANDIDATE", sha256: "a".repeat(64) };
+async function ready(work: (c: Awaited<ReturnType<typeof configured>> & { store: WorkspaceStore; workspace: string; p: Awaited<ReturnType<typeof prepareContextAnalystRun>>; saved: Awaited<ReturnType<typeof saveContextAnalystManifest>>; open: () => Promise<ContextAnalystTask> }) => Promise<void>, subject = "idea") {
+  await fixture(async (store, workspace) => { const context = await configured(store, 1, subject), p = await prepareContextAnalystRun(store, context.configuration), saved = await saveContextAnalystManifest(store, p), handles: ContextAnalystTask[] = [];
+    const open = async () => { const h = await ContextAnalystTask.create(store, p, "AUTHORED_COORDINATOR"); handles.push(h); return h; };
+    try { await work({ ...context, store, workspace, p, saved, open }); } finally { handles.forEach(h => h.close()); }
+  });
+}
+function modify(store: WorkspaceStore, id: string, edit: (r: any) => void) { const db = new DatabaseSync(resolve(store.directory, "tasks.sqlite")); try { const row = JSON.parse(String(db.prepare("SELECT document FROM tasks WHERE id=?").get(id)!.document)); edit(row); db.prepare("UPDATE tasks SET document=? WHERE id=?").run(JSON.stringify(row), id); } finally { db.close(); } }
+
+test("phase guards preserve original identity, frozen bytes and distinct inference/finalization deadlines", async t => ready(async ({ store, p, workspace }) => {
+  const bytes = JSON.stringify(p), reconstructed = await checkContextAnalystManifestBytes(store, Buffer.from(JSON.stringify(p.manifest)), Buffer.from(JSON.stringify(p.generation))), other = new WorkspaceStore(resolve(workspace, "other"));
+  try { for (const value of [structuredClone(p), reconstructed.preparation]) assert.throws(() => checkContextAnalystFinalizationAccess(store, value), ContextDataError); assert.throws(() => checkContextAnalystFinalizationAccess(other, p)); } finally { other.close(); }
+  t.mock.timers.enable({ apis: ["Date"], now: Date.parse(p.manifest.preparedAt) - 1 }); assert.throws(() => checkContextAnalystPreparationAccess(store, p)); assert.throws(() => checkContextAnalystFinalizationAccess(store, p)); t.mock.timers.tick(Date.parse(p.manifest.inferenceDeadlineAt) - Date.now());
+  assert.throws(() => checkContextAnalystPreparationAccess(store, p)); checkContextAnalystFinalizationAccess(store, p);
+  assert.equal(JSON.stringify(p), bytes); t.mock.timers.tick(1000); assert.throws(() => checkContextAnalystFinalizationAccess(store, p));
+}));
+
+test("finalization file checks need the actual successful receipt and remain data only after inference", async t => ready(async ({ store, p, saved }) => {
+  const bytes = await readFile(resolve(saved.directory, "manifest.json")); t.mock.timers.enable({ apis: ["Date"], now: Date.parse(p.manifest.inferenceDeadlineAt) });
+  await assert.rejects(verifySavedContextAnalystManifest(store, p)); const checked = await verifyContextAnalystFinalizationFiles(store, p); assert.equal(checked.executionAuthority, "not_granted"); assert.equal(checked.ownership, "not_acquired");
+  await assert.rejects(verifyContextAnalystFinalizationFiles(store, structuredClone(p))); await assert.rejects(ContextAnalystTask.create(store, p, "late")); assert(!existsSync(resolve(store.directory, "tasks.sqlite"))); assert((await readFile(resolve(saved.directory, "manifest.json"))).equals(bytes));
+}));
+
+test("no original preparation/receipt or invalid owner can create a task or invoke getters", async () => fixture(async (store, workspace) => {
+  const { configuration } = await configured(store), p = await prepareContextAnalystRun(store, configuration); await assert.rejects(ContextAnalystTask.create(store, p, "owner")); assert(!existsSync(resolve(store.directory, "tasks.sqlite")));
+  await saveContextAnalystManifest(store, p); let accessed = false; const other = new WorkspaceStore(resolve(workspace, "other"));
+  try { for (const value of [structuredClone(p), { get manifest() { accessed = true; return p.manifest; } }]) await assert.rejects(ContextAnalystTask.create(store, value as any, "owner")); await assert.rejects(ContextAnalystTask.create(other, p, "owner"));
+    for (const owner of ["", "x".repeat(201), "line\nfeed", { toString() { accessed = true; return "owner"; } }]) await assert.rejects(ContextAnalystTask.create(store, p, owner as any));
+    assert.throws(() => new (ContextAnalystTask as any)(Symbol(), store, p, "owner")); assert(!accessed); assert(!existsSync(resolve(store.directory, "tasks.sqlite")));
+  } finally { other.close(); }
+}));
+
+test("idea/app ownership pins one exact context task, preserves source bytes and creates no provider/budget/result", async () => {
+  for (const subject of ["idea", "app"]) await ready(async ({ store, workspace, p, saved, open }) => { const bytes = await readFile(resolve(saved.directory, "manifest.json")), audit = store.auditLog(), h = await open(), s = h.snapshot();
+    assert.equal(s.record.spec.id, p.manifest.taskId); assert.equal(s.record.spec.runId, p.manifest.runId); assert.equal(s.record.spec.manifestHash, p.manifestSha256); assert.equal(s.record.spec.deadlineAt, p.manifest.coordinatorDeadlineAt); assert.equal(s.record.spec.kind, "analyst"); assert.equal(s.record.spec.questionKey, "supplied-brief-context-analysis"); assert.equal(s.record.spec.maximumAttempts, 1); assert.equal(s.record.attempt, 1); assert.equal(s.record.state, "running"); assert.equal(s.record.fence, 1); assert.deepEqual(s.events.map(e => e.kind), ["created", "claimed", "started"]);
+    h.assertWorkspace(workspace); assert.throws(() => h.assertWorkspace(workspace + "/other")); s.record.spec.manifestHash = "f".repeat(64); assert.equal(h.snapshot().record.spec.manifestHash, p.manifestSha256);
+    assert.equal((await readContextAnalystManifest(store, p.manifest.taskId)).ownership, "not_acquired"); assert.deepEqual(store.auditLog(), audit); assert((await readFile(resolve(saved.directory, "manifest.json"))).equals(bytes));
+    for (const f of ["budgets.sqlite", "research.sqlite", "analyst-runs"]) assert(!existsSync(resolve(store.directory, f))); assert.deepEqual(store.jobs(), []); assert.deepEqual(store.actorRuns(), []);
+  }, subject);
+});
+
+test("concurrent/duplicate creation has one winner and never adopts or changes the existing task", async () => ready(async ({ store, p, open }) => {
+  const attempts = await Promise.allSettled([open(), open()]); assert.equal(attempts.filter(a => a.status === "fulfilled").length, 1); const h = (attempts.find(a => a.status === "fulfilled") as PromiseFulfilledResult<ContextAnalystTask>).value, before = h.snapshot(); await assert.rejects(open()); assert.deepEqual(h.snapshot(), before); h.assertInference();
+  await assert.rejects(ContextAnalystTask.create(store, await readContextAnalystManifest(store, p.manifest.taskId) as any, "copied historical data"));
+}));
+
+test("an already queued matching task is not adopted or claimed and closed-writer DB bytes stay unchanged", async () => ready(async ({ store, workspace, p, open }) => {
+  const tasks = new TaskStore(workspace), m = p.manifest; tasks.create({ id: m.taskId, runId: m.runId, kind: "analyst", questionKey: m.questionKey, manifestHash: p.manifestSha256, maximumAttempts: 1, deadlineAt: m.coordinatorDeadlineAt }); const before = tasks.task(m.taskId), events = tasks.events(m.taskId); tasks.close(); const file = resolve(store.directory, "tasks.sqlite"), b = await readFile(file); await assert.rejects(open()); assert((await readFile(file)).equals(b)); const observer = new TaskStore(workspace); try { assert.deepEqual(observer.task(m.taskId), before); assert.deepEqual(observer.events(m.taskId), events); } finally { observer.close(); }
+}));
+
+test("existing malformed/task-only/non-WAL schema is denied without table repair or DB rewrite", async () => { for (const variant of ["unrelated", "tasks_only", "bad_events", "non_wal", "schema_during_read"]) await ready(async ({ store, workspace, p, open }) => {
+  const file = resolve(store.directory, "tasks.sqlite"); if (["non_wal", "schema_during_read"].includes(variant)) { const tasks = new TaskStore(workspace); tasks.close(); }
+  const db = new DatabaseSync(file); try { if (variant === "unrelated") db.exec("CREATE TABLE unrelated (id TEXT)"); if (["tasks_only", "bad_events"].includes(variant)) { db.exec("PRAGMA journal_mode=WAL; CREATE TABLE tasks (id TEXT PRIMARY KEY, run_id TEXT NOT NULL, question_key TEXT NOT NULL, document TEXT NOT NULL)"); if (variant === "bad_events") db.exec("CREATE TABLE task_events (id TEXT)"); } if (variant === "non_wal") db.exec("PRAGMA journal_mode=DELETE"); } finally { db.close(); } await chmod(file, 0o600); const b = await readFile(file); if (variant === "schema_during_read") { const original = store.contextSnapshot.bind(store); let guardCalls = 0; store.contextSnapshot = id => { guardCalls++; return original(id); }; checkContextAnalystPreparationAccess(store, p); let calls = 0, changed = false; store.contextSnapshot = id => { if (!changed && ++calls > guardCalls) { changed = true; const writer = new DatabaseSync(file); try { writer.exec("DROP TABLE task_events"); } finally { writer.close(); } } return original(id); }; try { await assert.rejects(open()); assert(changed); } finally { store.contextSnapshot = original; } const checked = new DatabaseSync(file, { readOnly: true }); try { assert.equal(checked.prepare("SELECT count(*) AS n FROM sqlite_master WHERE name='task_events'").get()!.n, 0); assert.equal(checked.prepare("SELECT count(*) AS n FROM tasks").get()!.n, 0); } finally { checked.close(); } } else { await assert.rejects(open()); assert((await readFile(file)).equals(b)); }
+}); });
+
+test("unsafe existing main/sidecar/root files are refused before constructor permission normalization", async () => { for (const variant of ["mode", "hardlink", "symlink", "wal_link", "shm_mode", "root_mode", "missing_main_sidecar"]) await ready(async ({ store, workspace, open }) => {
+  const file = resolve(store.directory, "tasks.sqlite"); if (variant !== "missing_main_sidecar") { const tasks = new TaskStore(workspace); tasks.close(); }
+  if (variant === "mode") await chmod(file, 0o644); if (variant === "hardlink") await link(file, file + ".alias"); if (variant === "symlink") { await rename(file, file + ".saved"); await symlink(file + ".saved", file); } if (variant === "wal_link") { await writeFile(resolve(workspace, "target"), "UNCHANGED"); await symlink(resolve(workspace, "target"), file + "-wal"); } if (variant === "shm_mode") await writeFile(file + "-shm", "unsafe", { mode: 0o644 }); if (variant === "root_mode") await chmod(store.directory, 0o755); if (variant === "missing_main_sidecar") await writeFile(file + "-wal", "orphan", { mode: 0o600 });
+  await assert.rejects(open()); if (variant === "mode") assert.equal((await stat(file)).mode & 0o777, 0o644); if (variant === "root_mode") assert.equal((await stat(store.directory)).mode & 0o777, 0o755); if (variant === "wal_link") assert.equal(await readFile(resolve(workspace, "target"), "utf8"), "UNCHANGED"); if (variant === "missing_main_sidecar") assert(!existsSync(file));
+}); });
+
+test("other existing v1 task records remain unchanged when a separate context task starts", async () => ready(async ({ workspace, open }) => {
+  const tasks = new TaskStore(workspace); try { tasks.create({ id: "legacy", runId: "legacy-run", kind: "analyst", questionKey: "supplied-brief-analysis", manifestHash: "c".repeat(64), maximumAttempts: 1, deadlineAt: new Date(Date.now() + 60000).toISOString() }); const before = tasks.task("legacy"), events = tasks.events("legacy"); await open(); assert.deepEqual(tasks.task("legacy"), before); assert.deepEqual(tasks.events("legacy"), events); } finally { tasks.close(); }
+}));
+
+test("inference deadline aborts only its send signal; reserved finalization can still seal and complete", async t => {
+  t.mock.timers.enable({ apis: ["Date", "setInterval", "setTimeout"], now: Date.now() });
+  await ready(async ({ p, open }) => { const h = await open(); await h.beforeDispatch("AUTHORED_COUNT"); await h.beforeDispatch("AUTHORED_COUNT"); assert.equal(h.snapshot().record.dispatchIntents.length, 1); for (let i = 0; i < 10; i++) t.mock.timers.tick(1000); assert.equal(h.inferenceSignal.aborted, true); assert.equal(h.signal.aborted, false); await assert.rejects(h.beforeDispatch("LATE")); assert.equal(h.signal.aborted, false); await h.seal(output); t.mock.timers.tick(500); await h.complete(output.sha256); assert.equal(h.snapshot().record.state, "completed"); assert.equal(h.snapshot().record.spec.deadlineAt, p.manifest.coordinatorDeadlineAt); assert.equal(h.snapshot().record.dispatchIntents.length, 1); });
+});
+
+test("coordinator deadline denies completion and preserves sealed diagnostic output without promotion", async t => {
+  t.mock.timers.enable({ apis: ["Date", "setInterval", "setTimeout"], now: Date.now() }); await ready(async ({ open }) => { const h = await open(); await h.seal(output); t.mock.timers.tick(11000); await assert.rejects(h.complete(output.sha256)); assert.equal(h.snapshot().record.state, "sealed"); assert.equal(h.signal.aborted, true); });
+});
+
+test("current revocation, withdrawal and saved/source tamper deny dispatch before any intent", async () => { for (const variant of ["revoke", "withdraw", "manifest", "source"]) await ready(async ({ store, grant, catalogs, saved, open }) => { const h = await open(); if (variant === "revoke") revokeContextProcessingAuthorization(store, grant.id, 1, "Authored stop"); if (variant === "withdraw") withdrawContextSource(store, catalogs[0]!.id, 1, "Authored stop"); if (variant === "manifest") await writeFile(resolve(saved.directory, "manifest.json"), "changed"); if (variant === "source") await writeFile(resolve(catalogs[0]!.directory, "source.txt"), "changed"); await assert.rejects(h.beforeDispatch("DENIED")); assert.deepEqual(h.snapshot().record.dispatchIntents, []); assert.equal(h.inferenceSignal.aborted, true); }); });
+
+test("withdrawal/revocation/file loss also deny finalization after inference without changing sealed data", async t => {
+  t.mock.timers.enable({ apis: ["Date", "setInterval", "setTimeout"], now: Date.now() }); for (const variant of ["revoke", "withdraw", "generation"]) await ready(async ({ store, grant, catalogs, saved, open }) => { const h = await open(); await h.seal(output); t.mock.timers.tick(10000); if (variant === "revoke") revokeContextProcessingAuthorization(store, grant.id, 1, "Authored stop"); if (variant === "withdraw") withdrawContextSource(store, catalogs[0]!.id, 1, "Authored stop"); if (variant === "generation") await writeFile(resolve(saved.directory, "generation.json"), "changed"); await assert.rejects(h.complete(output.sha256)); assert.equal(h.snapshot().record.state, "sealed"); assert.deepEqual(h.snapshot().record.output, output); });
+});
+
+test("file mutation during full validation cannot record dispatch or bypass final file reads", async () => ready(async ({ store, saved, open }) => { const h = await open(), original = store.contextSnapshot.bind(store); let changed = false; store.contextSnapshot = id => { if (!changed) { changed = true; writeFileSync(resolve(saved.directory, "generation.json"), "Changed after initial reads"); } return original(id); }; try { await assert.rejects(h.beforeDispatch("DENIED")); assert(changed); assert.deepEqual(h.snapshot().record.dispatchIntents, []); } finally { store.contextSnapshot = original; } }));
+
+test("cancellation during a full source read cannot leave a late dispatch intent", async () => ready(async ({ store, workspace, p, open }) => { const h = await open(), tasks = new TaskStore(workspace), original = store.contextSnapshot.bind(store); let cancelled = false; store.contextSnapshot = id => { if (!cancelled) { cancelled = true; tasks.cancel(p.manifest.taskId, 1); } return original(id); }; try { await assert.rejects(h.beforeDispatch("LATE")); assert(cancelled); assert.equal(h.snapshot().record.state, "cancelled"); assert.deepEqual(h.snapshot().record.dispatchIntents, []); } finally { store.contextSnapshot = original; tasks.close(); } }));
+
+test("database inode replacement and task spec mutation cannot redirect an active handle", async () => { for (const variant of ["inode", "spec", "factory_inode"]) await ready(async ({ store, workspace, p, open }) => { if (variant === "factory_inode") { const tasks = new TaskStore(workspace); tasks.close(); const original = store.contextSnapshot.bind(store); let guardCalls = 0; store.contextSnapshot = id => { guardCalls++; return original(id); }; checkContextAnalystPreparationAccess(store, p); assert(guardCalls > 0); let calls = 0, changed = false; store.contextSnapshot = id => { if (!changed && ++calls > guardCalls) { changed = true; const file = resolve(store.directory, "tasks.sqlite"); renameSync(file, file + ".saved"); copyFileSync(file + ".saved", file); } return original(id); }; try { await assert.rejects(open()); assert(changed); } finally { store.contextSnapshot = original; } const db = new DatabaseSync(resolve(store.directory, "tasks.sqlite"), { readOnly: true }); try { assert.equal(db.prepare("SELECT count(*) AS n FROM tasks").get()!.n, 0); } finally { db.close(); } return; } const h = await open(); if (variant === "inode") { const file = resolve(store.directory, "tasks.sqlite"); renameSync(file, file + ".saved"); copyFileSync(file + ".saved", file); assert.throws(() => h.assertInference()); } else { modify(store, p.manifest.taskId, r => { r.spec.manifestHash = "f".repeat(64); }); await assert.rejects(h.beforeDispatch("DENIED")); } assert.deepEqual(h.snapshot().record.dispatchIntents, []); }); });
+
+test("conditional stop/cancel preserves an already cancelled record and never authorizes another attempt", async () => ready(async ({ workspace, p, open }) => { const h = await open(), tasks = new TaskStore(workspace); try { tasks.cancel(p.manifest.taskId, 1); const before = tasks.task(p.manifest.taskId); h.stop("adapter_failed"); assert.deepEqual(tasks.task(p.manifest.taskId), before); await assert.rejects(open()); await assert.rejects(h.beforeDispatch("NO_RETRY")); } finally { tasks.close(); } }));
+
+test("wrong completion hash and stopped sealed finalization cannot promote or replace output", async () => ready(async ({ open }) => { const h = await open(); await h.seal(output); await assert.rejects(h.complete("f".repeat(64))); h.stop("policy_denied"); assert.equal(h.snapshot().record.state, "sealed"); assert.deepEqual(h.snapshot().record.output, output); await assert.rejects(h.complete(output.sha256)); }));
+
+test("close aborts both signals without implying success/failure and a factory restart cannot adopt", async () => ready(async ({ open }) => { const h = await open(); const before = h.snapshot(); h.close(); h.close(); assert(h.signal.aborted); assert(h.inferenceSignal.aborted); assert.throws(() => h.snapshot()); await assert.rejects(h.seal(output)); await assert.rejects(open()); assert.equal(before.record.state, "running"); }));
+
+test("uncertain factory failures before a row or after start consume preparation and never retry or adopt", async () => { for (const boundary of ["create", "start"]) await ready(async ({ store, workspace, p, open }) => { const originalCreate = TaskStore.prototype.create, originalStart = TaskStore.prototype.start; let calls = 0; if (boundary === "create") TaskStore.prototype.create = function() { calls++; throw new Error("AUTHORED failure before task row is visible"); }; else TaskStore.prototype.start = function(lease) { calls++; originalStart.call(this, lease); throw new Error("AUTHORED failure after started record commit"); }; try { await assert.rejects(open()); } finally { TaskStore.prototype.create = originalCreate; TaskStore.prototype.start = originalStart; } const tasks = new TaskStore(workspace); try { const before = tasks.list(p.manifest.runId), events = tasks.events(p.manifest.taskId); if (boundary === "start") { assert.equal(before[0]!.state, "running"); assert.equal(before[0]!.attempt, 1); } else assert.equal(before.length, 0); await assert.rejects(open()); assert.equal(calls, 1); assert.deepEqual(tasks.list(p.manifest.runId), before); assert.deepEqual(tasks.events(p.manifest.taskId), events); } finally { tasks.close(); } assert(!existsSync(resolve(store.directory, "budgets.sqlite"))); }); });

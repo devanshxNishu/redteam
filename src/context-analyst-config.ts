@@ -51,10 +51,14 @@ function buildPreparation(configuration: Readonly<ContextAnalystConfiguration>, 
   bytes(manifest, 24000); const preparation = freeze({ schemaVersion: "2.0" as const, kind: "context_analyst_run_preparation" as const, state: "not_started" as const, manifest, manifestSha256: sha256(JSON.stringify(manifest)), generation: preview.generation }); bytes(preparation, 520000); return preparation;
 }
 export type ContextAnalystPreparation = ReturnType<typeof buildPreparation>;
-const checkedPreparations = new WeakMap<object, { store: WorkspaceStore; guard: () => undefined }>();
+const checkedPreparations = new WeakMap<object, { store: WorkspaceStore; guard: () => undefined; finalizationGuard: () => undefined }>();
 /** Current metadata/expiry and frozen deadline only; full managed file checks remain required before later use. */
 export function checkContextAnalystPreparationAccess(store: WorkspaceStore, value: ContextAnalystPreparation): undefined {
   try { const checked = checkedPreparations.get(value); if (!checked || checked.store !== store) throw new ContextDataError(); checked.guard(); return undefined; } catch { throw new ContextDataError(); }
+}
+/** Original preparation only; current metadata/rights and coordinator deadline, never permission for a new send. */
+export function checkContextAnalystFinalizationAccess(store: WorkspaceStore, value: ContextAnalystPreparation): undefined {
+  try { const checked = checkedPreparations.get(value); if (!checked || checked.store !== store) throw new ContextDataError(); checked.finalizationGuard(); return undefined; } catch { throw new ContextDataError(); }
 }
 async function checkedContext(store: WorkspaceStore, configuration: Readonly<ContextAnalystConfiguration>) {
   const grant = await readContextProcessingAuthorization(store, configuration.processing.authorizationId); checkBinding(store, configuration, grant);
@@ -68,7 +72,8 @@ async function checkedContext(store: WorkspaceStore, configuration: Readonly<Con
 export async function prepareContextAnalystRun(store: WorkspaceStore, value: unknown): Promise<ContextAnalystPreparation> {
   try {
     const configuration = parseContextAnalystConfiguration(value), checked = await checkedContext(store, configuration), preparation = buildPreparation(configuration, checked.current, checked.preview, checked.packet, Date.now());
-    const guard = () => { checked.guard(); if (Date.now() >= Date.parse(preparation.manifest.inferenceDeadlineAt)) throw new ContextDataError(); return undefined; }; guard(); checkedPreparations.set(preparation, { store, guard }); return preparation;
+    const finalizationGuard = () => { checked.guard(); if (Date.now() < Date.parse(preparation.manifest.preparedAt) || Date.now() >= Date.parse(preparation.manifest.coordinatorDeadlineAt)) throw new ContextDataError(); return undefined; };
+    const guard = () => { finalizationGuard(); if (Date.now() >= Date.parse(preparation.manifest.inferenceDeadlineAt)) throw new ContextDataError(); return undefined; }; guard(); checkedPreparations.set(preparation, { store, guard, finalizationGuard }); return preparation;
   } catch { throw new ContextDataError(); }
 }
 /** Canonical data validation only. Reconstructed bytes never acquire checked preparation/write or execution identity. */
