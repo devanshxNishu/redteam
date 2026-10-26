@@ -1,6 +1,6 @@
 # Next global context slice: inspected-source records and snapshots
 
-I05a in0.35 checks supplied metadata only. I05b must preserve the exact permitted source bytes and provenance before any analytical packet can claim source-backed news context. Keep discovery, actual collection and source-use semantics separate. This design is repository-only until implementation and verification.
+I05a in0.35 checks supplied metadata only. I05b must preserve the exact permitted source bytes and provenance before any analytical packet can claim source-backed news context. Keep discovery, actual collection and source-use semantics separate. Version0.36 implements this local import/storage/snapshot slice; see `docs/context-records.md`. It includes no actual collection or external processing. This development design remains repository-only.
 
 ## Source records
 

@@ -9,6 +9,9 @@ import type { ExperimentPlanSummary } from "./experiments.ts";
 import type { ReportExportSummary } from "./report-export.ts";
 import type { OutcomeEvidenceSummary } from "./outcome-evidence.ts";
 import type { ReviewBriefSummary } from "./review-briefs.ts";
+import type { ContextSourceCatalog, ContextSourceState } from "./context-sources.ts";
+import type { ContextSnapshotSummary } from "./context-snapshots.ts";
+import { ContextDataError, ContextStateConflict } from "./context-data.ts";
 
 export type GrantCapability = "browser:read" | "browser:interact" | "code:read" | "code:test";
 export interface AccessGrant {
@@ -101,6 +104,9 @@ export class WorkspaceStore {
       CREATE TABLE IF NOT EXISTS experiment_plans (id TEXT PRIMARY KEY, document TEXT NOT NULL, frozen_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS report_exports (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS outcome_evidence (id TEXT PRIMARY KEY, plan_id TEXT NOT NULL, comparison_id TEXT NOT NULL, document TEXT NOT NULL, registered_at TEXT NOT NULL, UNIQUE(plan_id, comparison_id));
+      CREATE TABLE IF NOT EXISTS context_sources (id TEXT PRIMARY KEY, lineage_root_id TEXT NOT NULL, version INTEGER NOT NULL, revision INTEGER NOT NULL, document TEXT NOT NULL, imported_at TEXT NOT NULL, UNIQUE(lineage_root_id, version));
+      CREATE TABLE IF NOT EXISTS context_source_events (source_id TEXT NOT NULL, revision INTEGER NOT NULL, document TEXT NOT NULL, PRIMARY KEY(source_id, revision));
+      CREATE TABLE IF NOT EXISTS context_snapshots (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS review_briefs (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
     `);
   }
@@ -347,6 +353,72 @@ export class WorkspaceStore {
 
   recentReviewBriefs(): ReviewBriefSummary[] {
     return this.db.prepare("SELECT document FROM review_briefs ORDER BY created_at DESC, id LIMIT 100").all().map(row => JSON.parse(String(row.document)) as ReviewBriefSummary);
+  }
+
+  private contextGuard(authorize: () => undefined): void {
+    const result: unknown = authorize();
+    if (result !== undefined) { if (result instanceof Promise) void result.catch(() => undefined); throw new ContextDataError(); }
+  }
+
+  contextSource(id: string): ContextSourceCatalog | null {
+    const row = this.db.prepare("SELECT id, lineage_root_id, version, revision, document FROM context_sources WHERE id=?").get(id);
+    if (!row) return null; const source = JSON.parse(String(row.document)) as ContextSourceCatalog;
+    if (source.id !== row.id || source.lineageRootId !== row.lineage_root_id || source.version !== Number(row.version) || source.state.revision !== Number(row.revision)) throw new ContextDataError(); return source;
+  }
+
+  contextSourceEvents(id: string): ContextSourceState[] {
+    return this.db.prepare("SELECT revision, document FROM context_source_events WHERE source_id=? ORDER BY revision LIMIT 3").all(id).map(row => { const state = JSON.parse(String(row.document)) as ContextSourceState; if (state.revision !== Number(row.revision)) throw new ContextDataError(); return state; });
+  }
+
+  recentContextSources(): ContextSourceCatalog[] {
+    return this.db.prepare("SELECT id FROM context_sources ORDER BY imported_at DESC, id LIMIT 100").all().map(row => this.contextSource(String(row.id))!);
+  }
+
+  saveContextSource(summary: ContextSourceCatalog, supersedes: { sourceId: string; expectedRevision: number } | null, authorize: () => undefined): void {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      this.contextGuard(authorize);
+      if (summary.state.revision !== 1 || summary.state.status !== "active") throw new ContextDataError();
+      if (supersedes) {
+        const prior = this.contextSource(supersedes.sourceId);
+        if (!prior || prior.state.revision !== supersedes.expectedRevision || prior.state.status !== "active") throw new ContextStateConflict();
+        if (summary.lineageRootId !== prior.lineageRootId || summary.version !== prior.version + 1 || summary.metadataId !== prior.metadataId || summary.originId !== prior.originId || Date.parse(summary.importedAt) < Date.parse(prior.importedAt)) throw new ContextDataError();
+        const state: ContextSourceState = { revision: 2, status: "superseded", at: summary.importedAt, reason: "replaced_by_new_source_version", replacementId: summary.id };
+        const changed = this.db.prepare("UPDATE context_sources SET revision=2, document=? WHERE id=? AND revision=?").run(JSON.stringify({ ...prior, state }), prior.id, supersedes.expectedRevision);
+        if (changed.changes !== 1) throw new ContextStateConflict();
+        this.db.prepare("INSERT INTO context_source_events(source_id, revision, document) VALUES (?, 2, ?)").run(prior.id, JSON.stringify(state)); this.audit("context_source_superseded", prior.id);
+      } else if (summary.version !== 1 || summary.lineageRootId !== summary.id) throw new ContextDataError();
+      this.db.prepare("INSERT INTO context_sources(id, lineage_root_id, version, revision, document, imported_at) VALUES (?, ?, ?, 1, ?, ?)").run(summary.id, summary.lineageRootId, summary.version, JSON.stringify(summary), summary.importedAt);
+      this.db.prepare("INSERT INTO context_source_events(source_id, revision, document) VALUES (?, 1, ?)").run(summary.id, JSON.stringify(summary.state)); this.audit("context_source_imported", summary.id); this.db.exec("COMMIT");
+    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+  }
+
+  withdrawContextSource(id: string, expectedRevision: number, reason: string, authorize: () => undefined): ContextSourceState {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const prior = this.contextSource(id);
+      if (!prior || prior.state.revision !== expectedRevision || prior.state.status !== "active") throw new ContextStateConflict();
+      this.contextGuard(authorize);
+      const state: ContextSourceState = { revision: 2, status: "withdrawn", at: new Date().toISOString(), reason, replacementId: null };
+      if (Date.parse(state.at) < Date.parse(prior.importedAt)) throw new ContextDataError();
+      const changed = this.db.prepare("UPDATE context_sources SET revision=2, document=? WHERE id=? AND revision=?").run(JSON.stringify({ ...prior, state }), id, expectedRevision);
+      if (changed.changes !== 1) throw new ContextStateConflict();
+      this.db.prepare("INSERT INTO context_source_events(source_id, revision, document) VALUES (?, 2, ?)").run(id, JSON.stringify(state)); this.audit("context_source_withdrawn", id); this.db.exec("COMMIT"); return state;
+    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+  }
+
+  saveContextSnapshot(summary: ContextSnapshotSummary, authorize: () => undefined): void {
+    this.db.exec("BEGIN IMMEDIATE");
+    try { this.contextGuard(authorize); this.db.prepare("INSERT INTO context_snapshots(id, document, created_at) VALUES (?, ?, ?)").run(summary.id, JSON.stringify(summary), summary.createdAt); this.audit("context_snapshot_saved", summary.id); this.db.exec("COMMIT"); }
+    catch (error) { this.db.exec("ROLLBACK"); throw error; }
+  }
+
+  contextSnapshot(id: string): ContextSnapshotSummary | null {
+    const row = this.db.prepare("SELECT document FROM context_snapshots WHERE id=?").get(id); return row ? JSON.parse(String(row.document)) as ContextSnapshotSummary : null;
+  }
+
+  recentContextSnapshots(): ContextSnapshotSummary[] {
+    return this.db.prepare("SELECT document FROM context_snapshots ORDER BY created_at DESC, id LIMIT 100").all().map(row => JSON.parse(String(row.document)) as ContextSnapshotSummary);
   }
 
   saveReportExport(summary: ReportExportSummary, authorize: () => undefined): void {

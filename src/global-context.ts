@@ -5,7 +5,7 @@ import { sha256 } from "./evidence.ts";
 
 const kinds = ["news", "release", "research", "dataset", "forecast"] as const;
 type SourceKind = typeof kinds[number];
-interface Scope { asOf: string; regions: string[]; languages: string[]; topics: string[] }
+export interface GlobalContextScope { asOf: string; regions: string[]; languages: string[]; topics: string[] }
 interface Source {
   id: string; originId: string; kind: SourceKind; publisher: string; title: string; url: string;
   publishedAt: string | null; updatedAt: string | null; eventAt: string | null; retrievedAt: string;
@@ -14,7 +14,7 @@ interface Source {
 }
 interface Claim { id: string; kind: "reported_statement" | "trend_hypothesis" | "forecast" | "analyst_inference"; statement: string; sourceIds: string[]; contradictionSourceIds: string[] }
 export interface GlobalContextInput {
-  schemaVersion: "1.0"; kind: "global_context_input"; scope: Scope;
+  schemaVersion: "1.0"; kind: "global_context_input"; scope: GlobalContextScope;
   policy: { maximumRetrievalAgeHours: number; maximumPublicationAgeHours: Record<SourceKind, number>; minimumDeclaredOriginsForTrend: number };
   sources: Source[]; claims: Claim[];
 }

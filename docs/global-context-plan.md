@@ -1,6 +1,6 @@
 # Global news and trend context
 
-User requirement, October 26, 2026: Redteam must use relevant global news and trends when it reviews an idea or app. This is a required development track. Version 0.34.0 records the design. Version 0.35.0 implements [I05a supplied metadata checks](global-context.md). It does not collect news, inspect source contents or claim current global coverage.
+User requirement, October 26, 2026: Redteam must use relevant global news and trends when it reviews an idea or app. This is a required development track. Version 0.34.0 records the design. Version0.35 implements [I05a supplied metadata checks](global-context.md); version0.36 adds [I05b explicit local source records and snapshots](context-records.md). It does not collect news, inspect source contents or claim current global coverage.
 
 ## Product behavior
 
@@ -55,10 +55,10 @@ Store versioned local evidence and context snapshots before enabling analyst ret
 | Step | Ready work | Required verification |
 |---|---|---|
 | I05a, implemented0.35 | Strict supplied source/claim/scope/freshness policy and deterministic terminal metadata assessment; no source authentication | Stale/unknown/future dates, metadata-only sources, wrong region/language/topic, duplicate origins, conflict and look-ahead cases |
-| I05b | Versioned source registry and immutable checked snapshots with terminal import/show | Exact bytes/citations, current access, bounded private storage, tamper/unsafe-file denial, no automatic fetch or execution |
+| I05b, implemented0.36 | Explicit imported text/versioned source registry and immutable checked snapshots with terminal operations | Exact bytes/citations, current access, bounded private storage, tamper/unsafe-file denial, no automatic fetch or execution |
 | I05c | One explicit permitted discovery/collection adapter, then more providers | Real permitted public smoke plus fake failures, limits, redirects/private-network defense, corrections, duplication and source preservation |
 | I05d | Explicit context selection in a new analytical packet version; update prompts/schema and source-use policy | Old packet compatibility, exact source pairs, per-entry processing rights, source loss and untrusted-content tests |
 | I05e | Context-aware terminal/web report with dated coverage and refresh status | Exact citations, no unsupported current claims, failed/partial collection and current-access guards |
 | I05f | Frozen human-reviewed retrieval and review-usefulness evaluation | Relevance, source support, freshness, coverage, conflicting evidence and zero future leakage; thresholds set before evaluation |
 
-I05a metadata checks are implemented. Implement I05b source storage/snapshots next while the bounded analyst coordinator/report/recovery integration continues. Do not silently add network access or pretend the current brief-only packet contains news. An actual feed, source pack or model call is reported only after it occurs. Real research, pilot usefulness, paid demand and separate consumer/investor predictive validation remain open.
+I05a metadata checks and I05b explicit imported-source storage/snapshots are implemented. Implement I05c permitted discovery/collection next while the bounded analyst coordinator/report/recovery integration continues. Do not silently add network access or pretend the current brief-only packet contains news. An actual feed, source pack or model call is reported only after it occurs. Real research, pilot usefulness, paid demand and separate consumer/investor predictive validation remain open.

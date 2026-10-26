@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "context_snapshot_input",
+  "briefId": "00000000-0000-4000-8000-000000000000",
+  "selection": [],
+  "context": {
+    "schemaVersion": "1.0",
+    "kind": "global_context_input",
+    "scope": {
+      "asOf": "2026-01-01T00:00:00.000Z",
+      "regions": [
+        "in"
+      ],
+      "languages": [
+        "en"
+      ],
+      "topics": [
+        "software"
+      ]
+    },
+    "policy": {
+      "maximumRetrievalAgeHours": 24,
+      "maximumPublicationAgeHours": {
+        "news": 72,
+        "release": 168,
+        "research": 8760,
+        "dataset": 2160,
+        "forecast": 720
+      },
+      "minimumDeclaredOriginsForTrend": 2
+    },
+    "sources": [],
+    "claims": []
+  }
+}

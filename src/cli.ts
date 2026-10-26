@@ -29,6 +29,9 @@ import { freezeExperimentPlan, readExperimentPlan, experimentPlanSummaries } fro
 import { createReviewBrief, previewReviewBrief, readReviewBrief, readReviewBriefInput, reviewBriefSummaries } from "./review-briefs.ts";
 import { readAnalyticalPacket, readAnalyticalResponseInput, checkStoredAnalyticalResponse } from "./analytical-review.ts";
 import { assessGlobalContext, readGlobalContextInput } from "./global-context.ts";
+import { ContextDataError, existingContextWorkspace, uuid as contextUUID, integer as contextInteger, text as contextText } from "./context-data.ts";
+import { importContextSource, readContextImportFiles, readContextSource, contextSourceSummaries, withdrawContextSource } from "./context-sources.ts";
+import { createContextSnapshot, previewContextSnapshot, readContextSnapshotInput, readContextSnapshot, contextSnapshotSummaries } from "./context-snapshots.ts";
 import { prepareAnalystGeneration } from "./analyst-generation.ts";
 import { createReportExport, readReportExport, reportExportSummaries } from "./report-export.ts";
 import { inspectInstallation } from "./installation.ts";
@@ -41,6 +44,14 @@ const help = `redteam — evidence-first app review
 redteam ui [--port 4317]
 redteam doctor
 redteam context assess FILE
+redteam context sources import METADATA_FILE TEXT_FILE
+redteam context sources list
+redteam context sources show SOURCE_ID
+redteam context sources withdraw SOURCE_ID REVISION REASON
+redteam context snapshots preview FILE
+redteam context snapshots create FILE
+redteam context snapshots list
+redteam context snapshots show SNAPSHOT_ID
 redteam review --demo broken|fixed
 redteam runs list
 redteam access grant --target ORIGIN [--name NAME] [--allow browser:read,browser:interact] [--session FILE] [--hours 24]
@@ -174,10 +185,38 @@ async function main(): Promise<void> {
   if (command === "--version") { console.log((JSON.parse(await readFile(resolve(root, "package.json"), "utf8")) as { version: string }).version); return; }
   if (command === "examples") { if (args.length) throw new Error("Usage: redteam examples"); console.log(resolve(root, "examples")); return; }
   if (command === "context") {
-    const [operation, file, ...extra] = args;
-    if (operation !== "assess" || !file || extra.length) throw new Error("Usage: redteam context assess FILE");
-    print(assessGlobalContext(await readGlobalContextInput(file)));
-    return;
+    const [category, operation, ...parameters] = args;
+    if (category === "assess") { if (!operation || parameters.length) throw new Error("Usage: redteam context assess FILE"); print(assessGlobalContext(await readGlobalContextInput(operation))); return; }
+    const usage = "Usage: redteam context sources import METADATA_FILE TEXT_FILE|list|show SOURCE_ID|withdraw SOURCE_ID REVISION REASON; context snapshots preview FILE|create FILE|list|show SNAPSHOT_ID";
+    if (category === "sources") {
+      if (!operation || !["import", "list", "show", "withdraw"].includes(operation) || parameters.length !== ({ import: 2, list: 0, show: 1, withdraw: 3 }[operation])) throw new Error(usage);
+      if (operation === "show" || operation === "withdraw") contextUUID(parameters[0]);
+      const revision = operation === "withdraw" ? (/^1$/u.test(parameters[1]!) ? contextInteger(Number(parameters[1]), 1) : (() => { throw new ContextDataError(); })()) : 0;
+      if (operation === "withdraw") contextText(parameters[2], 1000);
+      const prepared = operation === "import" ? await readContextImportFiles(parameters[0]!, parameters[1]!) : null;
+      const store = new WorkspaceStore(operation === "import" ? workspace : await existingContextWorkspace(workspace));
+      try {
+        if (prepared) { const saved = await importContextSource(store, prepared.input, prepared.content); print({ id: saved.id, importedAt: saved.importedAt, version: saved.version, lineageRootId: saved.lineageRootId, recordSha256: saved.recordSha256, stateRevision: saved.state.revision, provenance: "operator_imported_unverified" }); }
+        else if (operation === "list") print({ recentWindow: 100, sources: contextSourceSummaries(store) });
+        else if (operation === "show") print(await readContextSource(store, parameters[0]!));
+        else print(withdrawContextSource(store, parameters[0]!, revision, parameters[2]!));
+      } finally { store.close(); }
+      return;
+    }
+    if (category === "snapshots") {
+      if (!operation || !["preview", "create", "list", "show"].includes(operation) || parameters.length !== (operation === "list" ? 0 : 1)) throw new Error(usage);
+      if (operation === "show") contextUUID(parameters[0]);
+      const input = operation === "preview" || operation === "create" ? await readContextSnapshotInput(parameters[0]!) : null;
+      const store = new WorkspaceStore(await existingContextWorkspace(workspace));
+      try {
+        if (operation === "preview") print(await previewContextSnapshot(store, input));
+        else if (operation === "create") { const saved = await createContextSnapshot(store, input); print({ id: saved.id, createdAt: saved.createdAt, briefId: saved.briefId, subjectType: saved.subjectType, title: saved.title, sourceCount: saved.sources.length, outcome: saved.outcome, recordSha256: saved.recordSha256 }); }
+        else if (operation === "list") print({ recentWindow: 100, snapshots: contextSnapshotSummaries(store) });
+        else print(await readContextSnapshot(store, parameters[0]!));
+      } finally { store.close(); }
+      return;
+    }
+    throw new Error(usage);
   }
   if (command === "doctor") {
     if (args.length) throw new Error("Usage: redteam doctor");

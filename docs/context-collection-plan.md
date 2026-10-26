@@ -1,0 +1,35 @@
+# Next collection work: bounded public context retrieval
+
+After verified0.36, manual text records and snapshots are ready. The next I05c slice must observe actual permitted public bytes through a bounded collector. It must preserve the distinction between discovery, operator import, injected test transport and native network observation. This plan is repository-only and enables no network command or actual capture by itself.
+
+## First scope
+
+Start with one explicit public JSON dataset adapter, then add news discovery/feed adapters. The World Bank Indicators API is a candidate for the first actual public smoke: its [official API documentation](https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api-documentation) describes key-free access, and its [call structure documentation](https://datahelpdesk.worldbank.org/knowledgebase/articles/898581-api-basic-call-structures) describes JSON format and page limits. This is macro dataset context, not comprehensive news, demand or psychology. No provider subscription, credential, model or price is selected.
+
+A trusted adapter should construct one fixed-origin URL from bounded country/indicator/query fields, not accept endpoints or headers from source text. No JSONP, automatic pagination, redirects or retries. Keep missing/null observations, source dates, units, revisions and coverage limits explicit. A date-only release field or annual observation is not an exact publication instant: preserve original values/precision and leave I05a publication unknown where necessary. Do not manufacture current eligibility from retrieval time or a HTTP modification header.
+
+Before a send, require an explicit unexpired local collection/use declaration for the exact supported source/scope. Keep external model processing, redistribution and training denied until their own contract exists. Fetching public material is not independent rights or fact authentication. A discovery-only search/feed headline cannot become inspected article content. Further news providers require primary documentation, their permitted use and a separately recorded real smoke.
+
+## Transport proposal
+
+Use a narrow internal native HTTPS GET transport on Node24. Keep exact allowed HTTPS origin/path, port443, fixed safe headers and a transparent product user-agent. Do not load cookies, environment keys/proxies, client certificates, sessions or an operator-provided agent. No insecure TLS/parser options, arbitrary methods/body, dynamic endpoint/tool from source text, local file access or browser execution.
+
+Resolve supported public IPv4 addresses through a dedicated cancellable resolver; bound answer count and reject special/private/loopback/link-local/multicast/reserved targets. An IPv4-only first slice must say so; IPv6-only targets remain unavailable. Check the [IANA special-purpose registry](https://www.iana.org/assignments/iana-ipv4-special-registry/) and preserve the deny-policy version. Freeze a validated address into the request lookup so a later resolution cannot redirect the connection. Keep the original hostname for Host/SNI/certificate verification and check the connected peer. This local control is not a complete production egress sandbox or independent DNS/CA authentication.
+
+Primary [Node24 HTTPS documentation](https://nodejs.org/download/release/v24.16.0/docs/api/https.html) and [HTTP request options](https://nodejs.org/download/release/v24.16.0/docs/api/http.html) support custom lookup, response header limits and TLS options. [DNS Resolver documentation](https://nodejs.org/download/release/v24.16.0/docs/api/dns.html) documents per-instance query cancellation. A socket timeout alone does not abort a request; use an overall deadline/AbortSignal and destroy/cancel request, response and resolver. Check direct time/chunk bounds as well as timers. Re-read version-specific sections during implementation if uncertain; the runtime is24, not the unversioned26 documentation.
+
+Proposed initial bounds: one DNS operation and one GET, no fallback/replay; at most16 A answers,16KiB response headers,32KiB raw identity-encoded UTF-8 JSON,8,192 body events and an explicit short overall deadline (maximum30seconds). Require status200, JSON media type and identity/no content encoding. Reject partial bodies, invalid UTF-8/JSON/schema, size overflow, redirects and changed peer/authority. Close timers, listeners, resolver and sockets on every exit. Error codes exclude remote body, private paths and exception details. Bounds are operating choices to verify, not validity guarantees.
+
+## Storage and authority
+
+The collector records actual start/finish/retrieval time, exact constructed URL/query identity, status, bounded selected nonsecret headers, exact body bytes/hash and observed transport mode. Keep body content untrusted; it cannot grant tools, change instructions or authorize another fetch. Header dates, TLS and raw hashes do not approve semantic claims or model training rights.
+
+Manual `context_source_import_input` must continue to reject claimed collector identity. Add a separate supported captured-source record policy generated from trusted collector code, with checked reading for both old manual records and the new policy. A caller-supplied JSON success flag is not a network observation. Injected I/O results must remain explicitly simulated/unverified and must not pass a native capture assertion. A local operator who controls all code/metadata remains outside independent attestation.
+
+Publish exact capture/source bytes only after all bounds, content checks and current source declaration pass; guard again before catalog insertion. Preserve unknown failures/partial records factually, but never adopt them as inspected source content. Keep manual versions/snapshots/withdrawal and existing brief-only analytical packets unchanged. Collector metadata, source state, publication/correction dates and actual import/capture clocks need exact identities for future packet2 processing.
+
+## Verification and release
+
+Use injected DNS/request/stream fixtures for private/special/mixed answers, rebinding, wrong peers, TLS/URL/scheme/port/credential/header changes, redirects, compression, headers/body/UTF-8/JSON limits, empty chunks, timeout/cancellation/late callbacks, incomplete bodies and cleanup. Actual native public smoke must use explicit permitted input and preserve the exact received bytes/provenance under ignored local outputs. A blocked DNS/TLS/network/server result is a factual blocker for live verification; do not substitute curl or fake I/O and call it a product pass. No actual research, demand, model or investor outcome is inferred.
+
+After native retrieval and checked captured-source storage pass, expose deliberate terminal collection, then add bounded news discovery/feeds, packet2/per-source processing, dated review/report and frozen human-reviewed source relevance/usefulness evaluation. Keep broad coverage, global perfection, semantic approval and predictive behavior claims gated.

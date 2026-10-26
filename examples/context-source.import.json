@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "context_source_import_input",
+  "metadata": {
+    "id": "authored-source",
+    "originId": "authored-origin",
+    "kind": "news",
+    "publisher": "Authored software fixture",
+    "title": "Authored fixture; no actual news",
+    "url": "https://example.invalid/authored-unopened-reference",
+    "publishedAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": null,
+    "eventAt": null,
+    "retrievedAt": "2026-01-01T01:00:00.000Z",
+    "status": "available",
+    "inspection": "declared_inspected",
+    "contentSha256": "9eae9e9e9e63ab9fcfa6eb73177b5b420dc5a68defc254e2954576ac028573dd",
+    "regions": [
+      "in"
+    ],
+    "language": "en",
+    "topics": [
+      "software"
+    ],
+    "applicabilityBasis": "Authored test scope only, not publisher or market authentication."
+  },
+  "observationPeriod": null,
+  "permissions": {
+    "localReview": false,
+    "basis": "Replace with an actual permitted local use declaration before import.",
+    "expiresAt": "2026-01-02T00:00:00.000Z",
+    "externalProcessing": false,
+    "redistribution": false,
+    "training": false
+  },
+  "supersedes": null
+}
