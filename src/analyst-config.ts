@@ -49,12 +49,28 @@ function maximumCost(input: number, output: number, inputRate: bigint, outputRat
   if (cost > BigInt(Number.MAX_SAFE_INTEGER)) return deny(); return Number(cost);
 }
 
+/** Shared public resource arithmetic only; this does not parse or synthesize processing authority. */
+export function parseAnalystResources(value: unknown) {
+  const raw = object(value, ["pricing", "limits", "taskPolicy"]);
+  const pricing = object(raw.pricing, ["inputUsdPerMillion", "outputUsdPerMillion"]), inputRate = rate(pricing.inputUsdPerMillion), outputRate = rate(pricing.outputUsdPerMillion);
+  const limits = object(raw.limits, ["maximumInputTokens", "maximumOutputTokens", "count", "generation", "timeoutMs", "finalizationMs"]);
+  const maximumInputTokens = integer(limits.maximumInputTokens, 1, 1000000), maximumOutputTokens = integer(limits.maximumOutputTokens, 16, 1000000), count = cap(limits.count), generation = cap(limits.generation);
+  if (count.tokens < maximumInputTokens || generation.tokens < maximumInputTokens + maximumOutputTokens
+    || generation.costMicrousd < maximumCost(maximumInputTokens, maximumOutputTokens, inputRate.units, outputRate.units)
+    || BigInt(count.costMicrousd) + BigInt(generation.costMicrousd) > BigInt(Number.MAX_SAFE_INTEGER)) return deny();
+  const rawPolicy = object(raw.taskPolicy, ["leaseMs", "heartbeatMs"]);
+  let taskPolicy: AnalystTaskPolicy;
+  try { taskPolicy = analystTaskPolicy({ leaseMs: integer(rawPolicy.leaseMs, 1, 60000), heartbeatMs: integer(rawPolicy.heartbeatMs, 1, 59999) }); } catch { return deny(); }
+  return freeze({ pricing: { inputUsdPerMillion: inputRate.text, outputUsdPerMillion: outputRate.text },
+    limits: { maximumInputTokens, maximumOutputTokens, count, generation, timeoutMs: integer(limits.timeoutMs, 1, 300000), finalizationMs: integer(limits.finalizationMs, 1, 10000) }, taskPolicy,
+    maximumGenerationCostMicrousd: maximumCost(maximumInputTokens, maximumOutputTokens, inputRate.units, outputRate.units) });
+}
+
 /** Public data only. Parsing records an operator declaration, not verified rights or live compatibility. */
 export function parseAnalystConfiguration(value: unknown): Readonly<AnalystConfiguration> {
   const fields = object(value, ["schemaVersion", "kind", "provider", "model", "pricing", "processing", "limits", "taskPolicy"]);
   if (fields.schemaVersion !== "1.0" || fields.kind !== "analyst_configuration" || fields.provider !== "openai"
     || typeof fields.model !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,119}$/.test(fields.model)) return deny();
-  const pricing = object(fields.pricing, ["inputUsdPerMillion", "outputUsdPerMillion"]), inputRate = rate(pricing.inputUsdPerMillion), outputRate = rate(pricing.outputUsdPerMillion);
   const processing = object(fields.processing, ["mode", "provider", "scope", "briefId", "packetSha256", "authorized", "basis", "expiresAt"]);
   if (processing.mode !== "external" || processing.provider !== "openai" || processing.scope !== "exact_brief_packet_and_generation" || processing.authorized !== true
     || typeof processing.briefId !== "string" || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(processing.briefId)
@@ -62,18 +78,11 @@ export function parseAnalystConfiguration(value: unknown): Readonly<AnalystConfi
     || typeof processing.basis !== "string" || !processing.basis.trim() || processing.basis.length > 500 || /[\x00-\x1f\x7f-\x9f]/u.test(processing.basis)
     || typeof processing.expiresAt !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(processing.expiresAt)
     || !Number.isFinite(Date.parse(processing.expiresAt)) || new Date(processing.expiresAt).toISOString() !== processing.expiresAt) return deny();
-  const limits = object(fields.limits, ["maximumInputTokens", "maximumOutputTokens", "count", "generation", "timeoutMs", "finalizationMs"]);
-  const maximumInputTokens = integer(limits.maximumInputTokens, 1, 1000000), maximumOutputTokens = integer(limits.maximumOutputTokens, 16, 1000000), count = cap(limits.count), generation = cap(limits.generation);
-  if (count.tokens < maximumInputTokens || generation.tokens < maximumInputTokens + maximumOutputTokens
-    || generation.costMicrousd < maximumCost(maximumInputTokens, maximumOutputTokens, inputRate.units, outputRate.units)
-    || BigInt(count.costMicrousd) + BigInt(generation.costMicrousd) > BigInt(Number.MAX_SAFE_INTEGER)) return deny();
-  const rawPolicy = object(fields.taskPolicy, ["leaseMs", "heartbeatMs"]);
-  let taskPolicy: AnalystTaskPolicy;
-  try { taskPolicy = analystTaskPolicy({ leaseMs: integer(rawPolicy.leaseMs, 1, 60000), heartbeatMs: integer(rawPolicy.heartbeatMs, 1, 59999) }); } catch { return deny(); }
+  const resources = parseAnalystResources({ pricing: fields.pricing, limits: fields.limits, taskPolicy: fields.taskPolicy });
   return freeze({ schemaVersion: "1.0", kind: "analyst_configuration", provider: "openai", model: fields.model,
-    pricing: { inputUsdPerMillion: inputRate.text, outputUsdPerMillion: outputRate.text },
+    pricing: resources.pricing,
     processing: { mode: "external", provider: "openai", scope: "exact_brief_packet_and_generation", briefId: processing.briefId, packetSha256: processing.packetSha256, authorized: true, basis: processing.basis, expiresAt: processing.expiresAt },
-    limits: { maximumInputTokens, maximumOutputTokens, count, generation, timeoutMs: integer(limits.timeoutMs, 1, 300000), finalizationMs: integer(limits.finalizationMs, 1, 10000) }, taskPolicy });
+    limits: resources.limits, taskPolicy: resources.taskPolicy });
 }
 
 /** Checked, unwritten run preparation. No environment, key, transport, task, ledger or result is opened. */

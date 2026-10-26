@@ -1,6 +1,6 @@
 {
   "name": "redteam",
-  "version": "0.43.0",
+  "version": "0.44.0",
   "private": true,
   "type": "module",
   "description": "Ideas and apps: controlled evidence, structured review planning, and bounded stakeholder mechanics.",
@@ -54,7 +54,8 @@
     "docs/node-release-sources.md",
     "docs/context-analysis.md",
     "docs/context-processing.md",
-    "docs/context-analyst-generation.md"
+    "docs/context-analyst-generation.md",
+    "docs/context-analyst-configuration.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

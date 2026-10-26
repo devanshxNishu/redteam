@@ -1,6 +1,6 @@
 # Analyst configuration and unwritten manifest
 
-Version 0.31.0 adds typed internal helpers in `src/analyst-config.ts`. They prepare public configuration and a source-bound manifest for later runtime integration. No terminal/API run route, provider dispatch, task, ledger or result is added by these helpers. Existing terminal `analysis prepare` still returns its model-independent generation preview.
+Version 0.31.0 adds typed internal helpers in `src/analyst-config.ts`. They prepare public configuration and a source-bound manifest for later runtime integration. No terminal/API run route, provider dispatch, task, ledger or result is added by these helpers. Version0.44 adds a separate [context configuration/unwritten plan](context-analyst-configuration.md); only pure public resource parsing is shared, with no v1 processing remapping. Existing terminal `analysis prepare` still returns its model-independent generation preview.
 
 `parseAnalystConfiguration(value)` requires exact plain data properties. It refuses missing/extra fields, accessors, hidden fields, symbols, custom prototypes and credential/endpoint/tool fields. It copies and deeply freezes normalized public data. It reads no environment or key. This is separate from actor configuration and research processing permission.
 
