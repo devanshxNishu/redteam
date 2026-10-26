@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "context_source_collection_input",
+  "collection": {
+    "schemaVersion": "1.0",
+    "kind": "public_context_collection_input",
+    "adapter": "world_bank_population_v1",
+    "countryCode": "IND",
+    "years": { "first": 2023, "last": 2024 },
+    "permissions": {
+      "collect": false,
+      "localReview": false,
+      "basis": "Disabled template. Review the source and permitted local use before authorizing collection.",
+      "expiresAt": "2026-01-01T00:00:00.000Z",
+      "externalProcessing": false,
+      "redistribution": false,
+      "training": false
+    },
+    "limits": { "timeoutMs": 15000, "maximumBytes": 32768 }
+  },
+  "supersedes": null
+}

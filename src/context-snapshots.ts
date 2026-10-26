@@ -36,9 +36,10 @@ async function checkedInputs(store: WorkspaceStore, value: unknown, creating: bo
     checkContextSourceAccess(store, checked, catalog); sources.push({ checked, catalog });
   }
   const guard = () => { checkReviewBriefAccess(store, brief, briefCatalog); for (const source of sources) checkContextSourceAccess(store, source.checked, source.catalog); return undefined; }; guard();
+  const hasNative = sources.some(source => source.checked.source.policyVersion === "context-source-native-capture-v1");
   const sourcePins = sources.map(({ checked, catalog }) => ({ sourceId: checked.source.id, version: checked.source.version, lineageRootId: checked.source.lineageRootId, recordSha256: catalog.recordSha256, metadataSha256: checked.source.metadataSha256,
-    contentSha256: checked.source.content.sha256, contentBytes: checked.source.content.bytes, importedAt: checked.source.importedAt, stateRevision: checked.currentState.revision, permittedPurpose: "local_review_only", permissionExpiresAt: checked.source.input.permissions.expiresAt }));
-  const base = { input, inputSha256: sha256(JSON.stringify(input)), brief: packet.brief, briefPacketSha256: packet.packetSha256, sourcePins, assessment: assessGlobalContext(input.context), boundaries };
+    ...(hasNative ? { recordPolicy: checked.source.policyVersion } : {}), contentSha256: checked.source.content.sha256, contentBytes: checked.source.content.bytes, importedAt: checked.source.importedAt, stateRevision: checked.currentState.revision, permittedPurpose: "local_review_only", permissionExpiresAt: checked.source.input.permissions.expiresAt }));
+  const base = { input, inputSha256: sha256(JSON.stringify(input)), brief: packet.brief, briefPacketSha256: packet.packetSha256, sourcePins, assessment: assessGlobalContext(input.context), boundaries: hasNative ? { ...boundaries, sourceContents: "local_source_bytes_integrity_only", provenance: "checked_local_source_policies", recordedNativeDatasetCapture: true } : boundaries };
   return { base, guard, briefTitle: brief.input.title };
 }
 export async function previewContextSnapshot(store: WorkspaceStore, value: unknown) {
@@ -46,7 +47,7 @@ export async function previewContextSnapshot(store: WorkspaceStore, value: unkno
 }
 function record(id: string, createdAt: string, base: Awaited<ReturnType<typeof checkedInputs>>["base"]) {
   uuid(id); timestamp(createdAt); if (Date.parse(base.input.context.scope.asOf) > Date.parse(createdAt) || base.sourcePins.some(pin => Date.parse(pin.importedAt) > Date.parse(createdAt))) throw new ContextDataError();
-  return { schemaVersion: "1.0", kind: "context_snapshot", policyVersion: "context-snapshot-v1", id, createdAt, ...base };
+  return { schemaVersion: "1.0", kind: "context_snapshot", policyVersion: base.sourcePins.some(pin => pin.recordPolicy === "context-source-native-capture-v1") ? "context-snapshot-v2" : "context-snapshot-v1", id, createdAt, ...base };
 }
 export type ContextSnapshot = ReturnType<typeof record>;
 function summary(snapshot: ContextSnapshot, title: string, directory: string, recordSha256: string): ContextSnapshotSummary { return { id: snapshot.id, createdAt: snapshot.createdAt, briefId: snapshot.brief.id, briefReportSha256: snapshot.brief.reportSha256, subjectType: snapshot.brief.subjectType, title, directory, recordSha256,

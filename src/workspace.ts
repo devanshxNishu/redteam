@@ -382,14 +382,14 @@ export class WorkspaceStore {
       if (supersedes) {
         const prior = this.contextSource(supersedes.sourceId);
         if (!prior || prior.state.revision !== supersedes.expectedRevision || prior.state.status !== "active") throw new ContextStateConflict();
-        if (summary.lineageRootId !== prior.lineageRootId || summary.version !== prior.version + 1 || summary.metadataId !== prior.metadataId || summary.originId !== prior.originId || Date.parse(summary.importedAt) < Date.parse(prior.importedAt)) throw new ContextDataError();
+        if (summary.lineageRootId !== prior.lineageRootId || summary.version !== prior.version + 1 || summary.recordPolicy !== prior.recordPolicy || summary.metadataId !== prior.metadataId || summary.originId !== prior.originId || Date.parse(summary.importedAt) < Date.parse(prior.importedAt)) throw new ContextDataError();
         const state: ContextSourceState = { revision: 2, status: "superseded", at: summary.importedAt, reason: "replaced_by_new_source_version", replacementId: summary.id };
         const changed = this.db.prepare("UPDATE context_sources SET revision=2, document=? WHERE id=? AND revision=?").run(JSON.stringify({ ...prior, state }), prior.id, supersedes.expectedRevision);
         if (changed.changes !== 1) throw new ContextStateConflict();
         this.db.prepare("INSERT INTO context_source_events(source_id, revision, document) VALUES (?, 2, ?)").run(prior.id, JSON.stringify(state)); this.audit("context_source_superseded", prior.id);
       } else if (summary.version !== 1 || summary.lineageRootId !== summary.id) throw new ContextDataError();
       this.db.prepare("INSERT INTO context_sources(id, lineage_root_id, version, revision, document, imported_at) VALUES (?, ?, ?, 1, ?, ?)").run(summary.id, summary.lineageRootId, summary.version, JSON.stringify(summary), summary.importedAt);
-      this.db.prepare("INSERT INTO context_source_events(source_id, revision, document) VALUES (?, 1, ?)").run(summary.id, JSON.stringify(summary.state)); this.audit("context_source_imported", summary.id); this.db.exec("COMMIT");
+      this.db.prepare("INSERT INTO context_source_events(source_id, revision, document) VALUES (?, 1, ?)").run(summary.id, JSON.stringify(summary.state)); this.audit(summary.recordPolicy ? "context_source_captured" : "context_source_imported", summary.id); this.db.exec("COMMIT");
     } catch (error) { this.db.exec("ROLLBACK"); throw error; }
   }
 

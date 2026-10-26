@@ -4,7 +4,7 @@ Private source repository: [devanshxNishu/redteam](https://github.com/devanshxNi
 
 Redteam is planned for **ideas and apps** through a web dashboard and terminal CLI. The current build provides controlled app evidence and local record workflows. Web, terminal and protected API idea/app intake are implemented; analytical idea review is next; researched stakeholder predictions and the live roundtable remain gated. See the [active scope](docs/idea-and-app-scope.md) and [next analytical review slices](docs/analytical-review-plan.md).
 
-Version 0.37.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live model-provider smoke test and the agent roundtable remain development milestones. The [global context metadata checks](docs/global-context.md) now assess supplied news/trend records for dates, declared coverage, origin duplication and conflicts. [Versioned local context sources and snapshots](docs/context-records.md) now preserve explicit imported text, local-use rights, corrections, withdrawal and exact brief/source pins through the terminal. An [internal bounded public dataset collector](docs/context-collector.md) now retrieves one explicit World Bank population series through native HTTPS with strict network, byte and time controls. Captured-source storage, terminal collection, news feeds and source-backed review integration remain development work; no active news feed or current global awareness is claimed.
+Version 0.38.0 provides a local workspace, an installable CLI, scoped access grants, browser evidence, local repository snapshots, requirement-linked source notes, scoped action tracking, a research registry, and bounded stakeholder runtime mechanics. Configured actors use fenced task ownership, durable budget reservations, atomic JSON publication, factual crash recovery, and terminal report diagnostics. Optional OpenAI inference is tested with fake transport. A live model-provider smoke test and the agent roundtable remain development milestones. The [global context metadata checks](docs/global-context.md) now assess supplied news/trend records for dates, declared coverage, origin duplication and conflicts. [Versioned local context sources and snapshots](docs/context-records.md) now preserve explicit imported text, local-use rights, corrections, withdrawal and exact brief/source pins through the terminal. An [internal bounded public dataset collector](docs/context-collector.md) now retrieves one explicit World Bank population series through native HTTPS with strict network, byte and time controls. [Terminal collection and checked captured-source storage](docs/context-collection.md) now add exact native receipts, corrections, withdrawal and compatible snapshots. News feeds and source-backed review integration remain development work; no active news feed or current global awareness is claimed.
 
 ## Start from source
 
@@ -27,7 +27,7 @@ Create and install a local release archive:
 
 ```sh
 npm pack
-npm install --global ./redteam-0.37.0.tgz
+npm install --global ./redteam-0.38.0.tgz
 redteam --help
 redteam doctor
 redteam context assess FILE

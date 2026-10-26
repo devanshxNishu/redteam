@@ -54,3 +54,6 @@ Checked snapshot reading reconstructs supported input/assessment/source pins fro
 Twenty-nine authored actual-store tests cover exact bytes/time/provenance/purpose, strict early denial and mutable callers, withdrawal/expiry/versions/concurrency/atomic rollback, publication orphans, false rehashed assertions, unsafe files/parents/database, exact brief/source/selection/as-of binding, empty/partial metadata coverage, current source loss and terminal operation without automatic fetch. They are software evidence, not real news or human research.
 
 I05c must next add a configured permitted bounded discovery/collection adapter with distinct actual capture provenance and a real public smoke. Research primary provider/format/network rules first. Do not let manual import claim collector execution or silently add external processing. Packet v2/per-source processing, context-aware report and frozen human-reviewed retrieval/usefulness evaluation follow. Source facts, independent trend data, psychology, demand and investment outcomes remain unvalidated.
+
+
+Version0.38 adds a separate [native captured-source policy and terminal collection](context-collection.md). Manual inputs remain strict and cannot claim collector identity. Captured snapshots use v2 policy pins; manual-only v1 records remain compatible. Current access/version/withdrawal checks apply to both.

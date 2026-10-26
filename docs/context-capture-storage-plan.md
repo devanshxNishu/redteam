@@ -1,6 +1,6 @@
 # Captured-source storage handoff
 
-Version0.37 provides internal bounded native population retrieval. The next I05c slice connects that result to existing versioned local source records and snapshots, then exposes deliberate terminal collection. This repository-only handoff is a design proposal; it grants no execution or source rights.
+Version0.37 provides internal bounded native population retrieval. The next I05c slice connects that result to existing versioned local source records and snapshots, then exposes deliberate terminal collection. This handoff is now implemented in0.38 for the population adapter. See `docs/context-collection.md` for delivered contracts and limitations. It grants no source rights by itself; news adapters and packet integration remain future work.
 
 ## Native writer and historical reader
 

@@ -1,6 +1,6 @@
 # Bounded public context collector
 
-Version0.37 adds the internal `collectPublicContext(input, signal?)` helper in `dist/context-collector.js`. It retrieves one small World Bank population response. It does not create a source record, snapshot, review, task, budget or access grant. There is no collection CLI, API, web control or scheduled feed yet. Existing manual source records and brief-only analytical packets are unchanged.
+Version0.37 adds the internal `collectPublicContext(input, signal?)` helper in `dist/context-collector.js`. It retrieves one small World Bank population response. It does not create a source record, snapshot, review, task, budget or access grant. Version0.38 adds a separate [deliberate terminal collection/storage operation](context-collection.md). There is no collection API, web control or scheduled feed. Existing manual source records and brief-only analytical packets are unchanged.
 
 ## Supported input
 
@@ -38,4 +38,4 @@ The provider's `lastupdated` remains a date with `date_only` precision. Annual o
 
 This release verifies native public dataset retrieval and failure controls. Authored tests do not count as actual news or research. The actual capture proof is kept under ignored local outputs; it is not a news feed or a researched stakeholder model.
 
-Next add a separate captured-source storage policy, exact checked reading, current local-use checks and terminal collection. Manual import must continue to reject claimed collector provenance. Then add permitted news discovery/feeds, per-source processing in packet2, dated report/web coverage, and frozen human-reviewed retrieval/usefulness evaluation. The first dataset capture does not complete I05c or establish current global awareness.
+Version0.38 adds the separate captured-source storage policy, exact checked reading, current local-use checks and terminal collection. Manual import must continue to reject claimed collector provenance. Then add permitted news discovery/feeds, per-source processing in packet2, dated report/web coverage, and frozen human-reviewed retrieval/usefulness evaluation. The first dataset capture does not complete I05c or establish current global awareness.

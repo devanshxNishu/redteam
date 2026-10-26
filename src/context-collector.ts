@@ -5,6 +5,7 @@ import type { ClientRequest, IncomingMessage } from "node:http";
 import { isIPv4 } from "node:net";
 import type { TLSSocket } from "node:tls";
 import { performance } from "node:perf_hooks";
+import { isDeepStrictEqual } from "node:util";
 import { sha256 } from "./evidence.ts";
 import { fields, freeze, integer, list, text, timestamp } from "./context-data.ts";
 
@@ -85,9 +86,10 @@ export interface ContextCollectorIO {
 const nativeIO: ContextCollectorIO = { resolver: options => new Resolver(options), request: (url, options, response) => httpsRequest(url, options, response) };
 type Mode = "native_https" | "injected_test_io";
 const nativeCaptures = new WeakSet<object>();
+const nativeStarts = new WeakMap<object, number>();
 const signalAborted = Object.getOwnPropertyDescriptor(AbortSignal.prototype, "aborted")!.get!;
-export function assertNativeContextCapture(value: unknown): undefined {
-  if (!value || typeof value !== "object" || !nativeCaptures.has(value)) throw new ContextCollectionError("not_native"); return undefined;
+export function assertNativeContextCapture(value: unknown, notBefore?: number): undefined {
+  if (!value || typeof value !== "object" || !nativeCaptures.has(value) || notBefore !== undefined && (!Number.isFinite(notBefore) || notBefore < 0 || nativeStarts.get(value)! < notBefore)) throw new ContextCollectionError("not_native"); return undefined;
 }
 function headers(message: IncomingMessage, maximumBytes: number) {
   const all = message.rawHeaders;
@@ -198,17 +200,46 @@ async function collect(value: unknown, io: ContextCollectorIO, mode: Mode, signa
         request.on("error", failed); request.once("close", requestClosed); request.once("socket", onSocket); request.once("information", incomplete); request.once("upgrade", upgraded); guard(); request.end();
       } catch (error) { fail(error); }
     });
-    guard(); const retrievedAt = new Date().toISOString(); let data;
-    try { data = dataset(capture.rawText, input, retrievedAt); } catch { throw new ContextCollectionError("response_invalid"); }
-    guard();
-    const result = freeze({ schemaVersion: "1.0", kind: "public_context_capture", policyVersion: "world-bank-population-capture-v1", input, inputSha256: sha256(JSON.stringify(input)), url: url.href,
-      startedAt, retrievedAt, finishedAt: new Date().toISOString(), body: { text: capture.rawText, bytes: Buffer.byteLength(capture.rawText), sha256: sha256(capture.rawText) }, response: { status: 200, ...capture.response }, dataset: data,
-      provenance: { transport: mode, networkObservation: mode === "native_https" ? "native_runtime_observation" : "simulated_unverified", logicalDnsOperations: 1, httpRequests: 1, redirects: 0, applicationRetries: 0, peerIPv4: address, addressPolicy: policy, bodyEvents: capture.chunks, originalProviderBodyPreserved: true },
-      boundaries: { semanticReview: "unreviewed", publisherFacts: "not_independently_authenticated", toolAuthority: "not_granted", externalProcessing: "not_authorized", redistribution: "not_authorized", training: "not_authorized", newsCoverage: "not_collected", currentGlobalAwareness: "not_established", researchValidated: false, stakeholderDecisions: false, storedSource: false } });
-    guard(); if (mode === "native_https") nativeCaptures.add(result); return result;
+    guard(); const retrievedAt = new Date().toISOString(); let result;
+    try { result = captureObject(input, startedAt, retrievedAt, undefined, capture.rawText, capture.response, mode, address, capture.chunks); }
+    catch { throw new ContextCollectionError("response_invalid"); }
+    guard(); if (mode === "native_https") { nativeCaptures.add(result); nativeStarts.set(result, monotonic); } return result;
   } catch (error) { throw error instanceof ContextCollectionError ? error : new ContextCollectionError("network_unavailable"); }
   finally { clearTimeout(timer); if (signal) EventTarget.prototype.removeEventListener.call(signal, "abort", abort); try { resolver?.cancel(); } catch {} }
 }
 export type PublicContextCapture = Awaited<ReturnType<typeof collect>>;
 export function collectPublicContext(value: unknown, signal?: AbortSignal): Promise<PublicContextCapture> { return collect(value, nativeIO, "native_https", signal); }
 export function createInjectedContextCollector(io: ContextCollectorIO): (value: unknown, signal?: AbortSignal) => Promise<PublicContextCapture> { return (value, signal) => collect(value, io, "injected_test_io", signal); }
+
+
+function captureObject(input: PublicContextCollection, startedAt: string, retrievedAt: string, finishedAt: string | undefined, rawText: string, response: ReturnType<typeof headers>, mode: Mode, address: string, chunks: number) {
+  const parsed = dataset(rawText, input, retrievedAt);
+  return freeze({ schemaVersion: "1.0", kind: "public_context_capture", policyVersion: "world-bank-population-capture-v1", input, inputSha256: sha256(JSON.stringify(input)), url: collectionURL(input).href,
+    startedAt, retrievedAt, finishedAt: finishedAt ?? new Date().toISOString(), body: { text: rawText, bytes: Buffer.byteLength(rawText), sha256: sha256(rawText) }, response: { status: 200, ...response }, dataset: parsed,
+    provenance: { transport: mode, networkObservation: mode === "native_https" ? "native_runtime_observation" : "simulated_unverified", logicalDnsOperations: 1, httpRequests: 1, redirects: 0, applicationRetries: 0, peerIPv4: address, addressPolicy: policy, bodyEvents: chunks, originalProviderBodyPreserved: true },
+    boundaries: { semanticReview: "unreviewed", publisherFacts: "not_independently_authenticated", toolAuthority: "not_granted", externalProcessing: "not_authorized", redistribution: "not_authorized", training: "not_authorized", newsCoverage: "not_collected", currentGlobalAwareness: "not_established", researchValidated: false, stakeholderDecisions: false, storedSource: false } });
+}
+export type RecordedPublicContextCapture = Omit<PublicContextCapture, "body"> & { body: Omit<PublicContextCapture["body"], "text"> };
+export function publicContextCaptureReceipt(capture: PublicContextCapture): RecordedPublicContextCapture {
+  const { body, ...rest } = capture; return freeze({ ...rest, body: { bytes: body.bytes, sha256: body.sha256 } });
+}
+/** Historical policy/byte reconstruction only. Never registers a native runtime capability. */
+export function readRecordedPublicContextCapture(value: unknown, rawText: string): PublicContextCapture {
+  try {
+    const raw = fields(value, ["schemaVersion", "kind", "policyVersion", "input", "inputSha256", "url", "startedAt", "retrievedAt", "finishedAt", "body", "response", "dataset", "provenance", "boundaries"]);
+    const input = parsePublicContextCollection(raw.input), startedAt = timestamp(raw.startedAt), retrievedAt = timestamp(raw.retrievedAt), finishedAt = timestamp(raw.finishedAt);
+    const start = Date.parse(startedAt), retrieved = Date.parse(retrievedAt), finish = Date.parse(finishedAt);
+    if (retrieved < start || finish < retrieved || finish >= start + input.limits.timeoutMs || Date.parse(input.permissions.expiresAt) <= start + input.limits.timeoutMs || typeof rawText !== "string" || !Buffer.byteLength(rawText) || Buffer.byteLength(rawText) > input.limits.maximumBytes) throw 0;
+    const response = fields(raw.response, ["status", "contentType", "contentLength", "date", "lastModified"]);
+    if (response.status !== 200) throw 0;
+    const rawHeaders: string[] = ["content-type", text(response.contentType, 512)];
+    if (response.contentLength !== null) rawHeaders.push("content-length", String(integer(response.contentLength, input.limits.maximumBytes)));
+    for (const [field, name] of [["date", "date"], ["lastModified", "last-modified"]]) if (response[field!] !== null) rawHeaders.push(name!, optionalText(response[field!], 512));
+    const checkedHeaders = headers({ rawHeaders } as IncomingMessage, input.limits.maximumBytes);
+    if (checkedHeaders.contentLength !== null && checkedHeaders.contentLength !== Buffer.byteLength(rawText)) throw 0;
+    const provenance = fields(raw.provenance, ["transport", "networkObservation", "logicalDnsOperations", "httpRequests", "redirects", "applicationRetries", "peerIPv4", "addressPolicy", "bodyEvents", "originalProviderBodyPreserved"]);
+    if (provenance.transport !== "native_https" || !permittedContextIPv4(provenance.peerIPv4)) throw 0;
+    const capture = captureObject(input, startedAt, retrievedAt, finishedAt, rawText, checkedHeaders, "native_https", provenance.peerIPv4, integer(provenance.bodyEvents, 8192));
+    if (!isDeepStrictEqual(value, publicContextCaptureReceipt(capture))) throw 0; return capture;
+  } catch { throw new ContextCollectionError("response_invalid"); }
+}
