@@ -1,6 +1,6 @@
 # Local analyst generation preview
 
-Version 0.29.0 implements the preparation slice I04b1. It does not implement provider dispatch or a live analyst.
+Version 0.29.0 implements the preparation slice I04b1. It does not implement provider dispatch or a live analyst. Version0.43 adds a separate [local context generation preview](context-analyst-generation.md) over packet2; this v1 brief-only contract and its bytes remain unchanged.
 
 ```sh
 redteam analysis prepare BRIEF_ID
