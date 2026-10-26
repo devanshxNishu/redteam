@@ -1,6 +1,6 @@
 # Next I05c adapter: primary software release context
 
-After0.38, the bounded population retrieval/storage/terminal path is ready. The next useful context slice should capture a dated primary release announcement. It must not imply general news coverage. This repository-only proposal enables no request or content rights by itself.
+After0.38, the bounded population retrieval/storage/terminal path is ready. The next useful context slice should capture a dated primary release announcement. It must not imply general news coverage. Version0.39 implements shared fixed-target transport and the internal native release helper; `docs/node-release-context.md` records the delivered contract. Release storage/reader/correction/snapshots and terminal integration remain next. This plan grants no source rights by itself.
 
 ## Candidate and retrieved documentation
 

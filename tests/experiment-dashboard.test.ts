@@ -39,7 +39,7 @@ async function fill(page: import("playwright").Page) {
   for (const [key, value] of Object.entries(values)) await page.locator(`#experiment-${key}`).fill(value);
   const starts = Math.floor((Date.now() + 3600000) / 1000) * 1000, ends = starts + 3600000;
   for (const [key, time] of [["startsAt", starts], ["endsAt", ends]] as const) {
-    const local = await page.evaluate(time => { const value = new Date(time), pad = (n: number) => String(n).padStart(2, "0"); return `${value.getFullYear()}-${pad(value.getMonth()+1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}:${pad(value.getSeconds())}`; }, time);
+    const local = await page.evaluate(time => { const value = new Date(time), pad = (n: number) => String(n).padStart(2, "0"); return `${value.getFullYear()}-${pad(value.getMonth()+1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}${value.getSeconds() ? ":" + pad(value.getSeconds()) : ""}`; }, time);
     await page.locator(`#experiment-${key}`).fill(local);
   }
   return { startsAt: new Date(starts).toISOString(), endsAt: new Date(ends).toISOString() };
