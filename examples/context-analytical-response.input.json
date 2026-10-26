@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "2.0",
+  "kind": "analytical_review_response",
+  "mode": "analytical_only",
+  "reviewStatus": "unreviewed",
+  "briefId": "00000000-0000-4000-8000-000000000000",
+  "snapshotId": "00000000-0000-4000-8000-000000000000",
+  "packetSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "concerns": [],
+  "abstention": "AUTHORED format example only. Replace placeholder identities with the exact checked local packet. No analysis was generated or approved."
+}

@@ -2,6 +2,8 @@
 
 Version 0.28.0 implements I04a through the terminal. It prepares supplied context for later analysis and checks a separately supplied analytical response. It does not call an analyst, model, tool, target, consumer or investor. There is no new review result, approval, job, artifact publication, action, experiment or actor run.
 
+Version 0.41 adds a separate [local packet2/context check](context-analysis.md). This v1 contract and existing analyst generation/configuration remain unchanged. Packet2 is not dispatchable.
+
 ## Terminal
 
 Create a saved idea or app brief first. Then:

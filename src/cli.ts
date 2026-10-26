@@ -35,6 +35,7 @@ import { collectContextSource, readContextCollectionInput } from "./context-coll
 import { collectNodeReleaseSource, readNodeReleaseSourceInput } from "./node-release-collection.ts";
 import { createContextSnapshot, previewContextSnapshot, readContextSnapshotInput, readContextSnapshot, contextSnapshotSummaries } from "./context-snapshots.ts";
 import { prepareAnalystGeneration } from "./analyst-generation.ts";
+import { readContextAnalyticalPacket, readContextAnalyticalResponseInput, checkStoredContextAnalyticalResponse } from "./context-analysis.ts";
 import { createReportExport, readReportExport, reportExportSummaries } from "./report-export.ts";
 import { inspectInstallation } from "./installation.ts";
 import { outcomeEvidenceSummaries, readOutcomeEvidence, registerOutcomeEvidence } from "./outcome-evidence.ts";
@@ -91,6 +92,8 @@ redteam briefs show BRIEF_ID
 redteam analysis packet BRIEF_ID
 redteam analysis prepare BRIEF_ID
 redteam analysis check BRIEF_ID FILE
+redteam analysis context-packet SNAPSHOT_ID
+redteam analysis context-check SNAPSHOT_ID FILE
 redteam verify RUN_DIRECTORY
 redteam research demo
 redteam research sources|models
@@ -408,6 +411,13 @@ async function main(): Promise<void> {
   }
   if (command === "analysis") {
     const [operation, id, file, ...extra] = args;
+    if (operation === "context-packet" || operation === "context-check") {
+      if (extra.length || !id || (operation === "context-check" ? !file : file !== undefined)) throw new Error("Usage: redteam analysis context-packet SNAPSHOT_ID|context-check SNAPSHOT_ID FILE");
+      contextUUID(id); const value = operation === "context-check" ? await readContextAnalyticalResponseInput(file!) : undefined;
+      const store = new WorkspaceStore(await existingContextWorkspace(workspace));
+      try { print(operation === "context-packet" ? await readContextAnalyticalPacket(store, id) : await checkStoredContextAnalyticalResponse(store, id, value)); } finally { store.close(); }
+      return;
+    }
     if (extra.length || !id || !["packet", "prepare", "check"].includes(operation ?? "") || (operation === "check" ? !file : file !== undefined)) throw new Error("Usage: redteam analysis packet BRIEF_ID|prepare BRIEF_ID|check BRIEF_ID FILE");
     const value = operation === "check" ? await readAnalyticalResponseInput(file!) : undefined;
     const store = new WorkspaceStore(workspace);

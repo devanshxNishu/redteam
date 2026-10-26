@@ -1,6 +1,6 @@
 # Terminal primary release sources
 
-Version0.40 adds explicit local publication of the bounded [Node.js release capture](node-release-context.md). It supports one fixed public full-release response, not a general news feed or current global awareness. Analytical packets still contain only the supplied brief.
+Version0.40 adds explicit local publication of the bounded [Node.js release capture](node-release-context.md). It supports one fixed public full-release response, not a general news feed or current global awareness. Existing analyst generation/configuration remain brief-only. Version 0.41 adds a separate [local context packet/check](context-analysis.md), with no external processing.
 
 ```sh
 redteam context sources collect-release FILE
@@ -39,4 +39,4 @@ Any snapshot with a release source uses `context-snapshot-v3`, pins every exact 
 
 Authored historical tests verify mechanical checks and grant no native capability. Separate native installed verification covers actual collection, same-ID correction, late preflight denial, an explicitly authored different-ID parent, final-insertion withdrawal, preserved orphan bytes, replay denial and actual old-package v1/v2 compatibility. This does not establish broader news coverage, human behavior, demand or investment validity.
 
-Next: additional permitted primary sources and coverage/discovery, packet2 with per-source processing permission, dated report/web integration, and frozen human-reviewed usefulness evaluation.
+Next: additional permitted primary sources and coverage/discovery, packet2 source-specific processing and runtime integration, dated report/web integration, and frozen human-reviewed usefulness evaluation.
