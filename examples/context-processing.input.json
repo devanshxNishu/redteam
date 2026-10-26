@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "context_processing_declaration_input",
+  "provider": "openai",
+  "model": "REPLACE_WITH_EXPLICIT_MODEL",
+  "purpose": "input_count_and_analysis_inference",
+  "packet": {
+    "snapshotId": "00000000-0000-0000-0000-000000000000",
+    "packetSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "packetDeclaration": {
+    "authorized": false,
+    "basis": "DISABLED EXAMPLE. Supply an accurate basis for the exact brief, supplied snapshot metadata and future generation payload.",
+    "expiresAt": "2000-01-01T00:00:00.000Z"
+  },
+  "sources": [],
+  "training": false,
+  "redistribution": false
+}

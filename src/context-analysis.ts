@@ -40,6 +40,10 @@ function sourceProjection(checked: CheckedContextSource, catalog: ContextSourceC
     eligibilityAtSnapshot: { eligibleByMetadata: assessment.eligibleByMetadata, reasons: assessment.reasons, warnings: assessment.warnings, declaredOriginGroup: assessment.declaredOriginGroup }, semanticReview: "unreviewed" };
 }
 const checkedPackets = new WeakMap<object, () => undefined>();
+/** Current metadata/rights only; callers must perform full checked file reads around new use. */
+export function checkContextAnalyticalPacketAccess(packet: ContextAnalyticalPacket): undefined {
+  try { const guard = checkedPackets.get(packet); if (!guard) throw new ContextDataError(); guard(); return undefined; } catch { throw new ContextDataError(); }
+}
 /** Local deterministic packet only. This cannot enter the existing brief-only provider contracts. */
 export async function readContextAnalyticalPacket(store: WorkspaceStore, snapshotId: string): Promise<ContextAnalyticalPacket> {
   try {

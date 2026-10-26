@@ -11,6 +11,7 @@ import type { OutcomeEvidenceSummary } from "./outcome-evidence.ts";
 import type { ReviewBriefSummary } from "./review-briefs.ts";
 import type { ContextSourceCatalog, ContextSourceState } from "./context-sources.ts";
 import type { ContextSnapshotSummary } from "./context-snapshots.ts";
+import type { ContextProcessingCatalog, ContextProcessingState } from "./context-processing.ts";
 import { ContextDataError, ContextStateConflict } from "./context-data.ts";
 
 export type GrantCapability = "browser:read" | "browser:interact" | "code:read" | "code:test";
@@ -107,6 +108,9 @@ export class WorkspaceStore {
       CREATE TABLE IF NOT EXISTS context_sources (id TEXT PRIMARY KEY, lineage_root_id TEXT NOT NULL, version INTEGER NOT NULL, revision INTEGER NOT NULL, document TEXT NOT NULL, imported_at TEXT NOT NULL, UNIQUE(lineage_root_id, version));
       CREATE TABLE IF NOT EXISTS context_source_events (source_id TEXT NOT NULL, revision INTEGER NOT NULL, document TEXT NOT NULL, PRIMARY KEY(source_id, revision));
       CREATE TABLE IF NOT EXISTS context_snapshots (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS context_processing (id TEXT PRIMARY KEY, revision INTEGER NOT NULL, packet_sha256 TEXT NOT NULL, provider TEXT NOT NULL, model TEXT NOT NULL, document TEXT NOT NULL, created_at TEXT NOT NULL);
+      CREATE UNIQUE INDEX IF NOT EXISTS context_processing_active_scope ON context_processing(packet_sha256, provider, model) WHERE revision=1;
+      CREATE TABLE IF NOT EXISTS context_processing_events (authorization_id TEXT NOT NULL, revision INTEGER NOT NULL, document TEXT NOT NULL, PRIMARY KEY(authorization_id, revision));
       CREATE TABLE IF NOT EXISTS review_briefs (id TEXT PRIMARY KEY, document TEXT NOT NULL, created_at TEXT NOT NULL);
     `);
   }
@@ -419,6 +423,44 @@ export class WorkspaceStore {
 
   recentContextSnapshots(): ContextSnapshotSummary[] {
     return this.db.prepare("SELECT document FROM context_snapshots ORDER BY created_at DESC, id LIMIT 100").all().map(row => JSON.parse(String(row.document)) as ContextSnapshotSummary);
+  }
+
+  contextProcessingAuthorization(id: string): ContextProcessingCatalog | null {
+    const row = this.db.prepare("SELECT id, revision, packet_sha256, provider, model, created_at, document FROM context_processing WHERE id=?").get(id); if (!row) return null;
+    const summary = JSON.parse(String(row.document)) as ContextProcessingCatalog;
+    if (summary.id !== row.id || summary.state.revision !== Number(row.revision) || summary.packetSha256 !== row.packet_sha256 || summary.provider !== row.provider || summary.model !== row.model || summary.createdAt !== row.created_at) throw new ContextDataError(); return summary;
+  }
+
+  contextProcessingEvents(id: string): ContextProcessingState[] {
+    return this.db.prepare("SELECT revision, document FROM context_processing_events WHERE authorization_id=? ORDER BY revision LIMIT 3").all(id).map(row => { const event = JSON.parse(String(row.document)) as ContextProcessingState; if (event.revision !== Number(row.revision)) throw new ContextDataError(); return event; });
+  }
+
+  activeContextProcessing(packetSha256: string, provider: string, model: string): ContextProcessingCatalog | null {
+    const row = this.db.prepare("SELECT id FROM context_processing WHERE packet_sha256=? AND provider=? AND model=? AND revision=1").get(packetSha256, provider, model); return row ? this.contextProcessingAuthorization(String(row.id)) : null;
+  }
+
+  recentContextProcessing(): ContextProcessingCatalog[] {
+    return this.db.prepare("SELECT id FROM context_processing ORDER BY created_at DESC, id LIMIT 100").all().map(row => this.contextProcessingAuthorization(String(row.id))!);
+  }
+
+  saveContextProcessingAuthorization(summary: ContextProcessingCatalog, authorize: () => undefined): void {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      this.contextGuard(authorize); if (summary.state.revision !== 1 || summary.state.status !== "active") throw new ContextDataError();
+      if (this.activeContextProcessing(summary.packetSha256, summary.provider, summary.model)) throw new ContextStateConflict();
+      this.db.prepare("INSERT INTO context_processing(id, revision, packet_sha256, provider, model, document, created_at) VALUES (?, 1, ?, ?, ?, ?, ?)").run(summary.id, summary.packetSha256, summary.provider, summary.model, JSON.stringify(summary), summary.createdAt);
+      this.db.prepare("INSERT INTO context_processing_events(authorization_id, revision, document) VALUES (?, 1, ?)").run(summary.id, JSON.stringify(summary.state)); this.audit("context_processing_declared", summary.id); this.db.exec("COMMIT");
+    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
+  }
+
+  revokeContextProcessingAuthorization(id: string, expectedRevision: number, reason: string, authorize: () => undefined): ContextProcessingState {
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      const prior = this.contextProcessingAuthorization(id); if (!prior || prior.state.revision !== expectedRevision || prior.state.status !== "active") throw new ContextStateConflict(); this.contextGuard(authorize);
+      const state: ContextProcessingState = { revision: 2, status: "revoked", at: new Date().toISOString(), reason }; if (Date.parse(state.at) < Date.parse(prior.createdAt)) throw new ContextDataError();
+      const changed = this.db.prepare("UPDATE context_processing SET revision=2, document=? WHERE id=? AND revision=?").run(JSON.stringify({ ...prior, state }), id, expectedRevision); if (changed.changes !== 1) throw new ContextStateConflict();
+      this.db.prepare("INSERT INTO context_processing_events(authorization_id, revision, document) VALUES (?, 2, ?)").run(id, JSON.stringify(state)); this.audit("context_processing_revoked", id); this.db.exec("COMMIT"); return state;
+    } catch (error) { this.db.exec("ROLLBACK"); throw error; }
   }
 
   saveReportExport(summary: ReportExportSummary, authorize: () => undefined): void {

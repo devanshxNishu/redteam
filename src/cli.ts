@@ -36,6 +36,7 @@ import { collectNodeReleaseSource, readNodeReleaseSourceInput } from "./node-rel
 import { createContextSnapshot, previewContextSnapshot, readContextSnapshotInput, readContextSnapshot, contextSnapshotSummaries } from "./context-snapshots.ts";
 import { prepareAnalystGeneration } from "./analyst-generation.ts";
 import { readContextAnalyticalPacket, readContextAnalyticalResponseInput, checkStoredContextAnalyticalResponse } from "./context-analysis.ts";
+import { createContextProcessingAuthorization, readContextProcessingInput, readContextProcessingAuthorization, contextProcessingSummaries, revokeContextProcessingAuthorization } from "./context-processing.ts";
 import { createReportExport, readReportExport, reportExportSummaries } from "./report-export.ts";
 import { inspectInstallation } from "./installation.ts";
 import { outcomeEvidenceSummaries, readOutcomeEvidence, registerOutcomeEvidence } from "./outcome-evidence.ts";
@@ -57,6 +58,10 @@ redteam context snapshots preview FILE
 redteam context snapshots create FILE
 redteam context snapshots list
 redteam context snapshots show SNAPSHOT_ID
+redteam context processing declare FILE
+redteam context processing list
+redteam context processing show AUTHORIZATION_ID
+redteam context processing revoke AUTHORIZATION_ID 1 REASON
 redteam review --demo broken|fixed
 redteam runs list
 redteam access grant --target ORIGIN [--name NAME] [--allow browser:read,browser:interact] [--session FILE] [--hours 24]
@@ -194,7 +199,21 @@ async function main(): Promise<void> {
   if (command === "context") {
     const [category, operation, ...parameters] = args;
     if (category === "assess") { if (!operation || parameters.length) throw new Error("Usage: redteam context assess FILE"); print(assessGlobalContext(await readGlobalContextInput(operation))); return; }
-    const usage = "Usage: redteam context sources import METADATA_FILE TEXT_FILE|collect FILE|collect-release FILE|list|show SOURCE_ID|withdraw SOURCE_ID REVISION REASON; context snapshots preview FILE|create FILE|list|show SNAPSHOT_ID";
+    const usage = "Usage: redteam context sources import METADATA_FILE TEXT_FILE|collect FILE|collect-release FILE|list|show SOURCE_ID|withdraw SOURCE_ID REVISION REASON; context snapshots preview FILE|create FILE|list|show SNAPSHOT_ID; context processing declare FILE|list|show AUTHORIZATION_ID|revoke AUTHORIZATION_ID 1 REASON";
+    if (category === "processing") {
+      if (!operation || !["declare", "list", "show", "revoke"].includes(operation) || parameters.length !== ({ declare: 1, list: 0, show: 1, revoke: 3 }[operation])) throw new Error(usage);
+      if (operation === "show" || operation === "revoke") contextUUID(parameters[0]);
+      if (operation === "revoke") { if (parameters[1] !== "1") throw new ContextDataError(); contextText(parameters[2], 1000); }
+      const input = operation === "declare" ? await readContextProcessingInput(parameters[0]!) : null;
+      const store = new WorkspaceStore(await existingContextWorkspace(workspace));
+      try {
+        if (input) { const saved = await createContextProcessingAuthorization(store, input); print({ id: saved.id, createdAt: saved.createdAt, provider: saved.provider, model: saved.model, snapshotId: saved.snapshotId, recordSha256: saved.recordSha256, expiresAt: saved.expiresAt, state: saved.state, executionAuthority: "not_granted" }); }
+        else if (operation === "list") print({ recentWindow: 100, authorizations: contextProcessingSummaries(store), processingAuthority: "not_checked" });
+        else if (operation === "show") print(await readContextProcessingAuthorization(store, parameters[0]!));
+        else print(revokeContextProcessingAuthorization(store, parameters[0]!, 1, parameters[2]!));
+      } finally { store.close(); }
+      return;
+    }
     if (category === "sources") {
       if (!operation || !["import", "collect", "collect-release", "list", "show", "withdraw"].includes(operation) || parameters.length !== ({ import: 2, collect: 1, "collect-release": 1, list: 0, show: 1, withdraw: 3 }[operation])) throw new Error(usage);
       if (operation === "show" || operation === "withdraw") contextUUID(parameters[0]);

@@ -32,7 +32,7 @@ export async function privateBytes(state: string, file: string, max: number): Pr
   if ((await lstat(file)).mode & 0o077) throw new ContextDataError(); const result = await boundedBytes(state, file, max);
   if ((await lstat(file)).mode & 0o077) throw new ContextDataError(); return result;
 }
-export async function recordDirectory(stateDirectory: string, prefix: "context-sources" | "context-snapshots", id: string, create = false): Promise<{ state: string; directory: string }> {
+export async function recordDirectory(stateDirectory: string, prefix: "context-sources" | "context-snapshots" | "context-processing", id: string, create = false): Promise<{ state: string; directory: string }> {
   uuid(id); const state = await realpath(stateDirectory), parent = resolve(state, prefix); await privateDirectory(state);
   if (create) { try { await mkdir(parent, { mode: 0o700 }); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; } }
   await privateDirectory(parent); const directory = resolve(parent, id); if (create) await mkdir(directory, { mode: 0o700 }); await privateDirectory(directory); return { state, directory };
