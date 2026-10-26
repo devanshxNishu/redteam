@@ -1,6 +1,6 @@
 # Primary software release capture
 
-Version0.39 adds internal `collectNodeRelease(input, signal?)` in `dist/node-release-context.js`. It retrieves one public Node.js full-release response through a fixed GitHub endpoint. This is a bounded primary announcement helper. It does not save a source record, snapshot, task, budget or review. There is no release collection CLI/API/web/feed or analytical-packet integration yet. Existing terminal population collection remains separate.
+Version0.39 added internal `collectNodeRelease(input, signal?)` in `dist/node-release-context.js`. It retrieves one public Node.js full-release response through a fixed GitHub endpoint. The helper itself saves no source, snapshot, task, budget or review. Version0.40 adds separate [checked source storage and explicit terminal collection](node-release-sources.md). There is no release collection API/web/feed or analytical-packet integration. Existing population collection remains separate.
 
 ## Input and fixed scope
 
@@ -24,7 +24,7 @@ The internal wire result says `media_and_utf8_only_unreviewed`. JSON/schema vali
 
 The adapter bounds JSON depth8, nodes2,048, object entries80, array entries100 and strings20,000characters before extracting fields. It supports known top-level fields, a positive safe release ID, exact repository/ID/tag URLs, full-release booleans, bounded literal name/announcement and at most20asset entries. Extra author/asset metadata remains bounded, uninterpreted raw data. It follows no asset, archive, author/profile, announcement link or reference. Markdown/HTML/instructions remain literal text with no tool authority.
 
-It preserves exact received JSON bytes/hash and supported release identity, name/tag, selected API version and actual start/retrieval/finish clocks. Announcement output is a byte count/hash and literal-format label, without another copy of the announcement text. A receipt helper omits raw JSON text; there is no persisted receipt reader or release source policy yet.
+It preserves exact received JSON bytes/hash and supported release identity, name/tag, selected API version and actual start/retrieval/finish clocks. Announcement output is a byte count/hash and literal-format label, without another copy of the announcement text. A receipt helper omits raw JSON text. Version0.40 historical reconstruction recomputes exact supported fields/bytes/clocks without granting native capability; the separate source policy governs persistence.
 
 `published_at`, `created_at` and provider `updated_at` each retain the original string, canonical UTC representation and second/millisecond precision. Invalid/future/unknown supported dates fail closed. Commit creation and provider update are not publication. `materialUpdatedAt` staysnull because the helper does not independently establish which material changed. Retrieval or a later provider update cannot refresh old publication. The raw body remains available only as unreviewed input.
 
@@ -34,4 +34,4 @@ Actual native adapter results have separate in-process identity and monotonic st
 
 ## Next delivery
 
-Add supported release-source storage and historical reconstruction, stable release-ID citation, correction preflight and one publication attempt. The mutable latest endpoint returning a different release ID must not supersede an older release. Preserve old manual/v1 and population/v2 bytes. Version snapshot boundaries when needed. Then expose explicit terminal release collection, wider permitted primary sources, packet2/per-source processing, dated report/web coverage and human-reviewed retrieval/usefulness evaluation.
+Version0.40 adds historical reconstruction, stable release-ID source citation, correction preflight, one publication attempt and explicit terminal collection. Release snapshots use v3 and old manual/v1 plus population/v2 remain readable. Next add wider permitted primary sources, packet2/per-source processing, dated report/web coverage and human-reviewed retrieval/usefulness evaluation.

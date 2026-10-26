@@ -1,6 +1,6 @@
 # Next I05c adapter: primary software release context
 
-After0.38, the bounded population retrieval/storage/terminal path is ready. The next useful context slice should capture a dated primary release announcement. It must not imply general news coverage. Version0.39 implements shared fixed-target transport and the internal native release helper; `docs/node-release-context.md` records the delivered contract. Release storage/reader/correction/snapshots and terminal integration remain next. This plan grants no source rights by itself.
+After0.38, the bounded population retrieval/storage/terminal path is ready. The next useful context slice should capture a dated primary release announcement. It must not imply general news coverage. Version0.39 implements shared fixed-target transport and the internal native release helper; `docs/node-release-context.md` records the delivered contract. Version0.40 adds release storage/reader/correction, v3 snapshots and explicit terminal integration; `docs/node-release-sources.md` records the supported contract. Wider sources and packet/report integration remain next. This plan grants no source rights by itself.
 
 ## Candidate and retrieved documentation
 
@@ -10,7 +10,7 @@ The inspected documentation examples currently use `X-GitHub-Api-Version: 2026-0
 
 [Unauthenticated rate limits](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api) apply by originating IP and are documented as60requests/hour. There may also be secondary limits. A denied request stays unavailable; no automatic wait/retry, token fallback, proxy rotation or credential load. [API terms](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#h-api-terms) require compliant use and restrict excessive/abusive requests. Public access is not blanket content/model/training/redistribution permission. Keep explicit operator local-use declarations and inspect source-specific terms before a real smoke.
 
-## Proposed implementation
+## Implemented sequence and continuing requirements
 
 First extract a bounded native JSON transport behind trusted fixed adapter descriptors. Preserve World Bank URLs, payload/receipt policy, native identity, test provenance and historical records exactly. The transport must revalidate the constructed allowed host/path rather than accept an arbitrary endpoint. Native and injected modes remain distinct. Reuse dedicated cancellable DNS, pinned public IPv4, original TLS authority, no proxy/key/cookie, one GET, no redirect/retry, size/event/header/deadline/cancellation limits and static errors. Keep allowed hosts and request headers explicit per adapter; no broad generic network tool.
 

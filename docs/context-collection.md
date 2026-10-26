@@ -1,6 +1,6 @@
 # Terminal public-source collection
 
-Version0.38 adds deliberate terminal collection and a separate native captured-source storage policy. The first adapter supports one small World Bank population series. It does not collect news or change the current brief-only analytical packet.
+Version0.38 adds deliberate terminal collection and a separate native captured-source storage policy. This command supports one small World Bank population series. Version0.40 adds a separate [primary release command and policy](node-release-sources.md). Neither changes the current brief-only analytical packet or establishes broad news coverage.
 
 ```sh
 redteam context sources collect COLLECTION_FILE
@@ -35,7 +35,7 @@ Historical reads reconstruct the supported receipt, raw bytes, generated metadat
 
 Captured catalogs are explicitly unverified. No raw text or private directory is returned in list/confirmation. Administrative withdrawal remains possible after expiry or content loss and preserves original bytes.
 
-Snapshots containing a captured source use `context-snapshot-v2`, pin each exact source policy/version/hash and retain local-only/unreviewed boundaries. Snapshot creation itself makes no request. Missing exact publication time can make the dataset ineligible under the existing freshness policy. That gap stays visible. Manual-only v1 sources/snapshots reconstruct unchanged, including records created by the actual installed0.36 package. Withdrawal/supersession denies dependent snapshot delivery without rewriting historical bytes or recalling copies.
+Snapshots containing population captures and manual sources use `context-snapshot-v2`; adding a primary release source selects v3. They pin each exact source policy/version/hash and retain local-only/unreviewed boundaries. Snapshot creation itself makes no request. Missing exact publication time can make the dataset ineligible under the existing freshness policy. That gap stays visible. Manual-only v1 sources/snapshots reconstruct unchanged, including records created by the actual installed0.36 package. Withdrawal/supersession denies dependent snapshot delivery without rewriting historical bytes or recalling copies.
 
 The shipped test suite uses authored/injected historical fixtures for mechanical checks. They do not establish historical network events. Separate native source and installed smokes verify actual small public requests and the complete storage lifecycle. No human research, news coverage, stakeholder prediction or commercial validation is inferred.
 

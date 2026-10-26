@@ -97,3 +97,11 @@ test("deadline and caller abort close a stalled release request without a candid
 test("transport media/UTF-8 validation does not pretend to validate a release JSON schema", async () => {
   const raw = Buffer.from("unreviewed invalid JSON"), f = fixture({ raw }); const response = await f.transport({ kind: "nodejs_latest_release_v1" }, { permissions: input().permissions, limits: input().limits }); assert.equal(response.rawText, raw.toString()); assert.equal(response.validation, "media_and_utf8_only_unreviewed"); await assert.rejects(fixture({ raw }).collect(input()), failure("response_invalid"));
 });
+
+test("capture finish time follows release parsing while retrieval keeps its original clock", async t => {
+  const now = Date.now(), value = input(), f = fixture(), parse = JSON.parse;
+  t.mock.timers.enable({ apis: ["Date"], now });
+  t.mock.method(JSON, "parse", (raw: string) => { const result = parse(raw); t.mock.timers.setTime(now + 50); return result; });
+  const capture = await f.collect(value);
+  assert.equal(capture.retrievedAt, new Date(now).toISOString()); assert.equal(capture.finishedAt, new Date(now + 50).toISOString());
+});

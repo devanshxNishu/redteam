@@ -32,6 +32,7 @@ import { assessGlobalContext, readGlobalContextInput } from "./global-context.ts
 import { ContextDataError, existingContextWorkspace, uuid as contextUUID, integer as contextInteger, text as contextText } from "./context-data.ts";
 import { importContextSource, readContextImportFiles, readContextSource, contextSourceSummaries, withdrawContextSource } from "./context-sources.ts";
 import { collectContextSource, readContextCollectionInput } from "./context-collection.ts";
+import { collectNodeReleaseSource, readNodeReleaseSourceInput } from "./node-release-collection.ts";
 import { createContextSnapshot, previewContextSnapshot, readContextSnapshotInput, readContextSnapshot, contextSnapshotSummaries } from "./context-snapshots.ts";
 import { prepareAnalystGeneration } from "./analyst-generation.ts";
 import { createReportExport, readReportExport, reportExportSummaries } from "./report-export.ts";
@@ -47,6 +48,7 @@ redteam doctor
 redteam context assess FILE
 redteam context sources import METADATA_FILE TEXT_FILE
 redteam context sources collect FILE
+redteam context sources collect-release FILE
 redteam context sources list
 redteam context sources show SOURCE_ID
 redteam context sources withdraw SOURCE_ID REVISION REASON
@@ -189,12 +191,20 @@ async function main(): Promise<void> {
   if (command === "context") {
     const [category, operation, ...parameters] = args;
     if (category === "assess") { if (!operation || parameters.length) throw new Error("Usage: redteam context assess FILE"); print(assessGlobalContext(await readGlobalContextInput(operation))); return; }
-    const usage = "Usage: redteam context sources import METADATA_FILE TEXT_FILE|collect FILE|list|show SOURCE_ID|withdraw SOURCE_ID REVISION REASON; context snapshots preview FILE|create FILE|list|show SNAPSHOT_ID";
+    const usage = "Usage: redteam context sources import METADATA_FILE TEXT_FILE|collect FILE|collect-release FILE|list|show SOURCE_ID|withdraw SOURCE_ID REVISION REASON; context snapshots preview FILE|create FILE|list|show SNAPSHOT_ID";
     if (category === "sources") {
-      if (!operation || !["import", "collect", "list", "show", "withdraw"].includes(operation) || parameters.length !== ({ import: 2, collect: 1, list: 0, show: 1, withdraw: 3 }[operation])) throw new Error(usage);
+      if (!operation || !["import", "collect", "collect-release", "list", "show", "withdraw"].includes(operation) || parameters.length !== ({ import: 2, collect: 1, "collect-release": 1, list: 0, show: 1, withdraw: 3 }[operation])) throw new Error(usage);
       if (operation === "show" || operation === "withdraw") contextUUID(parameters[0]);
       const revision = operation === "withdraw" ? (/^1$/u.test(parameters[1]!) ? contextInteger(Number(parameters[1]), 1) : (() => { throw new ContextDataError(); })()) : 0;
       if (operation === "withdraw") contextText(parameters[2], 1000);
+      if (operation === "collect-release") {
+        const input = await readNodeReleaseSourceInput(parameters[0]!);
+        const store = new WorkspaceStore(input.supersedes ? await existingContextWorkspace(workspace) : workspace), controller = new AbortController();
+        const stop = () => controller.abort(); process.once("SIGINT", stop); process.once("SIGTERM", stop);
+        try { const saved = await collectNodeReleaseSource(store, input, controller.signal); print({ id: saved.id, importedAt: saved.importedAt, version: saved.version, lineageRootId: saved.lineageRootId, recordSha256: saved.recordSha256, stateRevision: saved.state.revision, recordPolicy: saved.recordPolicy, provenance: "native_primary_release_capture_recorded", semanticReview: "unreviewed" }); }
+        finally { process.removeListener("SIGINT", stop); process.removeListener("SIGTERM", stop); store.close(); }
+        return;
+      }
       if (operation === "collect") {
         const input = await readContextCollectionInput(parameters[0]!);
         const store = new WorkspaceStore(input.supersedes ? await existingContextWorkspace(workspace) : workspace), controller = new AbortController();

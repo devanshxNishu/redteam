@@ -7,6 +7,8 @@ import { parseGlobalContextInput } from "./global-context.ts";
 import { ContextDataError, ContextStateConflict, fields, text, uuid, digest, timestamp, integer, freeze, json, bytes, inputBytes, recordDirectory, privateBytes, publish } from "./context-data.ts";
 import { assertNativeContextCapture, publicContextCaptureReceipt, readRecordedPublicContextCapture } from "./context-collector.ts";
 import type { PublicContextCapture, PublicContextCollection } from "./context-collector.ts";
+import { assertNativeNodeReleaseCapture, nodeReleaseReceipt, readRecordedNodeReleaseCapture, parseNodeReleaseCollection } from "./node-release-context.ts";
+import type { NodeReleaseCapture, NodeReleaseCollection } from "./node-release-context.ts";
 import type { WorkspaceStore } from "./workspace.ts";
 
 type Metadata = ReturnType<typeof parseGlobalContextInput>["sources"][number];
@@ -19,12 +21,13 @@ export interface ContextSourceImport {
 export interface ContextSourceState { revision: number; status: "active" | "withdrawn" | "superseded"; at: string; reason: string | null; replacementId: string | null }
 export interface ContextSourceCatalog {
   id: string; importedAt: string; version: number; lineageRootId: string; metadataId: string; originId: string; kind: Metadata["kind"]; title: string;
-  recordPolicy?: "context-source-native-capture-v1";
+  recordPolicy?: "context-source-native-capture-v1" | "context-source-node-release-v1";
   expiresAt: string; directory: string; recordSha256: string; contentSha256: string; inputSha256: string; metadataSha256: string; state: ContextSourceState;
 }
 export interface PreviousContextVersion { id: string; recordSha256: string; version: number; lineageRootId: string }
 const sourceBounds = { record: 24000, nativeRecord: 64000, content: 32768 };
 const nativePolicy = "context-source-native-capture-v1" as const;
+const releasePolicy = "context-source-node-release-v1" as const;
 const nativeProvenance = Object.freeze({ source: "native_public_capture_recorded", importedText: "exact_received_utf8_json", publisher: "not_authenticated", retrievalTime: "native_runtime_recorded", networkRequests: 1, modelCalls: 0 } as const);
 const provenance = Object.freeze({ source: "operator_imported_unverified", importedText: "exact_local_bytes_only", publisher: "not_authenticated", retrievalTime: "operator_declared_not_observed", networkRequests: 0, modelCalls: 0 } as const);
 const boundaries = Object.freeze({ semanticReview: "unreviewed", externalProcessing: "not_authorized", redistribution: "not_authorized", training: "not_authorized", currentGlobalAwareness: "not_established", researchValidated: false, stakeholderDecisions: false } as const);
@@ -65,15 +68,27 @@ function nativeSourceRecord(capture: PublicContextCapture, id: string, importedA
   const base = sourceRecord(manual, id, importedAt, content, previous), input = { ...manual, kind: "context_source_native_input" as const };
   return { ...base, policyVersion: nativePolicy, input, inputSha256: sha256(JSON.stringify(input)), provenance: nativeProvenance, boundaries: { ...boundaries, captureReceipt: "historical_runtime_record_not_independent_attestation" }, capture: publicContextCaptureReceipt(capture) };
 }
-export type ContextSourceRecord = ReturnType<typeof sourceRecord> | ReturnType<typeof nativeSourceRecord>;
-function recordBound(record: ContextSourceRecord): number { return record.policyVersion === nativePolicy ? sourceBounds.nativeRecord : sourceBounds.record; }
+function releaseSourceRecord(capture: NodeReleaseCapture, id: string, importedAt: string, content: Buffer, previous: PreviousContextVersion | null) {
+  if (Date.parse(capture.finishedAt) > Date.parse(importedAt)) throw new ContextDataError();
+  const permission = capture.input.permissions, release = capture.release;
+  const metadata: Metadata = { id: `nodejs-release-${release.id}`, originId: "nodejs-node-releases", kind: "release", publisher: "Node.js public repository release", title: release.title, url: release.url,
+    publishedAt: release.timestamps.published.canonical, updatedAt: null, eventAt: null, retrievedAt: capture.retrievedAt, status: "available", inspection: "declared_inspected", contentSha256: capture.body.sha256,
+    regions: ["global"], language: "en", topics: ["nodejs", "software-releases"], applicabilityBasis: release.applicability.basis };
+  const manual = parseContextSourceImport({ schemaVersion: "1.0", kind: "context_source_import_input", metadata, observationPeriod: null,
+    permissions: { localReview: true, basis: permission.basis, expiresAt: permission.expiresAt, externalProcessing: false, redistribution: false, training: false }, supersedes: previous ? { sourceId: previous.id, expectedRevision: 1 } : null });
+  const base = sourceRecord(manual, id, importedAt, content, previous), input = { ...manual, kind: "context_source_node_release_input" as const };
+  return { ...base, policyVersion: releasePolicy, input, inputSha256: sha256(JSON.stringify(input)), provenance: { ...nativeProvenance, source: "native_primary_release_capture_recorded" as const },
+    boundaries: { ...boundaries, captureReceipt: "historical_runtime_record_not_independent_attestation", releaseSelection: "provider_latest_not_newest_publication", materialUpdate: "unknown", linksFollowed: 0, assetsDownloaded: 0 }, capture: nodeReleaseReceipt(capture) };
+}
+export type ContextSourceRecord = ReturnType<typeof sourceRecord> | ReturnType<typeof nativeSourceRecord> | ReturnType<typeof releaseSourceRecord>;
+function recordBound(record: ContextSourceRecord): number { return record.policyVersion === "context-source-import-v1" ? sourceBounds.record : sourceBounds.nativeRecord; }
 export interface CheckedContextSource { source: ContextSourceRecord; content: string; currentState: ContextSourceState }
 function initialState(at: string): ContextSourceState { return { revision: 1, status: "active", at, reason: null, replacementId: null }; }
-function catalog(record: ContextSourceRecord, directory: string, recordSha256: string, state: ContextSourceState): ContextSourceCatalog { return { ...(record.policyVersion === nativePolicy ? { recordPolicy: nativePolicy } : {}), id: record.id, importedAt: record.importedAt, version: record.version, lineageRootId: record.lineageRootId, metadataId: record.input.metadata.id, originId: record.input.metadata.originId, kind: record.input.metadata.kind, title: record.input.metadata.title, expiresAt: record.input.permissions.expiresAt, directory, recordSha256, contentSha256: record.content.sha256, inputSha256: record.inputSha256, metadataSha256: record.metadataSha256, state }; }
+function catalog(record: ContextSourceRecord, directory: string, recordSha256: string, state: ContextSourceState): ContextSourceCatalog { return { ...(record.policyVersion !== "context-source-import-v1" ? { recordPolicy: record.policyVersion } : {}), id: record.id, importedAt: record.importedAt, version: record.version, lineageRootId: record.lineageRootId, metadataId: record.input.metadata.id, originId: record.input.metadata.originId, kind: record.input.metadata.kind, title: record.input.metadata.title, expiresAt: record.input.permissions.expiresAt, directory, recordSha256, contentSha256: record.content.sha256, inputSha256: record.inputSha256, metadataSha256: record.metadataSha256, state }; }
 
 export function checkContextSourceCatalog(store: WorkspaceStore, value: ContextSourceCatalog): void {
   fields(value, [...(Object.hasOwn(value, "recordPolicy") ? ["recordPolicy"] : []), "id", "importedAt", "version", "lineageRootId", "metadataId", "originId", "kind", "title", "expiresAt", "directory", "recordSha256", "contentSha256", "inputSha256", "metadataSha256", "state"]);
-  if (Object.hasOwn(value, "recordPolicy") && value.recordPolicy !== nativePolicy) throw new ContextDataError();
+  if (Object.hasOwn(value, "recordPolicy") && value.recordPolicy !== nativePolicy && value.recordPolicy !== releasePolicy) throw new ContextDataError();
   uuid(value.id); timestamp(value.importedAt); integer(value.version); uuid(value.lineageRootId); text(value.metadataId, 80); text(value.originId, 80); text(value.title, 300); text(value.directory, 4096); timestamp(value.expiresAt); [value.recordSha256, value.contentSha256, value.inputSha256, value.metadataSha256].forEach(digest);
   if (!["news", "release", "research", "dataset", "forecast"].includes(value.kind) || Date.parse(value.expiresAt) <= Date.parse(value.importedAt)) throw new ContextDataError();
   const history = store.contextSourceEvents(value.id); if (history.length < 1 || history.length > 2 || !isDeepStrictEqual(history[0], initialState(value.importedAt))) throw new ContextDataError();
@@ -102,9 +117,11 @@ export async function readContextSource(store: WorkspaceStore, id: string): Prom
     const { state, directory } = await recordDirectory(store.directory, "context-sources", id); if (expected.directory !== directory) throw new ContextDataError();
     const recordBytes = await privateBytes(state, resolve(directory, "record.json"), sourceBounds.nativeRecord), content = await privateBytes(state, resolve(directory, "source.txt"), sourceBounds.content);
     if (sha256(recordBytes) !== expected.recordSha256) throw new ContextDataError();
-    const decoded = json(recordBytes), raw = fields(decoded, [...(expected.recordPolicy === nativePolicy ? ["capture"] : []), "schemaVersion", "kind", "policyVersion", "id", "importedAt", "version", "lineageRootId", "previous", "input", "inputSha256", "metadataSha256", "content", "provenance", "boundaries"]);
+    const decoded = json(recordBytes), raw = fields(decoded, [...(expected.recordPolicy ? ["capture"] : []), "schemaVersion", "kind", "policyVersion", "id", "importedAt", "version", "lineageRootId", "previous", "input", "inputSha256", "metadataSha256", "content", "provenance", "boundaries"]);
     const previous = raw.previous === null ? null : fields(raw.previous, ["id", "recordSha256", "version", "lineageRootId"]);
-    const record = expected.recordPolicy === nativePolicy ? nativeSourceRecord(readRecordedPublicContextCapture(raw.capture, contentText(content)), id, expected.importedAt, content, previous as PreviousContextVersion | null) : sourceRecord(parseContextSourceImport(raw.input), id, expected.importedAt, content, previous as PreviousContextVersion | null);
+    const record = expected.recordPolicy === nativePolicy ? nativeSourceRecord(readRecordedPublicContextCapture(raw.capture, contentText(content)), id, expected.importedAt, content, previous as PreviousContextVersion | null)
+      : expected.recordPolicy === releasePolicy ? releaseSourceRecord(readRecordedNodeReleaseCapture(raw.capture, contentText(content)), id, expected.importedAt, content, previous as PreviousContextVersion | null)
+      : sourceRecord(parseContextSourceImport(raw.input), id, expected.importedAt, content, previous as PreviousContextVersion | null);
     if (!isDeepStrictEqual(decoded, record) || !recordBytes.equals(bytes(record, recordBound(record)))) throw new ContextDataError(); checkPrevious(store, record);
     const checked = freeze({ source: record, content: contentText(content), currentState: expected.state }); checkContextSourceAccess(store, checked, expected);
     if (!(await privateBytes(state, resolve(directory, "record.json"), sourceBounds.nativeRecord)).equals(recordBytes) || !(await privateBytes(state, resolve(directory, "source.txt"), sourceBounds.content)).equals(content)) throw new ContextDataError();
@@ -127,7 +144,7 @@ export async function importContextSource(store: WorkspaceStore, value: unknown,
   } catch (error) { if (error instanceof ContextStateConflict) throw error; throw new ContextDataError(); }
 }
 export function contextSourceSummaries(store: WorkspaceStore) {
-  return store.recentContextSources().flatMap(summary => { try { checkContextSourceCatalog(store, summary); if (summary.state.status !== "active" || Date.now() >= Date.parse(summary.expiresAt)) return []; return [{ id: summary.id, importedAt: summary.importedAt, version: summary.version, lineageRootId: summary.lineageRootId, title: summary.title, kind: summary.kind, recordSha256: summary.recordSha256, stateRevision: summary.state.revision, recordStatus: "cataloged_unverified" as const, provenance: summary.recordPolicy === nativePolicy ? "native_capture_catalog_unverified" as const : provenance.source, ...(summary.recordPolicy ? { recordPolicy: summary.recordPolicy } : {}) }]; } catch { return []; } });
+  return store.recentContextSources().flatMap(summary => { try { checkContextSourceCatalog(store, summary); if (summary.state.status !== "active" || Date.now() >= Date.parse(summary.expiresAt)) return []; return [{ id: summary.id, importedAt: summary.importedAt, version: summary.version, lineageRootId: summary.lineageRootId, title: summary.title, kind: summary.kind, recordSha256: summary.recordSha256, stateRevision: summary.state.revision, recordStatus: "cataloged_unverified" as const, provenance: summary.recordPolicy ? "native_capture_catalog_unverified" as const : provenance.source, ...(summary.recordPolicy ? { recordPolicy: summary.recordPolicy } : {}) }]; } catch { return []; } });
 }
 export function withdrawContextSource(store: WorkspaceStore, id: string, expectedRevision: number, reason: string) {
   uuid(id); integer(expectedRevision, 1); text(reason, 1000); const summary = store.contextSource(id); if (!summary) throw new ContextDataError(); checkContextSourceCatalog(store, summary);
@@ -171,6 +188,37 @@ export async function saveCapturedContextSource(store: WorkspaceStore, captured:
       if (correction) { const prepared = preparedCorrections.get(correction); if (!prepared || prepared.directory !== store.directory || prepared.preparedAt > Date.parse(capture.startedAt) || correction.parent.source.policyVersion !== nativePolicy || correction.parent.source.capture.input.countryCode !== capture.input.countryCode || !isDeepStrictEqual(correction.parent.source.capture.input.years, capture.input.years)) throw new ContextDataError(); assertNativeContextCapture(captured, prepared.monotonic); checkContextSourceAccess(store, correction.parent, correction.catalog); } return undefined; };
     guard(); if (correction) previous = { id: correction.parent.source.id, recordSha256: correction.catalog.recordSha256, version: correction.parent.source.version, lineageRootId: correction.parent.source.lineageRootId };
     const record = nativeSourceRecord(capture, randomUUID(), new Date().toISOString(), content, previous), recordBytes = bytes(record, recordBound(record)); guard(); usedCaptures.add(captured);
+    return await persistSource(store, record, recordBytes, content, guard);
+  } catch (error) { if (error instanceof ContextStateConflict) throw error; throw new ContextDataError(); }
+}
+
+export interface NodeReleaseCorrection { parent: CheckedContextSource; catalog: ContextSourceCatalog }
+const preparedReleaseCorrections = new WeakMap<NodeReleaseCorrection, { directory: string; preparedAt: number; monotonic: number }>();
+const usedReleaseCaptures = new WeakSet<NodeReleaseCapture>();
+export async function prepareNodeReleaseCorrection(store: WorkspaceStore, value: NodeReleaseCollection, sourceId: string, revision: number): Promise<NodeReleaseCorrection> {
+  try {
+    const input = parseNodeReleaseCollection(value); if (Date.parse(input.permissions.expiresAt) <= Date.now() + input.limits.timeoutMs) throw new ContextDataError();
+    uuid(sourceId); integer(revision, 1); const parent = await readContextSource(store, sourceId), catalog = store.contextSource(sourceId); if (!catalog) throw new ContextDataError();
+    if (parent.source.policyVersion !== releasePolicy || parent.currentState.revision !== revision) throw new ContextStateConflict();
+    checkContextSourceAccess(store, parent, catalog); const prepared = freeze({ parent, catalog }); preparedReleaseCorrections.set(prepared, { directory: store.directory, preparedAt: Date.now(), monotonic: performance.now() }); return prepared;
+  } catch (error) { if (error instanceof ContextStateConflict) throw error; throw new ContextDataError(); }
+}
+/** One native publication attempt. Latest selecting another release is a conflict before any files. */
+export async function saveNodeReleaseSource(store: WorkspaceStore, captured: NodeReleaseCapture, correction: NodeReleaseCorrection | null = null, signal?: AbortSignal): Promise<ContextSourceCatalog> {
+  try {
+    assertNativeNodeReleaseCapture(captured); if (usedReleaseCaptures.has(captured)) throw new ContextDataError();
+    const capture = readRecordedNodeReleaseCapture(nodeReleaseReceipt(captured), captured.body.text), content = Buffer.from(capture.body.text); contentText(content);
+    const guard = () => {
+      if (signal?.aborted || Date.now() >= Date.parse(capture.input.permissions.expiresAt)) throw new ContextDataError();
+      if (correction) {
+        const prepared = preparedReleaseCorrections.get(correction); if (!prepared || prepared.directory !== store.directory || prepared.preparedAt > Date.parse(capture.startedAt) || correction.parent.source.policyVersion !== releasePolicy) throw new ContextDataError();
+        assertNativeNodeReleaseCapture(captured, prepared.monotonic); checkContextSourceAccess(store, correction.parent, correction.catalog);
+        if (correction.parent.source.capture.release.id !== capture.release.id || correction.parent.source.capture.release.repository !== capture.release.repository) throw new ContextStateConflict();
+      }
+      return undefined;
+    };
+    guard(); const previous = correction ? { id: correction.parent.source.id, recordSha256: correction.catalog.recordSha256, version: correction.parent.source.version, lineageRootId: correction.parent.source.lineageRootId } : null;
+    const record = releaseSourceRecord(capture, randomUUID(), new Date().toISOString(), content, previous), recordBytes = bytes(record, recordBound(record)); guard(); usedReleaseCaptures.add(captured);
     return await persistSource(store, record, recordBytes, content, guard);
   } catch (error) { if (error instanceof ContextStateConflict) throw error; throw new ContextDataError(); }
 }

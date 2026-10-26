@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "node_release_source_collection_input",
+  "collection": {
+    "schemaVersion": "1.0",
+    "kind": "node_release_collection_input",
+    "adapter": "nodejs_latest_release_v1",
+    "permissions": {
+      "collect": false,
+      "localReview": false,
+      "basis": "Disabled example. Supply a source-specific permitted local-use basis before explicit collection.",
+      "expiresAt": "2020-01-01T00:00:00.000Z",
+      "externalProcessing": false,
+      "redistribution": false,
+      "training": false
+    },
+    "limits": { "timeoutMs": 10000, "maximumBytes": 32768 }
+  },
+  "supersedes": null
+}

@@ -1,6 +1,8 @@
 import { sha256 } from "./evidence.ts";
-import { fields, freeze, integer, text } from "./context-data.ts";
-import { ContextCollectionError, parsePublicContextAuthority, retrievePublicContext, createInjectedPublicContextTransport, checkPublicContextResponse, assertNativePublicContextResponse } from "./public-context-http.ts";
+import type { IncomingMessage } from "node:http";
+import { isDeepStrictEqual } from "node:util";
+import { fields, freeze, integer, text, timestamp } from "./context-data.ts";
+import { ContextCollectionError, parsePublicContextAuthority, retrievePublicContext, createInjectedPublicContextTransport, checkPublicContextResponse, assertNativePublicContextResponse, describePublicContextTarget, publicContextHeaders, permittedContextIPv4 } from "./public-context-http.ts";
 import type { ContextCollectorIO, PublicContextAuthority, PublicContextResponse } from "./public-context-http.ts";
 
 export interface NodeReleaseCollection extends PublicContextAuthority { schemaVersion: "1.0"; kind: "node_release_collection_input"; adapter: "nodejs_latest_release_v1" }
@@ -53,11 +55,12 @@ const nativeCaptures = new WeakMap<object, number>();
 export function assertNativeNodeReleaseCapture(value: unknown, notBefore?: number): undefined {
   if (!value || typeof value !== "object" || !nativeCaptures.has(value) || notBefore !== undefined && (!Number.isFinite(notBefore) || notBefore < 0 || nativeCaptures.get(value)! < notBefore)) throw new ContextCollectionError("not_native"); return undefined;
 }
-function captureObject(input: NodeReleaseCollection, observed: PublicContextResponse) {
+type ReleaseObservation = Pick<PublicContextResponse, "target" | "rawText" | "startedAt" | "retrievedAt" | "response" | "apiVersion" | "provenance">;
+function captureObject(input: NodeReleaseCollection, observed: ReleaseObservation, finishedAt?: string) {
   const parsed = release(observed.rawText, observed.retrievedAt);
   if (observed.target.kind !== "nodejs_latest_release_v1" || observed.apiVersion.requested !== "2026-03-10" || observed.apiVersion.selected !== "2026-03-10") throw 0;
   return freeze({ schemaVersion: "1.0", kind: "node_release_capture", policyVersion: "nodejs-release-capture-v1", input, inputSha256: sha256(JSON.stringify(input)), request: { url: observed.target.url, apiVersion: observed.apiVersion },
-    startedAt: observed.startedAt, retrievedAt: observed.retrievedAt, finishedAt: new Date().toISOString(), body: { text: observed.rawText, bytes: Buffer.byteLength(observed.rawText), sha256: sha256(observed.rawText) }, response: observed.response, release: parsed, provenance: observed.provenance,
+    startedAt: observed.startedAt, retrievedAt: observed.retrievedAt, finishedAt: finishedAt ?? new Date().toISOString(), body: { text: observed.rawText, bytes: Buffer.byteLength(observed.rawText), sha256: sha256(observed.rawText) }, response: observed.response, release: parsed, provenance: observed.provenance,
     boundaries: { semanticReview: "unreviewed", publisherFacts: "not_independently_authenticated", toolAuthority: "not_granted", linksFollowed: 0, assetsDownloaded: 0, externalProcessing: "not_authorized", redistribution: "not_authorized", training: "not_authorized", storedSource: false, packetIntegrated: false, currentGlobalAwareness: "not_established", behavioralValidity: false } });
 }
 async function collect(value: unknown, transport: (target: unknown, authority: unknown, signal?: AbortSignal) => Promise<PublicContextResponse>, signal?: AbortSignal) {
@@ -73,3 +76,24 @@ export function createInjectedNodeReleaseCollector(io: ContextCollectorIO): (val
   const transport = createInjectedPublicContextTransport(io); return (value, signal) => collect(value, transport, signal);
 }
 export function nodeReleaseReceipt(capture: NodeReleaseCapture) { const { body, ...rest } = capture; return freeze({ ...rest, body: { bytes: body.bytes, sha256: body.sha256 } }); }
+
+/** Checked historical local claim only. Reconstruction never creates a native capability. */
+export function readRecordedNodeReleaseCapture(value: unknown, rawText: string): NodeReleaseCapture {
+  try {
+    const raw = fields(value, ["schemaVersion", "kind", "policyVersion", "input", "inputSha256", "request", "startedAt", "retrievedAt", "finishedAt", "body", "response", "release", "provenance", "boundaries"]);
+    const input = parseNodeReleaseCollection(raw.input), startedAt = timestamp(raw.startedAt), retrievedAt = timestamp(raw.retrievedAt), finishedAt = timestamp(raw.finishedAt);
+    const start = Date.parse(startedAt), retrieved = Date.parse(retrievedAt), finish = Date.parse(finishedAt);
+    if (retrieved < start || finish < retrieved || finish >= start + input.limits.timeoutMs || Date.parse(input.permissions.expiresAt) <= start + input.limits.timeoutMs || typeof rawText !== "string" || !Buffer.byteLength(rawText) || Buffer.byteLength(rawText) > input.limits.maximumBytes
+      || new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(Buffer.from(rawText)) !== rawText) throw 0;
+    const response = fields(raw.response, ["status", "contentType", "contentLength", "date", "lastModified"]); if (response.status !== 200) throw 0;
+    const rawHeaders = ["content-type", text(response.contentType, 512)];
+    if (response.contentLength !== null) rawHeaders.push("content-length", String(integer(response.contentLength, input.limits.maximumBytes)));
+    for (const [key, header] of [["date", "date"], ["lastModified", "last-modified"]] as const) if (response[key] !== null) { const value = response[key]; if (typeof value !== "string" || value.length > 512) throw 0; rawHeaders.push(header, value); }
+    const checkedHeaders = publicContextHeaders({ rawHeaders } as IncomingMessage, input.limits.maximumBytes); if (checkedHeaders.contentLength !== null && checkedHeaders.contentLength !== Buffer.byteLength(rawText)) throw 0;
+    const provenance = fields(raw.provenance, ["transport", "networkObservation", "logicalDnsOperations", "httpRequests", "redirects", "applicationRetries", "peerIPv4", "addressPolicy", "bodyEvents"]);
+    if (provenance.transport !== "native_https" || !permittedContextIPv4(provenance.peerIPv4)) throw 0;
+    const observed: ReleaseObservation = { target: describePublicContextTarget({ kind: "nodejs_latest_release_v1" }), startedAt, retrievedAt, rawText, response: { status: 200, ...checkedHeaders }, apiVersion: { requested: "2026-03-10", selected: "2026-03-10" },
+      provenance: { transport: "native_https", networkObservation: "native_runtime_observation", logicalDnsOperations: 1, httpRequests: 1, redirects: 0, applicationRetries: 0, peerIPv4: provenance.peerIPv4, addressPolicy: "public-ipv4-iana-2025-10-09-v1", bodyEvents: integer(provenance.bodyEvents, 8192) } };
+    const capture = captureObject(input, observed, finishedAt); if (!isDeepStrictEqual(value, nodeReleaseReceipt(capture))) throw 0; return capture;
+  } catch { throw new ContextCollectionError("response_invalid"); }
+}
