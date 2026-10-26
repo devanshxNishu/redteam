@@ -1,6 +1,6 @@
 # Next collection work: bounded public context retrieval
 
-After verified0.36, manual text records and snapshots are ready. The next I05c slice must observe actual permitted public bytes through a bounded collector. It must preserve the distinction between discovery, operator import, injected test transport and native network observation. This plan is repository-only and enables no network command or actual capture by itself.
+After verified0.36, manual text records and snapshots are ready. Version0.37 implements the internal native World Bank population retrieval slice with explicit input and injected-vs-native identity; captured-source publication and terminal/news integration remain next. The next I05c slice must observe actual permitted public bytes through a bounded collector. It must preserve the distinction between discovery, operator import, injected test transport and native network observation. This plan is repository-only and enables no network command or actual capture by itself.
 
 ## First scope
 

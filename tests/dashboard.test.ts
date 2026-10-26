@@ -33,14 +33,14 @@ test("dashboard code inspection clears private detail on expiry, revocation, sta
     await page.goto(server.origin + "/#reviews"); await page.getByText("Local service connected", { exact: true }).waitFor();
     assert.match(await page.locator("#repository-run-list").textContent() ?? "", /No permitted records/);
     const first = await create(); await refresh(); await visible(first.notes.runId).waitFor();
-    await visible(first.notes.runId).getByRole("button").click(); await page.getByRole("heading", { name: "Engineering source notes", exact: true }).waitFor();
+    await visible(first.notes.runId).getByRole("button").click(); await page.locator("#review-dialog").getByRole("heading", { name: "Engineering source notes", exact: true }).waitFor();
     await page.locator("#detail-content").getByText(note, { exact: true }).waitFor();
     assert.equal(await page.locator("#detail-content img").count(), 0); assert(!(await page.locator("#detail-content").textContent())?.includes("COPIED_SOURCE_PRIVATE_MARKER"));
     assert.match(await page.locator("#detail-content").textContent() ?? "", /Expectation: unknown/);
     assert.match(await page.locator("#detail-content").textContent() ?? "", /Semantic review: unreviewed. Execution: not executed. Defect: not assessed/);
     await page.setViewportSize({ width: 390, height: 844 }); assert(await page.locator("#review-dialog").evaluate(element => element.scrollWidth <= element.clientWidth)); assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await page.getByRole("button", { name: "Close review detail" }).click(); await closed();
-    await visible(first.snapshot.runId).getByRole("button").click(); await page.getByRole("heading", { name: "Local repository snapshot", exact: true }).waitFor();
+    await visible(first.snapshot.runId).getByRole("button").click(); await page.locator("#review-dialog").getByRole("heading", { name: "Local repository snapshot", exact: true }).waitFor();
     assert.match(await page.locator("#detail-content").textContent() ?? "", /Captured files and hashes/);
     await page.getByRole("button", { name: "Close review detail" }).click();
     await visible(first.notes.runId).getByRole("button").click(); await page.locator("#review-dialog").waitFor();
