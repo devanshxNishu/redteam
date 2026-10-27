@@ -37,7 +37,7 @@ export async function recordDirectory(stateDirectory: string, prefix: "context-s
   if (create) { try { await mkdir(parent, { mode: 0o700 }); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; } }
   await privateDirectory(parent); const directory = resolve(parent, id); if (create) await mkdir(directory, { mode: 0o700 }); await privateDirectory(directory); return { state, directory };
 }
-export async function publish(state: string, directory: string, name: "record.json" | "source.txt" | "snapshot.json" | "manifest.json" | "generation.json" | "candidate.json", value: Buffer, max: number): Promise<void> {
+export async function publish(state: string, directory: string, name: "record.json" | "source.txt" | "snapshot.json" | "manifest.json" | "generation.json" | "candidate.json" | "report.json", value: Buffer, max: number): Promise<void> {
   if (value.length > max) throw new ContextDataError(); const file = resolve(directory, name); await checkedParents(state, file); await publishExclusive(file, value);
   if (!(await privateBytes(state, file, max)).equals(value)) throw new ContextDataError();
 }

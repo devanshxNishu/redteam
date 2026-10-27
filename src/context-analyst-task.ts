@@ -29,6 +29,11 @@ export function checkContextAnalystCandidateTaskBinding(store: WorkspaceStore, p
   return binding.candidateGuard();
 }
 
+function coordinatorAuthority(guard: () => unknown): void {
+  if (typeof guard !== "function") throw new ContextDataError();
+  const result = guard(); if (result !== undefined) { if (result instanceof Promise) void result.catch(() => {}); throw new ContextDataError(); }
+}
+
 /** Check before TaskStore can normalize permissions or create tables. Sidecars can change during normal SQLite use. */
 function databaseFiles(store: WorkspaceStore, allowMissing: boolean) {
   const state = store.directory, path = resolve(state, "tasks.sqlite");
@@ -75,11 +80,11 @@ export class ContextAnalystTask {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private closed = false;
 
-  private constructor(key: symbol, store: WorkspaceStore, preparation: ContextAnalystPreparation, owner: string) {
+  private constructor(key: symbol, store: WorkspaceStore, preparation: ContextAnalystPreparation, owner: string, coordinatorGuard: () => unknown) {
     if (key !== construction) throw new ContextDataError();
     this.store = store; this.preparation = preparation;
     let databaseGuard = () => undefined, initializing = true;
-    const guard = () => { databaseGuard(); if (initializing) checkContextAnalystPreparationAccess(store, preparation); else checkContextAnalystFinalizationAccess(store, preparation); return undefined; };
+    const guard = () => { coordinatorAuthority(coordinatorGuard); databaseGuard(); if (initializing) checkContextAnalystPreparationAccess(store, preparation); else checkContextAnalystFinalizationAccess(store, preparation); return undefined; };
     const m = preparation.manifest;
     this.task = new AnalystTask(dirname(store.directory), { taskId: m.taskId, runId: m.runId, questionKey: m.questionKey, manifestHash: preparation.manifestSha256, deadlineAt: m.coordinatorDeadlineAt, owner }, guard, m.configuration.taskPolicy);
     try {
@@ -94,12 +99,12 @@ export class ContextAnalystTask {
       } });
     } catch { this.task.close(); throw new ContextDataError(); }
   }
-  static async create(store: WorkspaceStore, preparation: ContextAnalystPreparation, suppliedOwner: string) {
+  static async create(store: WorkspaceStore, preparation: ContextAnalystPreparation, suppliedOwner: string, coordinatorGuard: () => unknown = () => undefined) {
     try {
-      checkContextAnalystPreparationAccess(store, preparation); if (attempted.has(preparation)) throw new ContextDataError(); const owner = text(suppliedOwner, 200), checkDatabase = preflight(store, preparation);
-      await verifySavedContextAnalystManifest(store, preparation); checkDatabase(); preflight(store, preparation)(); checkContextAnalystPreparationAccess(store, preparation);
+      coordinatorAuthority(coordinatorGuard); checkContextAnalystPreparationAccess(store, preparation); if (attempted.has(preparation)) throw new ContextDataError(); const owner = text(suppliedOwner, 200), checkDatabase = preflight(store, preparation);
+      await verifySavedContextAnalystManifest(store, preparation); coordinatorAuthority(coordinatorGuard); checkDatabase(); preflight(store, preparation)(); checkContextAnalystPreparationAccess(store, preparation);
       if (attempted.has(preparation)) throw new ContextDataError(); attempted.add(preparation);
-      return new ContextAnalystTask(construction, store, preparation, owner);
+      return new ContextAnalystTask(construction, store, preparation, owner, coordinatorGuard);
     } catch { throw new ContextDataError(); }
   }
   assertWorkspace(workspace: string): void { this.task.assertWorkspace(workspace); }
