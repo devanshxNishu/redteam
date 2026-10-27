@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFile, stat, writeFile, unlink } from "node:fs/promises";
+import { readFile, stat, writeFile, unlink, realpath } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runStudy } from "./runner.ts";
@@ -37,6 +37,7 @@ import { createContextSnapshot, previewContextSnapshot, readContextSnapshotInput
 import { prepareAnalystGeneration } from "./analyst-generation.ts";
 import { readContextAnalyticalPacket, readContextAnalyticalResponseInput, checkStoredContextAnalyticalResponse } from "./context-analysis.ts";
 import { prepareContextAnalystGeneration } from "./context-analyst-generation.ts";
+import { scanContextAnalystTasks } from "./context-analyst-catalog.ts";
 import { createContextProcessingAuthorization, readContextProcessingInput, readContextProcessingAuthorization, contextProcessingSummaries, revokeContextProcessingAuthorization } from "./context-processing.ts";
 import { createReportExport, readReportExport, reportExportSummaries } from "./report-export.ts";
 import { inspectInstallation } from "./installation.ts";
@@ -52,6 +53,7 @@ redteam context assess FILE
 redteam context sources import METADATA_FILE TEXT_FILE
 redteam context sources collect FILE
 redteam context sources collect-release FILE
+redteam context runs list [AFTER_ROW_ID [ROW_LIMIT]]
 redteam context sources list
 redteam context sources show SOURCE_ID
 redteam context sources withdraw SOURCE_ID REVISION REASON
@@ -201,7 +203,13 @@ async function main(): Promise<void> {
   if (command === "context") {
     const [category, operation, ...parameters] = args;
     if (category === "assess") { if (!operation || parameters.length) throw new Error("Usage: redteam context assess FILE"); print(assessGlobalContext(await readGlobalContextInput(operation))); return; }
-    const usage = "Usage: redteam context sources import METADATA_FILE TEXT_FILE|collect FILE|collect-release FILE|list|show SOURCE_ID|withdraw SOURCE_ID REVISION REASON; context snapshots preview FILE|create FILE|list|show SNAPSHOT_ID; context processing declare FILE|list|show AUTHORIZATION_ID|revoke AUTHORIZATION_ID 1 REASON";
+    const usage = "Usage: redteam context sources import METADATA_FILE TEXT_FILE|collect FILE|collect-release FILE|list|show SOURCE_ID|withdraw SOURCE_ID REVISION REASON; context snapshots preview FILE|create FILE|list|show SNAPSHOT_ID; context processing declare FILE|list|show AUTHORIZATION_ID|revoke AUTHORIZATION_ID 1 REASON; context runs list [AFTER_ROW_ID [ROW_LIMIT]]";
+    if (category === "runs") {
+      if (operation !== "list" || parameters.length > 2 || parameters[1] !== undefined && !/^[1-9][0-9]{0,2}$/u.test(parameters[1])) throw new Error(usage);
+      const rowLimit = parameters[1] === undefined ? 50 : contextInteger(Number(parameters[1]), 100);
+      print(scanContextAnalystTasks(resolve(await realpath(workspace), ".redteam"), { afterRowId: parameters[0] ?? "0", rowLimit }));
+      return;
+    }
     if (category === "processing") {
       if (!operation || !["declare", "list", "show", "revoke"].includes(operation) || parameters.length !== ({ declare: 1, list: 0, show: 1, revoke: 3 }[operation])) throw new Error(usage);
       if (operation === "show" || operation === "revoke") contextUUID(parameters[0]);
