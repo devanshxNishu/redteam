@@ -1,0 +1,43 @@
+# Bounded context analyst transport
+
+Version0.49 adds internal `createOpenAIContextAnalystTransport` in `src/context-analyst-transport.ts`. It connects the separate context preparation and phase-accounting contracts to bounded OpenAI Responses requests. Verification uses injected fake fetch and authored responses. No live model compatibility, provider billing, semantic approval or report publication is established. There is no new CLI/API run command.
+
+## Original preparation and complete payload
+
+The async factory needs the actual original same-Store preparation, successful saved publication receipt, explicit private key and transport function. It reads full current saved/source files and a fresh checked context packet. That exact packet's compact bytes must equal the frozen input. The packet, brief, snapshot, configuration, instructions, schema and generation hashes must match the original preparation. A parsed or copied packet cannot recreate schema-check authority. Existing source policies stay unchanged; the separate exact current source-specific processing declaration governs the named provider/model/purpose.
+
+Setup has an owned, unref'd timer at the original inference deadline. A stalled file read cannot hold the caller beyond that cutoff or return late transport authority. The timer is cleared on exit. Underlying local reads may still finish; they cannot dispatch a request, write a result or promote a late value. Local filesystem/runtime trust remains a boundary.
+
+The factory creates exact count and generation request strings. They share the complete model, instructions, literal input, strict typed citation schema, empty tools, `tool_choice: none` and disabled truncation. Generation also sets the configured output maximum and disables storage, streaming and background work. No supplied URL or file reference is opened. There is no model, price, key or endpoint selection from ambient environment variables.
+
+The key is bounded printable ASCII without whitespace. The exact inner packet and outer request bodies are checked for literal and JSON-escaped keys before transmission. Result metadata contains hashes, configured model, exact snapshot/as-of/processing pins and limits; it never contains the key or request bodies. Snapshot as-of metadata is frozen context, not live freshness or complete global awareness.
+
+## Actual accounting and transmission checks
+
+`run(phases)` requires a private in-process actual-handle registry entry bound to the exact original Store/preparation. `instanceof`, prototype instances, getters and copied methods cannot establish accounting authority. The adapter rechecks current files before each send, then current metadata, lease, deadline and ledger synchronously immediately before invoking fetch. There is no intervening await after that final identity guard. Accounting separately preserves one count and one generation callback, exact caps, dispatch intents and unknown liability.
+
+Only fixed HTTPS POST endpoints are used: `/v1/responses/input_tokens` and `/v1/responses`. Redirects, changed final URLs and non-success HTTP responses are denied. Each phase has at most one request attempt. There is no automatic retry. One transport can run once; a new transport cannot reuse a consumed phase. Full source checks are observations rather than an atomic transaction with a remote request. Later local changes and operator/runtime/network trust remain boundaries.
+
+Bounds are520,000 request bytes,16,384 count-response bytes,1,000,000 generation-response bytes,32,768 analytical-output bytes and8,192 stream reads. These cover valid context inputs larger than the old brief-only bound without truncation. UTF-8 is strict, JSON must be an object and readers are cancelled/released on incomplete processing. Signal/deadline abort releases the caller from stalled fetch/read. A late response body is cancelled where possible; this does not prove remote processing or billing stopped.
+
+## Usage and unreviewed values
+
+A bounded exact count response supplies a positive input count. Its successful return is not a cost receipt: accounting keeps the full positive count liability. Generation binds that exact count and output limit. Provider usage must have a bounded identity, exact selected model and nonnegative safe integer input/output/total counts with a matching sum. Cost uses integer-ceiling arithmetic over the explicit configured rates. No current rate, account availability or measured provider invoice is inferred. A local ledger cannot impose a spending cap at the provider.
+
+Known usage returns to the ledger even when output is refused, incomplete, failed, invalid, drifted or denied by current rights. Missing/inconsistent usage or a model mismatch keeps generation liability uncertain. A recorded overrun remains settled and closes the budget. Model-written analytical text cannot supply receipt authority. Aborted, incomplete or unreadable network streams do not establish usage; they remain held unknown spend. Not every late network reply can be settled.
+
+After JSON parsing/local checking, the normalized analytical response is checked again for credential echoes; Unicode escape spelling cannot hide a returned key. Known usage still settles when that value is rejected.
+
+Only one completed assistant message with bounded output text and no annotations is eligible for local checking. Tool calls, extra messages, refusals, key echoes, incomplete/failed output and invalid envelopes cannot become a value. Hidden reasoning is omitted. The local context checker enforces exact typed paired field/source citations, source-use eligibility at the frozen snapshot, required brief support, duplicates, abstention and text/cross-field limits. These checks establish structure and references; facts, reasoning, proposed protocols, psychology and commercial outcomes remain unreviewed.
+
+Failed transport metadata uses `generationLiability: not_returned` to describe delivery. It is not a statement that spend is zero or unknown; only the current durable ledger establishes recorded liability.
+
+A returned candidate is `checked_unreviewed` or `rejected`. It is not a file, seal, report or accepted analysis. Current rights/full files are checked again by phase accounting. After awaiting generation, the transport also rechecks the original current phase binding immediately before its own return. Revocation in that delivery gap denies the candidate while keeping already settled usage. Known incurred usage remains recorded when that final check denies the value. Preparation-time packet and manifest boundary flags are preserved as historical declarations; they are not copied into a result as updated execution facts.
+
+## Documentation and verification
+
+Official documentation was fetched and inspected on October27,2026 local time. The [token-counting guide](https://developers.openai.com/api/docs/guides/token-counting) describes the count endpoint and the inclusion of non-visible generated tokens in output usage/limits. The [structured-output guide](https://developers.openai.com/api/docs/guides/structured-outputs) describes Responses `text.format`, strict schema output and refusals. These documents support the proposed protocol, not actual account/model compatibility. No model or price is selected by this release.
+
+Twenty-nine authored cases use real local source/task/budget stores and fake fetch. They cover complete idea/app payloads, larger context, key/preparation/receipt/handle identity, no replay, HTTP/redirect/network errors, byte/UTF-8/JSON/read bounds, refusal/incomplete output, known/unknown usage, rounding/overrun/drift, typed citations, hidden/key text exclusion, source loss before fetch/after response, stalled fetch/body cancellation, inference/finalization separation and stalled setup reads. The stalled-body fixture waits for an actual reader call; stream prefetch alone is not proof that transport started reading.
+
+Full old actor/analyst/task/budget/browser and compiled installed compatibility checks remain release gates. Next implement context candidate/coordinator/catalog/report/conservative recovery and explicit terminal operations. Actual selected model/key/rates/current permissions/live compatibility, broader news coverage, dated report/web, real pilot apps, human usefulness/research/behavior validation, paid demand and production isolation remain open. No uncertain replay, orphan adoption or unpublished-seal promotion is enabled.

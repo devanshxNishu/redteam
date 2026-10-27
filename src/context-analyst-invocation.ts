@@ -13,6 +13,11 @@ import type { WorkspaceStore } from "./workspace.ts";
 export interface ContextAnalystPhase { invocationRef: string; signal: AbortSignal; maximum: Readonly<BudgetAmount> }
 export interface ContextAnalystGenerationPhase extends ContextAnalystPhase { inputTokens: number; maximumOutputTokens: number }
 const construction = Symbol("checked context phases"), attempted = new WeakSet<object>();
+const bindings = new WeakMap<object, { store: WorkspaceStore; preparation: ContextAnalystPreparation; guard: () => undefined }>();
+/** Actual original handle only. Prototype instances and overridden public methods do not establish accounting authority. */
+export function checkContextAnalystInvocationBinding(store: WorkspaceStore, preparation: ContextAnalystPreparation, value: ContextAnalystInvocations): undefined {
+  const checked = bindings.get(value); if (!checked || checked.store !== store || checked.preparation !== preparation) throw new ContextDataError(); return checked.guard();
+}
 const keys = ["tokens", "costMicrousd"] as const;
 function amount(value: unknown): BudgetAmount {
   const raw = fields(value, [...keys]); for (const key of keys) if (!Number.isSafeInteger(raw[key]) || (raw[key] as number) < 0) throw new ContextDataError();
@@ -102,7 +107,7 @@ export class ContextAnalystInvocations {
   private constructor(key: symbol, store: WorkspaceStore, preparation: ContextAnalystPreparation, task: ContextAnalystTask, book: ContextLedger) {
     if (key !== construction) throw new ContextDataError(); this.store = store; this.preparation = preparation; this.task = task; this.book = book; this.caps = freeze({ count: { ...preparation.manifest.budget.count }, generation: { ...preparation.manifest.budget.generation } }); this.signal = AbortSignal.any([this.controller.signal, task.inferenceSignal]);
     this.book.create();
-    try { this.assertActive(); this.timer = setTimeout(() => this.controller.abort(), Math.max(1, Date.parse(preparation.manifest.inferenceDeadlineAt) - Date.now())); this.timer.unref(); }
+    try { this.assertActive(); this.timer = setTimeout(() => this.controller.abort(), Math.max(1, Date.parse(preparation.manifest.inferenceDeadlineAt) - Date.now())); this.timer.unref(); bindings.set(this, { store, preparation, guard: () => this.assertActive() }); }
     catch { this.controller.abort(); try { this.book.with(ledger => ledger.closeRun(preparation.manifest.runId, "context_initialization_failed")); } catch { /* Preserve uncertain initialization without adopting/retrying it. */ } throw new ContextDataError(); }
   }
   static async create(store: WorkspaceStore, preparation: ContextAnalystPreparation, task: ContextAnalystTask) {
@@ -119,6 +124,10 @@ export class ContextAnalystInvocations {
   }
   assertManifest(identity: { runId: string; taskId: string; sha256: string }): void {
     const raw = fields(identity, ["runId", "taskId", "sha256"]); if (raw.runId !== this.preparation.manifest.runId || raw.taskId !== this.preparation.manifest.taskId || raw.sha256 !== this.preparation.manifestSha256) throw new ContextDataError(); this.assertActive();
+  }
+  async checkTransmissionFiles(): Promise<void> {
+    try { this.assertActive(); await abortable(this.task.checkInferenceFiles(), this.signal); this.assertActive(); }
+    catch { throw new ContextDataError(); }
   }
   private uncertain(id: string) { try { this.book.with(ledger => ledger.uncertain(id)); } catch { /* Never release possible dispatch without a trusted receipt. */ } }
   private async invoke<T, U>(phase: "count" | "generation", work: (context: ContextAnalystPhase) => Promise<T>, consume: (result: T) => { result: U; usage: BudgetAmount | null }): Promise<{ result: U; liability: "settled" | "uncertain" }> {
