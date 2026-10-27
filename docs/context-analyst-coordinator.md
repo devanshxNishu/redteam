@@ -1,6 +1,6 @@
 # Bounded context coordinator
 
-Version 0.52.0 adds an internal normal coordinator for ideas and apps. `runOpenAIContextAnalyst` joins the existing context v2 components. It creates one private unreviewed run report. Terminal/API/web run routes, historical final-report checking, catalogs and conservative recovery remain open.
+Version 0.52.0 adds an internal normal coordinator for ideas and apps. `runOpenAIContextAnalyst` joins the existing context v2 components. It creates one private unreviewed run report. Terminal/API/web run routes, catalogs and conservative recovery remain open. A separate historical normal-report data reader is now implemented.
 
 ## Explicit setup
 
@@ -33,3 +33,5 @@ An explicit caller signal and the owned cutoff stop the caller and revoke ongoin
 A complete task or saved seal is not an accepted final report. Historical final-report inspection and conservative recovery still need separate contracts. Recovery must wait through the original coordinator deadline before a factual missing-publication report, preserve a valid final JSON winner, and promote no unpublished candidate or seal. Source loss can restrict delivery while task/budget facts remain.
 
 Native selected model/key/rates/current processing/live compatibility, actual partner app journeys, human research, held-out behavior, usefulness, paid demand, broader news coverage and production isolation remain separate evidence requirements. Software fixtures do not supply them.
+
+A separate [historical normal-report data reader](context-analyst-report-reader.md) checks supported saved reports. It does not restore this coordinator or confirm its cleanup. Discovery, conservative recovery and terminal execution remain open.
