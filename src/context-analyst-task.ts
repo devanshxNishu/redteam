@@ -13,13 +13,20 @@ import type { WorkspaceStore } from "./workspace.ts";
 
 const construction = Symbol("checked context ownership");
 const attempted = new WeakSet<object>();
-const bindings = new WeakMap<object, { store: WorkspaceStore; preparation: ContextAnalystPreparation }>();
+const bindings = new WeakMap<object, { store: WorkspaceStore; preparation: ContextAnalystPreparation; candidateGuard: () => { attempt: number; fence: number } }>();
 
 /** Actual current handle identity only; JSON, prototype copies and cross-Store/preparation handles are not authority. */
 export function checkContextAnalystTaskBinding(store: WorkspaceStore, preparation: ContextAnalystPreparation, task: ContextAnalystTask): undefined {
   const binding = bindings.get(task);
   if (!binding || binding.store !== store || binding.preparation !== preparation) throw new ContextDataError();
   return task.assertInference();
+}
+
+/** Original running owner during reserved finalization; never authorizes another send. */
+export function checkContextAnalystCandidateTaskBinding(store: WorkspaceStore, preparation: ContextAnalystPreparation, task: ContextAnalystTask) {
+  const binding = bindings.get(task);
+  if (!binding || binding.store !== store || binding.preparation !== preparation) throw new ContextDataError();
+  return binding.candidateGuard();
 }
 
 /** Check before TaskStore can normalize permissions or create tables. Sidecars can change during normal SQLite use. */
@@ -79,7 +86,12 @@ export class ContextAnalystTask {
       databaseGuard = databaseFiles(store, false).check; guard(); initializing = false;
       this.signal = this.task.signal; this.inferenceSignal = AbortSignal.any([this.signal, this.inference.signal]);
       this.timer = setTimeout(() => this.inference.abort(), Math.max(1, Date.parse(m.inferenceDeadlineAt) - Date.now())); this.timer.unref();
-      bindings.set(this, { store, preparation });
+      bindings.set(this, { store, preparation, candidateGuard: () => {
+        if (this.closed) throw new ContextDataError(); checkContextAnalystFinalizationAccess(store, preparation); this.task.assertActive();
+        const record = this.task.snapshot().record;
+        if (record.state !== "running" || record.attempt !== 1 || record.output !== null || !isDeepStrictEqual(record.spec, { id: m.taskId, runId: m.runId, kind: "analyst", questionKey: m.questionKey, manifestHash: preparation.manifestSha256, maximumAttempts: 1, deadlineAt: m.coordinatorDeadlineAt })) throw new ContextDataError();
+        return Object.freeze({ attempt: record.attempt, fence: record.fence });
+      } });
     } catch { this.task.close(); throw new ContextDataError(); }
   }
   static async create(store: WorkspaceStore, preparation: ContextAnalystPreparation, suppliedOwner: string) {

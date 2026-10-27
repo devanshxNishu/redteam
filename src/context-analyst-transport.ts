@@ -1,13 +1,13 @@
 import { isDeepStrictEqual } from "node:util";
 import { sha256 } from "./evidence.ts";
 import { parseContextAnalystConfiguration } from "./context-analyst-config.ts";
-import { checkContextAnalystPreparationAccess } from "./context-analyst-config.ts";
+import { checkContextAnalystPreparationAccess, checkContextAnalystFinalizationAccess } from "./context-analyst-config.ts";
 import type { ContextAnalystPreparation } from "./context-analyst-config.ts";
-import { verifySavedContextAnalystManifest } from "./context-analyst-artifacts.ts";
+import { verifySavedContextAnalystManifest, verifyContextAnalystFinalizationFiles } from "./context-analyst-artifacts.ts";
 import type { WorkspaceStore } from "./workspace.ts";
 import { contextAnalyticalResponseSchema } from "./context-analyst-generation.ts";
 import { validateContextAnalyticalResponse, readContextAnalyticalPacket } from "./context-analysis.ts";
-import { checkContextAnalystInvocationBinding } from "./context-analyst-invocation.ts";
+import { checkContextAnalystInvocationBinding, readContextAnalystInvocationOrigin } from "./context-analyst-invocation.ts";
 import type { ContextAnalystInvocations } from "./context-analyst-invocation.ts";
 import type { ContextAnalystPhase, ContextAnalystGenerationPhase } from "./context-analyst-invocation.ts";
 import type { BudgetAmount } from "./budget.ts";
@@ -64,7 +64,7 @@ interface Candidate {
   provider: { responseId: string | null; model: string | null; status: string | null; responseSha256: string };
 }
 /** Original checked preparation/publication only. Internal helper; no environment lookup or run command. */
-async function prepareTransport(store: WorkspaceStore, preparation: Preparation, apiKey: string, transport: typeof fetch = fetch) {
+async function prepareTransport(store: WorkspaceStore, preparation: Preparation, apiKey: string, transport: typeof fetch, runtimeRoute: "explicitly_injected_fetch" | "default_runtime_fetch") {
   if (typeof apiKey !== "string" || apiKey.length < 8 || apiKey.length > 2048 || /[^\x21-\x7e]/u.test(apiKey) || typeof transport !== "function") throw new ContextAnalystTransportError("phase_denied");
   checkContextAnalystPreparationAccess(store, preparation); await verifySavedContextAnalystManifest(store, preparation);
   const config = parseContextAnalystConfiguration(preparation.manifest.configuration), manifest = preparation.manifest, generation = preparation.generation;
@@ -163,16 +163,40 @@ async function prepareTransport(store: WorkspaceStore, preparation: Preparation,
         return decoded;
       });
       checkContextAnalystInvocationBinding(store, preparation, phases);
-      return freeze({ schemaVersion: "2.0", kind: "context_analyst_transport_result", ...generated.value, phase, countedInputTokens: counted, countResponseSha256: countedResponseSha256 as string | null, generationLiability: generated.liability, requestsStarted, metadata });
+      const value = freeze({ schemaVersion: "2.0", kind: "context_analyst_transport_result", ...generated.value, phase, countedInputTokens: counted, countResponseSha256: countedResponseSha256 as string | null, generationLiability: generated.liability, requestsStarted, metadata });
+      const resultSha256 = sha256(JSON.stringify(value)), observedAt = new Date().toISOString(), origin = readContextAnalystInvocationOrigin(store, preparation, phases);
+      checkContextAnalystInvocationBinding(store, preparation, phases);
+      observations.set(value, { store, preparation, observation: freeze({ schemaVersion: "2.0", kind: "context_analyst_transport_observation", runtimeRoute, provenance: "local_runtime_assertion_not_independent_provider_evidence", observedAt, resultSha256, ...origin }) });
+      return value;
     } catch { return result("failed", checkedSignal?.aborted ? "interrupted" : overrun ? "budget_overrun" : failure ?? "phase_denied"); }
   } });
 }
 
 /** Read-only setup has its own frozen inference cutoff; late file reads cannot return a usable transport. */
-export async function createOpenAIContextAnalystTransport(store: WorkspaceStore, preparation: Preparation, apiKey: string, transport: typeof fetch = fetch) {
+export async function createOpenAIContextAnalystTransport(store: WorkspaceStore, preparation: Preparation, apiKey: string, suppliedTransport?: typeof fetch) {
+  const runtimeRoute = suppliedTransport === undefined ? "default_runtime_fetch" : "explicitly_injected_fetch", transport = suppliedTransport === undefined ? fetch : suppliedTransport;
   if (typeof apiKey !== "string" || apiKey.length < 8 || apiKey.length > 2048 || /[^\x21-\x7e]/u.test(apiKey) || typeof transport !== "function") throw new ContextAnalystTransportError("phase_denied");
   checkContextAnalystPreparationAccess(store, preparation);
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), Math.max(1, Date.parse(preparation.manifest.inferenceDeadlineAt) - Date.now())); timer.unref();
-  try { const result = await abortable(prepareTransport(store, preparation, apiKey, transport), controller.signal); checkContextAnalystPreparationAccess(store, preparation); return result; }
+  try { const result = await abortable(prepareTransport(store, preparation, apiKey, transport, runtimeRoute), controller.signal); checkContextAnalystPreparationAccess(store, preparation); return result; }
   finally { clearTimeout(timer); }
+}
+
+export type ContextAnalystTransportResult = Awaited<ReturnType<Awaited<ReturnType<typeof createOpenAIContextAnalystTransport>>["run"]>>;
+type Observation = Readonly<{ schemaVersion: string; kind: string; runtimeRoute: "explicitly_injected_fetch" | "default_runtime_fetch"; provenance: string; observedAt: string; resultSha256: string; taskId: string; attempt: number; fence: number }>;
+const observations = new WeakMap<object, { store: WorkspaceStore; preparation: Preparation; observation: Observation }>();
+
+/** Actual returned object only. Data checks during finalization grant no publication, ownership or replay. */
+export async function inspectContextAnalystTransportObservation(store: WorkspaceStore, preparation: Preparation, result: unknown) {
+  try {
+    const checked = observations.get(result as object);
+    if (!checked || checked.store !== store || checked.preparation !== preparation) throw new Error();
+    const { observation } = checked, now = Date.now(), at = Date.parse(observation.observedAt);
+    checkContextAnalystFinalizationAccess(store, preparation);
+    if (at < Date.parse(preparation.manifest.preparedAt) || at >= Date.parse(preparation.manifest.inferenceDeadlineAt) || at > now || sha256(JSON.stringify(result)) !== observation.resultSha256) throw new Error();
+    await verifyContextAnalystFinalizationFiles(store, preparation);
+    checkContextAnalystFinalizationAccess(store, preparation);
+    if (Date.now() < at) throw new Error();
+    return observation;
+  } catch { throw new ContextAnalystTransportError("phase_denied"); }
 }

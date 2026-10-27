@@ -13,10 +13,14 @@ import type { WorkspaceStore } from "./workspace.ts";
 export interface ContextAnalystPhase { invocationRef: string; signal: AbortSignal; maximum: Readonly<BudgetAmount> }
 export interface ContextAnalystGenerationPhase extends ContextAnalystPhase { inputTokens: number; maximumOutputTokens: number }
 const construction = Symbol("checked context phases"), attempted = new WeakSet<object>();
-const bindings = new WeakMap<object, { store: WorkspaceStore; preparation: ContextAnalystPreparation; guard: () => undefined }>();
+const bindings = new WeakMap<object, { store: WorkspaceStore; preparation: ContextAnalystPreparation; guard: () => undefined; origin: Readonly<{ taskId: string; attempt: number; fence: number }> }>();
 /** Actual original handle only. Prototype instances and overridden public methods do not establish accounting authority. */
 export function checkContextAnalystInvocationBinding(store: WorkspaceStore, preparation: ContextAnalystPreparation, value: ContextAnalystInvocations): undefined {
   const checked = bindings.get(value); if (!checked || checked.store !== store || checked.preparation !== preparation) throw new ContextDataError(); return checked.guard();
+}
+/** Original phase identity only. It remains data after close and grants no send or task authority. */
+export function readContextAnalystInvocationOrigin(store: WorkspaceStore, preparation: ContextAnalystPreparation, value: ContextAnalystInvocations) {
+  const checked = bindings.get(value); if (!checked || checked.store !== store || checked.preparation !== preparation) throw new ContextDataError(); return checked.origin;
 }
 const keys = ["tokens", "costMicrousd"] as const;
 function amount(value: unknown): BudgetAmount {
@@ -107,7 +111,7 @@ export class ContextAnalystInvocations {
   private constructor(key: symbol, store: WorkspaceStore, preparation: ContextAnalystPreparation, task: ContextAnalystTask, book: ContextLedger) {
     if (key !== construction) throw new ContextDataError(); this.store = store; this.preparation = preparation; this.task = task; this.book = book; this.caps = freeze({ count: { ...preparation.manifest.budget.count }, generation: { ...preparation.manifest.budget.generation } }); this.signal = AbortSignal.any([this.controller.signal, task.inferenceSignal]);
     this.book.create();
-    try { this.assertActive(); this.timer = setTimeout(() => this.controller.abort(), Math.max(1, Date.parse(preparation.manifest.inferenceDeadlineAt) - Date.now())); this.timer.unref(); bindings.set(this, { store, preparation, guard: () => this.assertActive() }); }
+    try { this.assertActive(); this.timer = setTimeout(() => this.controller.abort(), Math.max(1, Date.parse(preparation.manifest.inferenceDeadlineAt) - Date.now())); this.timer.unref(); const record = task.snapshot().record; bindings.set(this, { store, preparation, guard: () => this.assertActive(), origin: Object.freeze({ taskId: record.spec.id, attempt: record.attempt, fence: record.fence }) }); }
     catch { this.controller.abort(); try { this.book.with(ledger => ledger.closeRun(preparation.manifest.runId, "context_initialization_failed")); } catch { /* Preserve uncertain initialization without adopting/retrying it. */ } throw new ContextDataError(); }
   }
   static async create(store: WorkspaceStore, preparation: ContextAnalystPreparation, task: ContextAnalystTask) {
