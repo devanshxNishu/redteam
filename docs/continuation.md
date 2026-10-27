@@ -1,6 +1,6 @@
 # Current0.50 development checkpoint
 
-Previous fully verified and privately synced release:0.49 source8221a6cf26521089adbc849d2fcfca0227ac4c51, checkpoint8d129d8912da94750a3f7601d922e52cfc90be37. Preserve all historical evidence below. Current0.50 code/typecheck/build/web syntax,18 focused candidate tests and full860 tests pass; package/installed/source-byte verification passes; ordinary private push verification remains pending. Do not claim0.50 released until final proof below. This continuation is not packaged.
+Previous fully verified and privately synced release:0.49 source8221a6cf26521089adbc849d2fcfca0227ac4c51, checkpoint8d129d8912da94750a3f7601d922e52cfc90be37. Preserve all historical evidence below. Current0.50 code/typecheck/build/web syntax,18 focused candidate tests and full860 tests pass; package/installed/source-byte verification and exact ordinary private source push pass. Source e238e7f4e964da9f1aa99b5d8ff1fa077ddbe8e8 matches private origin/main. Verify this checkpoint-only follow-up too. Do not claim0.50 released until final proof below. This continuation is not packaged.
 
 ## Current0.50 implementation
 
@@ -139,3 +139,5 @@ The first compiled helper passed the full multi-field candidate receipt to the u
 node work/verify-release-files.mjs 0.50.0 214 860 passes every installed/source packaged byte, archive size/SHA512, path whitelist and high-confidence credential patterns0. Final860/zero failed/cancelled/skipped spec/TAP counts checked. Typecheck/web syntax/build pass. Explicit22-file ready path/content/credential scan and diff whitespace pass. Origin URL/main branch verified, fetch0/0 and repository private confirmed. Packaged files unchanged after final packing. Stage/commit/ordinary push and exact private remote verification remain required; record source SHA here afterward, checkpoint-only follow-up commit/push/reverify. Do not publish to npm or deploy.
 
 Usage after verified package at04:07UTC: ordinary usage allowed, primary21%, secondary61% consumed. No credit purchase or reset credit used. Continue next independent technical milestone after private sync; no external input is needed for historical data checks. Keep broader validation gaps explicit.
+
+Source e238e7f4e964da9f1aa99b5d8ff1fa077ddbe8e8 was committed/pushed normally and matched exact private origin/main. Release/latest/GitHub proofs record it. Explicit22-file staged path/content/credential scan passed. This checkpoint-only follow-up changes no packaged bytes; verify its exact private push too. Next continue historical candidate/result reading, with source-backed data checks only and no reconstructed runtime/publication authority.
