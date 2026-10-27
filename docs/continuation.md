@@ -1,6 +1,6 @@
 # Development0.53: checked report reader, full release NOT verified
 
-Last fully verified release remains0.52.0 (sourcee31f21f30f0ded70b7c5953d48285d6b45854d99; latest prior checkpoint66c93f594f278d127eb120f09be4c9ff601ec9e4 matched private origin/main). Current0.53 is development progress with explicit unpassed full-regression gates, not a verified release. Ordinary private source push is authorized and ready after staged checks. Record exact source SHA after push in a checkpoint-only follow-up. Never represent this development milestone as910passing tests or a completed product.
+Last fully verified release remains0.52.0 (sourcee31f21f30f0ded70b7c5953d48285d6b45854d99; latest prior checkpoint66c93f594f278d127eb120f09be4c9ff601ec9e4 matched private origin/main). Current0.53 is development progress with explicit unpassed full-regression gates, not a verified release. Development source commit97eaaaa7d224d2821eb53209868ac75699eb709a was ordinarily pushed and verified equal to exact private origin/main. The11-file staged byte/credential/whitespace scope passed. Verify this checkpoint-only follow-up too. Never represent this development milestone as910passing tests or a completed product.
 
 ## Implemented and verified in this slice
 
