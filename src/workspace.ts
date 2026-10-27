@@ -1,5 +1,5 @@
 import { DatabaseSync } from "node:sqlite";
-import { chmodSync, lstatSync, mkdirSync } from "node:fs";
+import { chmodSync, lstatSync, mkdirSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { ActionRecord, ActionEvent } from "./domain/actions.ts";
@@ -83,7 +83,30 @@ export class WorkspaceStore {
   readonly directory: string;
   private readonly db: DatabaseSync;
 
-  constructor(workspace: string) {
+  constructor(workspace: string, options?: { readOnly: true }) {
+    if (options !== undefined) {
+      if (Object.getPrototypeOf(options) !== Object.prototype || Reflect.ownKeys(options).length !== 1 || Object.getOwnPropertyDescriptor(options, "readOnly")?.value !== true) throw new ContextDataError();
+      const root = realpathSync(workspace), directory = resolve(root, ".redteam"), state = lstatSync(directory);
+      if (!state.isDirectory() || state.isSymbolicLink() || state.mode & 0o077 || realpathSync(directory) !== directory) throw new ContextDataError();
+      const file = resolve(directory, "workspace.sqlite"), check = () => {
+        const currentState = lstatSync(directory);
+        if (!currentState.isDirectory() || currentState.isSymbolicLink() || currentState.mode & 0o077 || currentState.dev !== state.dev || currentState.ino !== state.ino || realpathSync(directory) !== directory) throw new ContextDataError();
+        const i = lstatSync(file);
+        if (!i.isFile() || i.isSymbolicLink() || i.nlink !== 1 || i.mode & 0o077) throw new ContextDataError();
+        for (const suffix of ["-wal", "-shm"]) {
+          const sidecar = lstatSync(file + suffix, { throwIfNoEntry: false });
+          if (sidecar && (!sidecar.isFile() || sidecar.isSymbolicLink() || sidecar.nlink !== 1 || sidecar.mode & 0o077)) throw new ContextDataError();
+        }
+        return i;
+      }, pinned = check();
+      this.directory = directory;
+      this.db = new DatabaseSync(file, { readOnly: true, allowExtension: false, defensive: true, timeout: 1000 });
+      try {
+        const current = check();
+        if (current.dev !== pinned.dev || current.ino !== pinned.ino || this.db.prepare("PRAGMA journal_mode").get()?.journal_mode !== "wal") throw new ContextDataError();
+      } catch (error) { this.db.close(); throw error; }
+      return;
+    }
     this.directory = workspaceDirectory(workspace);
     const file = resolve(this.directory, "workspace.sqlite");
     if (lstatSync(file, { throwIfNoEntry: false })?.isSymbolicLink()) throw new Error("The workspace database must not be a symbolic link.");

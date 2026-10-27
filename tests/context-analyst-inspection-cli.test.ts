@@ -1,0 +1,21 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync,writeFileSync,chmodSync,lstatSync,existsSync} from "node:fs";
+import {resolve} from "node:path";
+import {spawnSync} from "node:child_process";
+import {randomUUID} from "node:crypto";
+import {runFixture} from "./helpers/context-analyst-fixture.ts";
+import {revokeContextProcessingAuthorization} from "../src/context-processing.ts";
+const cli=resolve(import.meta.dirname,"../src/cli.ts");
+function command(root:string){const guard=resolve(root,"deny-inspection-network.mjs");writeFileSync(guard,"import{mock}from'node:test';import https from'node:https';import http from'node:http';import{syncBuiltinESMExports}from'node:module';mock.timers.enable({apis:['Date'],now:Number(process.env.REDTEAM_AUTHORED_FIXTURE_TIME)});const deny=()=>process.exit(97);https.request=deny;http.request=deny;globalThis.fetch=async()=>deny();syncBuiltinESMExports();\n",{mode:0o600});return(...args:string[])=>spawnSync(process.execPath,["--import",guard,cli,...args],{cwd:root,encoding:"utf8",maxBuffer:2000000,env:{...process.env,REDTEAM_AUTHORED_FIXTURE_TIME:String(Date.now()),OPENAI_API_KEY:"AUTHORED_UNUSED_INSPECTION_KEY_NOT_REAL"}});}
+const checked=(r:ReturnType<typeof spawnSync>)=>{assert.equal(r.status,0,String(r.stderr));assert.equal(r.signal,null);return JSON.parse(String(r.stdout));};
+const denied=(r:ReturnType<typeof spawnSync>)=>{assert.equal(r.status,1,String(r.stderr));assert.equal(String(r.stdout),"");assert(!String(r.stderr).includes("AUTHORED_UNUSED_INSPECTION_KEY"));assert(!String(r.stderr).includes("PRIVATE_UNSUPPORTED"));};
+test("terminal show returns checked existing idea/app report data without network, writes or new billing",async()=>{
+ for(const subject of ["idea","app"])await runFixture(async(store,c,result)=>{const root=resolve(store.directory,".."),run=command(root),files=["workspace.sqlite","tasks.sqlite","budgets.sqlite"].map(n=>resolve(store.directory,n)),bytes=files.map(f=>readFileSync(f)),report=resolve(store.directory,"context-analyst-runs",result.runId!,"report.json"),original=readFileSync(report);const listed=checked(run("context","runs","list"));assert.equal(listed.entries[0].id,result.taskId);const value=checked(run("context","runs","show",result.taskId!));assert.deepEqual(value.report,result.report);assert.equal(value.sha256,result.reportSha256);assert.equal(value.kind,"checked_historical_context_report_data");assert.equal(value.boundaries.executionAuthority,"not_granted");assert.equal(value.boundaries.semanticReview,"unreviewed");for(let i=0;i<files.length;i++)assert(readFileSync(files[i]!).equals(bytes[i]!));assert(readFileSync(report).equals(original));assert(!JSON.stringify(value).includes("AUTHORED_UNUSED_INSPECTION_KEY"));},subject);
+});
+test("terminal show rejects malformed, run-ID, absent and extra input without partial output or record repair",async()=>runFixture(async(store,c,result)=>{
+ const root=resolve(store.directory,".."),run=command(root),path=resolve(store.directory,"context-analyst-runs",result.runId!,"report.json"),original=readFileSync(path);for(const args of [["context","runs","show"],["context","runs","show","PRIVATE_UNSUPPORTED_ID"],["context","runs","show",result.runId!],["context","runs","show",randomUUID()],["context","runs","show",result.taskId!,"extra"]])denied(run(...args));assert(readFileSync(path).equals(original));writeFileSync(path,'{"PRIVATE_UNSUPPORTED_RECORD":true}');denied(run("context","runs","show",result.taskId!));assert.equal(readFileSync(path).toString(),'{"PRIVATE_UNSUPPORTED_RECORD":true}');writeFileSync(path,original);revokeContextProcessingAuthorization(store,c.grant.id,1,"Authored terminal current-rights rejection.");denied(run("context","runs","show",result.taskId!));assert(readFileSync(path).equals(original));
+}));
+test("terminal show denies public workspace modes without normalizing or recreating files",async()=>runFixture(async(store,c,result)=>{
+ const root=resolve(store.directory,".."),run=command(root),path=resolve(store.directory,"workspace.sqlite"),bytes=readFileSync(path);chmodSync(path,0o644);try{denied(run("context","runs","show",result.taskId!));assert.equal(lstatSync(path).mode&0o077,0o044);}finally{chmodSync(path,0o600);}assert(readFileSync(path).equals(bytes));assert(!existsSync(resolve(root,"outputs")));
+}));

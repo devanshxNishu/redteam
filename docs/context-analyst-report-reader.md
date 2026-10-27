@@ -1,6 +1,6 @@
 # Historical context report data
 
-`readContextAnalystReport(store, taskId, options?)` reads an existing normal context report. This internal helper does not run a model. It has no terminal, API or web route yet.
+`readContextAnalystReport(store, taskId, options?)` reads an existing normal context report. This helper does not run a model. The separate [terminal inspection command](context-analyst-inspection.md) now uses it through an existing read-only workspace. API and web routes remain open.
 
 The reader requires a task-backed manifest, a supported terminal task and its ordered event history, an exact private `report.json`, and current brief, context source and processing rights. It reads the complete saved source, snapshot, processing, manifest and generation files. A candidate-bearing report must match the separate checked historical candidate reader and the completed task output. A factual failed report has no candidate. Missing reports, unpublished candidates and seals are unavailable; the reader does not promote them.
 
