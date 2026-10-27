@@ -13,6 +13,14 @@ import type { WorkspaceStore } from "./workspace.ts";
 
 const construction = Symbol("checked context ownership");
 const attempted = new WeakSet<object>();
+const bindings = new WeakMap<object, { store: WorkspaceStore; preparation: ContextAnalystPreparation }>();
+
+/** Actual current handle identity only; JSON, prototype copies and cross-Store/preparation handles are not authority. */
+export function checkContextAnalystTaskBinding(store: WorkspaceStore, preparation: ContextAnalystPreparation, task: ContextAnalystTask): undefined {
+  const binding = bindings.get(task);
+  if (!binding || binding.store !== store || binding.preparation !== preparation) throw new ContextDataError();
+  return task.assertInference();
+}
 
 /** Check before TaskStore can normalize permissions or create tables. Sidecars can change during normal SQLite use. */
 function databaseFiles(store: WorkspaceStore, allowMissing: boolean) {
@@ -71,6 +79,7 @@ export class ContextAnalystTask {
       databaseGuard = databaseFiles(store, false).check; guard(); initializing = false;
       this.signal = this.task.signal; this.inferenceSignal = AbortSignal.any([this.signal, this.inference.signal]);
       this.timer = setTimeout(() => this.inference.abort(), Math.max(1, Date.parse(m.inferenceDeadlineAt) - Date.now())); this.timer.unref();
+      bindings.set(this, { store, preparation });
     } catch { this.task.close(); throw new ContextDataError(); }
   }
   static async create(store: WorkspaceStore, preparation: ContextAnalystPreparation, suppliedOwner: string) {
@@ -93,8 +102,17 @@ export class ContextAnalystTask {
     const saved = await readContextAnalystManifest(this.store, this.preparation.manifest.taskId);
     if (saved.manifestSha256 !== this.preparation.manifestSha256) throw new ContextDataError();
   }
-  async beforeDispatch(invocationRef: string): Promise<void> {
-    try { await this.files("inference"); this.assertInference(); this.task.beforeDispatch(invocationRef); }
+  async checkInferenceFiles(): Promise<void> {
+    try { await this.files("inference"); this.assertInference(); }
+    catch { this.inference.abort(); throw new ContextDataError(); }
+  }
+  async beforeDispatch(invocationRef: string, phaseGuard: () => unknown = () => undefined): Promise<void> {
+    try {
+      if (typeof phaseGuard !== "function") throw new ContextDataError();
+      await this.files("inference"); this.assertInference(); const result = phaseGuard();
+      if (result !== undefined) { if (result instanceof Promise) void result.catch(() => {}); throw new ContextDataError(); }
+      this.task.beforeDispatch(invocationRef);
+    }
     catch { this.inference.abort(); throw new ContextDataError(); }
   }
   async seal(output: SealedTaskOutput): Promise<void> {
