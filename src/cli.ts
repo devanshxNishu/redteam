@@ -39,6 +39,7 @@ import { readContextAnalyticalPacket, readContextAnalyticalResponseInput, checkS
 import { prepareContextAnalystGeneration } from "./context-analyst-generation.ts";
 import { scanContextAnalystTasks } from "./context-analyst-catalog.ts";
 import { inspectContextAnalystReport } from "./context-analyst-inspection.ts";
+import { diagnoseContextAnalystRun } from "./context-analyst-diagnostics.ts";
 import { runContextStartCommand } from "./context-command.ts";
 import { createContextProcessingAuthorization, readContextProcessingInput, readContextProcessingAuthorization, contextProcessingSummaries, revokeContextProcessingAuthorization } from "./context-processing.ts";
 import { createReportExport, readReportExport, reportExportSummaries } from "./report-export.ts";
@@ -57,6 +58,7 @@ redteam context sources collect FILE
 redteam context sources collect-release FILE
 redteam context runs list [AFTER_ROW_ID [ROW_LIMIT]]
 redteam context runs show TASK_ID
+redteam context runs diagnose TASK_ID
 redteam context runs start CONFIG_FILE --key-env ENV_NAME
 redteam context sources list
 redteam context sources show SOURCE_ID
@@ -207,8 +209,13 @@ async function main(): Promise<void> {
   if (command === "context") {
     const [category, operation, ...parameters] = args;
     if (category === "assess") { if (!operation || parameters.length) throw new Error("Usage: redteam context assess FILE"); print(assessGlobalContext(await readGlobalContextInput(operation))); return; }
-    const usage = "Usage: redteam context sources import METADATA_FILE TEXT_FILE|collect FILE|collect-release FILE|list|show SOURCE_ID|withdraw SOURCE_ID REVISION REASON; context snapshots preview FILE|create FILE|list|show SNAPSHOT_ID; context processing declare FILE|list|show AUTHORIZATION_ID|revoke AUTHORIZATION_ID 1 REASON; context runs list [AFTER_ROW_ID [ROW_LIMIT]]|show TASK_ID|start CONFIG_FILE --key-env ENV_NAME";
+    const usage = "Usage: redteam context sources import METADATA_FILE TEXT_FILE|collect FILE|collect-release FILE|list|show SOURCE_ID|withdraw SOURCE_ID REVISION REASON; context snapshots preview FILE|create FILE|list|show SNAPSHOT_ID; context processing declare FILE|list|show AUTHORIZATION_ID|revoke AUTHORIZATION_ID 1 REASON; context runs list [AFTER_ROW_ID [ROW_LIMIT]]|show TASK_ID|diagnose TASK_ID|start CONFIG_FILE --key-env ENV_NAME";
     if (category === "runs") {
+      if (operation === "diagnose") {
+        if (parameters.length !== 1) throw new Error(usage);
+        contextUUID(parameters[0]);
+        print(diagnoseContextAnalystRun(resolve(await realpath(workspace), ".redteam"), parameters[0]!)); return;
+      }
       if (operation === "start") {
         const result = await runContextStartCommand(workspace, parameters);
         if (result.body) print(result.body);
