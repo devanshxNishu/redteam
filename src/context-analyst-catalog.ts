@@ -15,7 +15,8 @@ function entry(row:Record<string,unknown>){const id=uuid(decode(row.id)),runId=u
 export function scanContextAnalystTasks(suppliedState:string,suppliedOptions:unknown={}){try{
  const o=options(suppliedOptions),started=Date.now(),deadline=started+o.ms;if(!Number.isSafeInteger(started)||started<0||!Number.isSafeInteger(deadline))throw new ContextDataError();if(typeof suppliedState!=="string"||suppliedState.length>4096||suppliedState.includes("\0"))throw new ContextDataError();const state=resolve(suppliedState);if(state!==suppliedState)throw new ContextDataError();const path=resolve(state,"tasks.sqlite");
  const guard=()=>{const now=Date.now();if(!Number.isSafeInteger(now)||o.signal!==undefined&&nativeAborted.call(o.signal)||now<started||now>=deadline)throw new ContextDataError();};
- const witness=()=>{stateDirectory(state);file(path+"-shm",1024*1024,true);return[file(path,maxFile),file(path+"-wal",maxFile,true)];};guard();const pinned=witness();
+ // An absent or private zero-byte WAL carries no database frames; SQLite can create it on a read-only open.
+ const witness=()=>{stateDirectory(state);file(path+"-shm",1024*1024,true);const wal=file(path+"-wal",maxFile,true);return[file(path,maxFile),wal?.[4]===0n?null:wal];};guard();const pinned=witness();
  let result;const db=new DatabaseSync(path,{readOnly:true,allowExtension:false,defensive:true,timeout:1});
  try{
   guard();db.exec("BEGIN");if(db.prepare("PRAGMA journal_mode").get()?.journal_mode!=="wal"||db.prepare("SELECT type FROM sqlite_master WHERE name='tasks'").get()?.type!=="table")throw new ContextDataError();equal(db.prepare("PRAGMA table_info(tasks)").all().map(c=>[c.name,c.type,c.pk,c.notnull]),[["id","TEXT",1,0],["run_id","TEXT",0,1],["question_key","TEXT",0,1],["document","TEXT",0,1]]);

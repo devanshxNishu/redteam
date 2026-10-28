@@ -14,7 +14,8 @@ export async function inspectContextAnalystReport(workspace:string,taskId:string
  const started=Date.now(),cutoff=started+maximumReadMs;if(!Number.isSafeInteger(started)||started<0||!Number.isSafeInteger(cutoff))throw new ContextDataError();
  const guard=()=>{const now=Date.now();if(!Number.isSafeInteger(now)||now<started||now>=cutoff)throw new ContextDataError();};
  const root=realpathSync(workspace),state=resolve(root,".redteam");
- const databases=()=>{const parents=directory(state);return{parents,files:["workspace.sqlite","tasks.sqlite"].map(name=>{const path=resolve(state,name);file(path+"-shm",true,1024*1024);return[file(path,false,maximumDatabaseBytes),file(path+"-wal",true,maximumDatabaseBytes)];})};};
+ // Empty private WAL coordination is equivalent to absence; every non-empty WAL stays pinned.
+ const databases=()=>{const parents=directory(state);return{parents,files:["workspace.sqlite","tasks.sqlite"].map(name=>{const path=resolve(state,name);file(path+"-shm",true,1024*1024);const wal=file(path+"-wal",true,maximumDatabaseBytes);return[file(path,false,maximumDatabaseBytes),wal?.[4]===0n?null:wal];})};};
  guard();const pinnedDatabases=databases(),store=new WorkspaceStore(root,{readOnly:true});let output,inputs:(()=>unknown)|undefined,pinnedInputs:unknown;
  try{
   const saved=await readContextAnalystManifest(store,taskId),m=saved.manifest,run=resolve(state,"context-analyst-runs",m.runId);
