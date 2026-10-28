@@ -2,11 +2,15 @@
 import {parseContextAnalystConfiguration} from "./context-analyst-config.ts";
 import {ContextDataError,freeze} from "./context-data.ts";
 const selectedKeys=new WeakMap<object,string>();
-export function selectContextStartInput(suppliedArguments:unknown,suppliedConfiguration:unknown,readSelectedValue:unknown){try{
+export function parseContextStartArguments(suppliedArguments:unknown){try{
  if(!Array.isArray(suppliedArguments)||Object.getPrototypeOf(suppliedArguments)!==Array.prototype||suppliedArguments.length!==3||Reflect.ownKeys(suppliedArguments).length!==4)throw new ContextDataError();
  const a:string[]=[];for(let i=0;i<3;i++){const d=Object.getOwnPropertyDescriptor(suppliedArguments,String(i));if(!d?.enumerable||!("value"in d)||typeof d.value!=="string")throw new ContextDataError();a.push(d.value);}
  const [configurationFile,flag,keyEnvironmentName]=a as[string,string,string];
- if(!configurationFile||configurationFile.length>4096||configurationFile.startsWith("-")||/[\x00-\x1f\x7f]/u.test(configurationFile)||flag!=="--key-env"||!/^[A-Z][A-Z0-9_]{0,63}$/u.test(keyEnvironmentName)||typeof readSelectedValue!=="function")throw new ContextDataError();
+ if(!configurationFile||configurationFile.length>4096||configurationFile.startsWith("-")||/[\x00-\x1f\x7f]/u.test(configurationFile)||flag!=="--key-env"||!/^[A-Z][A-Z0-9_]{0,63}$/u.test(keyEnvironmentName))throw new ContextDataError();
+ return freeze({configurationFile,keyEnvironmentName});
+ }catch{throw new ContextDataError();}}
+export function selectContextStartInput(suppliedArguments:unknown,suppliedConfiguration:unknown,readSelectedValue:unknown){try{
+ const {configurationFile,keyEnvironmentName}=parseContextStartArguments(suppliedArguments);if(typeof readSelectedValue!=="function")throw new ContextDataError();
  const configuration=parseContextAnalystConfiguration(suppliedConfiguration),key:unknown=readSelectedValue(keyEnvironmentName);
  if(key instanceof Promise){void Promise.prototype.then.call(key,()=>undefined,()=>undefined);throw new ContextDataError();}
  if(typeof key!=="string"||key.length<8||key.length>2048||/[^\x21-\x7e]/u.test(key))throw new ContextDataError();

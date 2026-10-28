@@ -1,0 +1,26 @@
+// Authored subprocess transport only. No native provider network or operator credential is used.
+import assert from "node:assert/strict";
+import {spawn} from "node:child_process";
+import {readFileSync,writeFileSync,existsSync} from "node:fs";
+import {resolve} from "node:path";
+import {setTimeout as delay} from "node:timers/promises";
+import type {configured} from "./context-analyst-fixture.ts";
+type Configuration=Awaited<ReturnType<typeof configured>>;
+export const authoredCommandKey="AUTHORED_NATIVE_COMMAND_VALUE_NOT_REAL";
+export const selectedName="REDTEAM_AUTHORED_SELECTED_VALUE";
+export function childCommand(root:string,c:Configuration,mode="normal",cli=resolve(import.meta.dirname,"../../src/cli.ts")){
+ const config=resolve(root,"command-configuration.json"),stub=resolve(root,"command-stub.json"),marker=resolve(root,"command-markers.jsonl"),guard=resolve(root,"command-transport.mjs");
+ writeFileSync(config,JSON.stringify(c.configuration),{mode:0o600});
+ writeFileSync(stub,JSON.stringify({config,marker,mode,key:authoredCommandKey,selectedName,model:c.configuration.model,briefId:c.brief.id,snapshotId:c.snapshot.id,packetSha256:c.packet.packetSha256}),{mode:0o600});
+ writeFileSync(guard,`import{readFileSync,appendFileSync}from'node:fs';import{open}from'node:fs/promises';import https from'node:https';import http from'node:http';import{syncBuiltinESMExports}from'node:module';
+const s=JSON.parse(readFileSync(process.env.REDTEAM_AUTHORED_STUB_FILE,'utf8')),mark=e=>appendFileSync(s.marker,JSON.stringify(e)+'\\n',{mode:0o600});
+const deny=()=>{mark({kind:'forbidden-network'});process.exit(97);};https.request=deny;https.get=deny;http.request=deny;http.get=deny;syncBuiltinESMExports();
+process.env=new Proxy(process.env,{get(t,n){if(n===s.selectedName)mark({kind:'selected-read'});if(n==='OPENAI_API_KEY')mark({kind:'ambient-read'});return Reflect.get(t,n);}});
+if(s.mode==='read-wait'){const p=await open(s.config,'r'),identity=await p.stat(),prototype=Object.getPrototypeOf(p),read=prototype.read;await p.close();prototype.read=async function(...a){const current=await this.stat();if(current.dev!==identity.dev||current.ino!==identity.ino)return read.apply(this,a);mark({kind:'read-wait'});return new Promise((_,reject)=>{const keep=setInterval(()=>{},1000),cancel=()=>{clearInterval(keep);reject(Error('AUTHORED_READ_CANCELLED'));};process.once('SIGINT',cancel);process.once('SIGTERM',cancel);});};}
+globalThis.fetch=async(u,i)=>{const url=String(u);if(!['https://api.openai.com/v1/responses/input_tokens','https://api.openai.com/v1/responses'].includes(url)||i.method!=='POST'||i.headers.Authorization!=='Bearer '+s.key)deny();mark({kind:'request',phase:url.endsWith('/input_tokens')?'count':'generation'});if(s.mode==='http')return new Response(s.key,{status:429});if(url.endsWith('/input_tokens'))return Response.json({object:'response.input_tokens',input_tokens:500});if(s.mode==='generation-wait'){mark({kind:'generation-wait'});return new Promise((_,reject)=>{const keep=setInterval(()=>{},1000),cancel=()=>{clearInterval(keep);reject(Error('AUTHORED_ABORTED'));};i.signal.addEventListener('abort',cancel,{once:true});if(i.signal.aborted)cancel();});}return Response.json({object:'response',id:'AUTHORED_NATIVE_COMMAND_RESPONSE',model:s.model,status:'completed',error:null,incomplete_details:null,output:[{type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text:JSON.stringify({schemaVersion:'2.0',kind:'analytical_review_response',mode:'analytical_only',reviewStatus:'unreviewed',briefId:s.briefId,snapshotId:s.snapshotId,packetSha256:s.packetSha256,concerns:[],abstention:'Authored subprocess transport. No semantic, human or commercial validation.'}),annotations:[]}]}],usage:s.mode==='unknown'?null:{input_tokens:500,output_tokens:50,total_tokens:550}});};\n`,{mode:0o600});
+ return{config,marker,events:()=>existsSync(marker)?readFileSync(marker,"utf8").trim().split("\n").filter(Boolean).map(l=>JSON.parse(l) as {kind:string;phase?:string}):[],start(args:string[]=["context","runs","start",config,"--key-env",selectedName],selected=true){
+  writeFileSync(marker,"",{mode:0o600});const child=spawn(process.execPath,["--import",guard,cli,...args],{cwd:root,env:{REDTEAM_AUTHORED_STUB_FILE:stub,...(selected?{[selectedName]:authoredCommandKey}:{}),OPENAI_API_KEY:"AUTHORED_AMBIENT_FALLBACK_MUST_NOT_BE_READ"},stdio:["ignore","pipe","pipe"]});let stdout="",stderr="";child.stdout.on("data",b=>{stdout+=String(b);});child.stderr.on("data",b=>{stderr+=String(b);});
+  const done=new Promise<{status:number|null;signal:NodeJS.Signals|null;stdout:string;stderr:string}>((accept,reject)=>{const watchdog=setTimeout(()=>{child.kill("SIGKILL");reject(Error("Authored command child watchdog expired"));},70000);child.once("error",e=>{clearTimeout(watchdog);reject(e);});child.once("close",(status,signal)=>{clearTimeout(watchdog);accept({status,signal,stdout,stderr});});});
+  return{child,done,async wait(kind:string){const until=Date.now()+20000;while(Date.now()<until){if(existsSync(marker)&&readFileSync(marker,"utf8").split("\n").some(l=>l&&JSON.parse(l).kind===kind))return;assert.equal(child.exitCode,null,stderr);await delay(20);}child.kill("SIGKILL");throw Error("Authored command marker not reached");}};
+ }};
+}
