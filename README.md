@@ -1,6 +1,6 @@
 # redteam
 
-Development build 0.56 adds an internal context run bridge with explicit input selection and single-workspace ownership. It also fixes the first terminal metadata/report read after all writers close. All 61 focused and installed compatibility checks pass; the full 967-case gate is running. See the [implementation status](docs/implementation-status.md). The last fully verified build is 0.55 with 937 passing tests.
+Build 0.56 fixes the first terminal metadata/report read after all writers close and adds an internal context run bridge with explicit input selection and one workspace owner. All 967 regression checks and 61 focused checks pass. The terminal start command remains separate integration work. See the [implementation status](docs/implementation-status.md).
 
 Private source repository: [devanshxNishu/redteam](https://github.com/devanshxNishu/redteam). Verified development milestones are pushed to `main`.
 
