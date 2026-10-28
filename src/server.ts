@@ -18,6 +18,9 @@ import { comparisonSummaries, createStoredComparison, readStoredComparison } fro
 import { experimentPlanSummaries, freezeExperimentPlan, readExperimentPlan } from "./experiments.ts";
 import { reportExportSummaries, createReportExport, readReportExport, checkReportExportAccess, reportExportMarkdown } from "./report-export.ts";
 import { outcomeEvidenceSummaries, registerOutcomeEvidence, readOutcomeEvidence, checkOutcomeEvidenceAccess, publicOutcomeEvidence } from "./outcome-evidence.ts";
+import {scanContextAnalystTasks} from "./context-analyst-catalog.ts";
+import {prepareContextAnalystReportResponse, encodeContextAnalystReportResponse} from "./context-analyst-api.ts";
+import {ContextDataError} from "./context-data.ts";
 import { createReviewBrief, readReviewBrief, checkReviewBriefAccess, reviewBriefSummaries } from "./review-briefs.ts";
 
 async function body(request: IncomingMessage, strictUTF8 = false): Promise<Record<string, unknown>> {
@@ -59,6 +62,7 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
   let outcomeEvidenceActive = false;
   let reviewBriefActive = false;
   let closing = false;
+  let contextReadController: AbortController | null = null;
   const server = createServer((request, response) => {
     response.setHeader("Cache-Control", "no-store");
     response.setHeader("X-Content-Type-Options", "nosniff");
@@ -82,6 +86,33 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
       const supplied = Buffer.from(authorization.startsWith("Bearer ") ? authorization.slice(7) : "");
       const expected = Buffer.from(token);
       if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) { send(response, 401, { error: "A local Redteam session is required." }); return; }
+      if (url.pathname === "/api/context-runs" || url.pathname.startsWith("/api/context-runs/")) {
+        const unavailable = () => { if (!response.destroyed && !response.headersSent) send(response, 404, {code: "context_run_unavailable", error: "Context run unavailable. Current source or saved integrity checks failed."}); };
+        if (request.method !== "GET") { unavailable(); return; }
+        if (url.pathname === "/api/context-runs") {
+          try {
+            const entries = [...url.searchParams];
+            if (entries.length > 2 || new Set(entries.map(([k]) => k)).size !== entries.length || entries.some(([k]) => !["afterRowId", "rowLimit"].includes(k))) throw new ContextDataError();
+            const afterRowId = url.searchParams.get("afterRowId") ?? "0", rawLimit = url.searchParams.get("rowLimit") ?? "50";
+            if (!/^[1-9][0-9]{0,2}$/u.test(rawLimit)) throw new ContextDataError();
+            send(response, 200, scanContextAnalystTasks(store.directory, {afterRowId, rowLimit: Number(rawLimit)}));
+          } catch { unavailable(); }
+          return;
+        }
+        const selected = /^\/api\/context-runs\/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/.exec(url.pathname);
+        if (!selected || url.searchParams.size) { unavailable(); return; }
+        if (contextReadController) { send(response, 409, {code: "context_run_busy", error: "A local context report read is already active."}); return; }
+        const controller = new AbortController(), cancel = () => controller.abort(); contextReadController = controller;
+        request.once("aborted", cancel); response.once("close", cancel);
+        try {
+          const view = await prepareContextAnalystReportResponse(options.workspace, selected[1]!, {signal: controller.signal});
+          if (closing || response.destroyed || request.aborted) controller.abort();
+          const encoded = encodeContextAnalystReportResponse(options.workspace, selected[1]!, view);
+          response.writeHead(200, {"Content-Type": "application/json; charset=utf-8"}); response.end(encoded);
+        } catch { unavailable(); }
+        finally { request.off("aborted", cancel); response.off("close", cancel); if (contextReadController === controller) contextReadController = null; }
+        return;
+      }
       if (request.method === "GET" && url.pathname === "/api/review-briefs") {
         try { send(response, 200, { recentWindow: 100, reviewBriefs: reviewBriefSummaries(store) }); }
         catch { send(response, 404, { code: "review_brief_unavailable", error: "Review brief catalog unavailable." }); }
@@ -276,6 +307,7 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
     origin, token, store, reviews,
     close: async () => {
       closing = true;
+      contextReadController?.abort();
       await reviews.stop();
       if (actorDemoActive) await actorDemoActive.catch(() => {});
       server.closeAllConnections();
