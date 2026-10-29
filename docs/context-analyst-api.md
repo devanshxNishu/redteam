@@ -1,17 +1,18 @@
 # Saved context report API
 
-The existing local service provides two authenticated GET routes:
+The existing local service provides authenticated GET routes:
 
 ```text
 GET /api/context-runs?afterRowId=0&rowLimit=50
 GET /api/context-runs/TASK_ID
+GET /api/context-runs/TASK_ID/managed
 ```
 
 Use the existing local bearer session, Host and Origin rules. Start the local UI service after terminal analysis. Its normal startup owns the workspace coordinator and can perform existing browser-job recovery. These GET handlers add no recovery or inference.
 
 The catalog returns bounded unverified task metadata, using the [existing cursor rules](context-analyst-catalog.md). Only `afterRowId` and `rowLimit` are accepted. Duplicate or unknown query keys are unavailable. Limits are 1 to 100 rows; the default is 50. A listed ID or recorded state does not establish report validity or source rights. Missing task state is not created.
 
-Detail accepts one strict task UUID and no query parameters. It returns `context_analyst_report_view`, a fixed projection of an actually checked existing normal report. It includes report identity/hash/time, brief ID, frozen snapshot identity/as-of time, analytical concerns and typed paired citations, unreviewed next checks, uncovered tracks or abstention, factual failure and recorded budget pools. Known and held cost remain separate. Rates are configured estimates, not provider invoices or current ledger amounts.
+Detail accepts one strict task UUID and no query parameters. The original endpoint retains schema1/policy `context-report-api-v1`; the separate `/managed` endpoint uses schema2/policy `context-report-api-v2` and checked effective permission/display expiry. See [managed report inspection](context-reports-web.md) for the exact v2 fields and manual recheck/display lifecycle. It returns `context_analyst_report_view`, a fixed projection of an actually checked existing normal report. It includes report identity/hash/time, brief ID, frozen snapshot identity/as-of time, analytical concerns and typed paired citations, unreviewed next checks, uncovered tracks or abstention, factual failure and recorded budget pools. Known and held cost remain separate. Rates are configured estimates, not provider invoices or current ledger amounts.
 
 The projection excludes internal directories, manifests, generation inputs, raw task/lease/fence/dispatch records, invocation identities and provider response fields. Literal analytical text remains untrusted and can quote supplied private information. Hash and citation consistency does not establish source truth, semantic support, human psychology, purchase demand or investment outcomes. A described app has not been executed by this review.
 
@@ -34,4 +35,4 @@ An original native cancellation signal is linked through a private signal while 
 
 The final expiry check also closes a reproduced old-reader gap: effective processing rights could expire during the outer connection closure without exhausting the read window. An authored-clock negative regression uses actual archived 0.58 compiled code; the current guard denies that delivery. No real participant data or native provider was used to reproduce it.
 
-These routes provide saved-data access. Managed web inspection, explicit operator semantic review, independent human evaluation, measured usefulness and separately versioned factual recovery remain separate work. Current checks cannot recall copies already delivered under valid access.
+These routes provide saved-data access. Managed web inspection is implemented through the separate v2 route. Explicit operator semantic review, independent human evaluation, measured usefulness and separately versioned factual recovery remain separate work. Current checks cannot recall copies already delivered under valid access.

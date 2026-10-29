@@ -19,7 +19,7 @@ import { experimentPlanSummaries, freezeExperimentPlan, readExperimentPlan } fro
 import { reportExportSummaries, createReportExport, readReportExport, checkReportExportAccess, reportExportMarkdown } from "./report-export.ts";
 import { outcomeEvidenceSummaries, registerOutcomeEvidence, readOutcomeEvidence, checkOutcomeEvidenceAccess, publicOutcomeEvidence } from "./outcome-evidence.ts";
 import {scanContextAnalystTasks} from "./context-analyst-catalog.ts";
-import {prepareContextAnalystReportResponse, encodeContextAnalystReportResponse} from "./context-analyst-api.ts";
+import {prepareContextAnalystReportResponse, prepareManagedContextAnalystReportResponse, encodeContextAnalystReportResponse} from "./context-analyst-api.ts";
 import {ContextDataError} from "./context-data.ts";
 import { createReviewBrief, readReviewBrief, checkReviewBriefAccess, reviewBriefSummaries } from "./review-briefs.ts";
 
@@ -74,7 +74,7 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
       if (request.headers.origin && request.headers.origin !== origin) { send(response, 403, { error: "Cross-origin requests are not allowed." }); return; }
       const url = new URL(request.url ?? "/", origin);
       if (closing) { send(response, 503, { error: "The local service is shutting down." }); return; }
-      if (request.method === "GET" && ["/", "/app.js", "/styles.css"].includes(url.pathname)) {
+      if (request.method === "GET" && ["/", "/app.js", "/context-reports.js", "/styles.css"].includes(url.pathname)) {
         const name = url.pathname === "/" ? "index.html" : url.pathname.slice(1);
         let content = await readFile(resolve(options.assetsRoot, "web", name));
         if (name === "index.html") content = Buffer.from(content.toString("utf8").replace("__REDTEAM_TOKEN__", token));
@@ -99,13 +99,14 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
           } catch { unavailable(); }
           return;
         }
-        const selected = /^\/api\/context-runs\/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/.exec(url.pathname);
+        const selected = /^\/api\/context-runs\/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})(\/managed)?$/.exec(url.pathname);
         if (!selected || url.searchParams.size) { unavailable(); return; }
         if (contextReadController) { send(response, 409, {code: "context_run_busy", error: "A local context report read is already active."}); return; }
         const controller = new AbortController(), cancel = () => controller.abort(); contextReadController = controller;
         request.once("aborted", cancel); response.once("close", cancel);
         try {
-          const view = await prepareContextAnalystReportResponse(options.workspace, selected[1]!, {signal: controller.signal});
+          const prepare = selected[2] ? prepareManagedContextAnalystReportResponse : prepareContextAnalystReportResponse;
+          const view = await prepare(options.workspace, selected[1]!, {signal: controller.signal});
           if (closing || response.destroyed || request.aborted) controller.abort();
           const encoded = encodeContextAnalystReportResponse(options.workspace, selected[1]!, view);
           response.writeHead(200, {"Content-Type": "application/json; charset=utf-8"}); response.end(encoded);

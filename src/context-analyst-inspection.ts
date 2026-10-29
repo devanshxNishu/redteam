@@ -8,10 +8,14 @@ import {readContextAnalystReport} from "./context-analyst-report-reader.ts";
 const maximumReadMs=30000, maximumDatabaseBytes=32*1024*1024;
 const nativeAborted=Object.getOwnPropertyDescriptor(AbortSignal.prototype,"aborted")!.get!;
 const nativeAdd=EventTarget.prototype.addEventListener,nativeRemove=EventTarget.prototype.removeEventListener;
-const deliveryGuards=new WeakMap<object,()=>void>();
+const deliveryGuards=new WeakMap<object,{guard:()=>void;effectiveExpiresAt:string}>();
+/** Checked expiry data only. Does not consume or recreate the original delivery guard. */
+export function contextAnalystInspectionAccess(value:unknown){try{
+ if(!value||typeof value!=="object")throw new ContextDataError();const saved=deliveryGuards.get(value);if(!saved)throw new ContextDataError();saved.guard();return Object.freeze({effectiveExpiresAt:saved.effectiveExpiresAt});
+ }catch{throw new ContextDataError();}}
 /** One original saved-data delivery only. Never ownership, publication receipt or dispatch authority. */
 export function consumeContextAnalystInspection(value:unknown):undefined{try{
- if(!value||typeof value!=="object")throw new ContextDataError();const guard=deliveryGuards.get(value);deliveryGuards.delete(value);if(!guard)throw new ContextDataError();guard();return undefined;
+ if(!value||typeof value!=="object")throw new ContextDataError();const saved=deliveryGuards.get(value);deliveryGuards.delete(value);if(!saved)throw new ContextDataError();saved.guard();return undefined;
  }catch{throw new ContextDataError();}}
 function options(value:unknown){const r=fields(value,Object.keys(value as object));if(Object.keys(r).some(k=>k!=="signal"))throw new ContextDataError();if(r.signal!==undefined){if(!(r.signal instanceof AbortSignal))throw new ContextDataError();nativeAborted.call(r.signal);}return{signal:r.signal as AbortSignal|undefined};}
 function directory(path:string){const i=lstatSync(path,{bigint:true});if(!i.isDirectory()||i.isSymbolicLink()||i.mode&0o077n||realpathSync(path)!==path)throw new ContextDataError();return[i.dev,i.ino,i.mode];}
@@ -39,5 +43,5 @@ export async function inspectContextAnalystReport(workspace:string,taskId:string
   output=await readContextAnalystReport(store,taskId,{timeoutMs:Math.max(1,cutoff-Date.now()),signal:relay.signal});
  }finally{store.close();}
  // Cover the await into this public frame AND closure of the workspace connection.
- guard();if(!inputs||!output||!isDeepStrictEqual(inputs(),pinnedInputs)||!isDeepStrictEqual(databases(),pinnedDatabases))throw new ContextDataError();guard();const checked=output;deliveryGuards.set(checked,()=>{guard();if(!inputs||!isDeepStrictEqual(inputs(),pinnedInputs)||!isDeepStrictEqual(databases(),pinnedDatabases))throw new ContextDataError();guard();});return checked;
+ guard();if(!inputs||!output||!isDeepStrictEqual(inputs(),pinnedInputs)||!isDeepStrictEqual(databases(),pinnedDatabases))throw new ContextDataError();guard();const checked=output;deliveryGuards.set(checked,{effectiveExpiresAt:new Date(effectiveExpiry).toISOString(),guard:()=>{guard();if(!inputs||!isDeepStrictEqual(inputs(),pinnedInputs)||!isDeepStrictEqual(databases(),pinnedDatabases))throw new ContextDataError();guard();}});return checked;
  }catch{throw new ContextDataError();}finally{if(originalSignal)nativeRemove.call(originalSignal,"abort",forward);}}

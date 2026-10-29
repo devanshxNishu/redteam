@@ -1,5 +1,7 @@
 # redteam: First-Build Backlog
 
+Implemented I04c inspection slice (0.60): separate v2 effective-expiry/display contract, literal saved context reports, bounded explicit metadata pagination, manual source rechecks, exact task/run/report identity and expiry/navigation cleanup. Full1046, unit24, native3, focused27, installed API10/CLI15 and actual installed old0.59 idea/app compatibility pass. Sources and reasoning remain unreviewed. Next ready work is a separate exact-report/concern-bound operator declaration contract; independent human evaluation and measured usefulness remain open. No model/key/start/recovery route or automatic action/experiment approval is added.
+
 Version: 1.4
 
 Date: October 26, 2026
