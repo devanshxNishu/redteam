@@ -42,6 +42,7 @@ import { inspectContextAnalystReport } from "./context-analyst-inspection.ts";
 import { diagnoseContextAnalystRun } from "./context-analyst-diagnostics.ts";
 import { runContextStartCommand } from "./context-command.ts";
 import {readContextOperatorReviewInput,prepareContextOperatorReviewPreview,encodeContextOperatorReviewPreview} from "./context-operator-review.ts";
+import {createContextOperatorReview,readContextOperatorReview,listContextOperatorReviews,encodeContextOperatorReview} from "./context-operator-review-store.ts";
 import { createContextProcessingAuthorization, readContextProcessingInput, readContextProcessingAuthorization, contextProcessingSummaries, revokeContextProcessingAuthorization } from "./context-processing.ts";
 import { createReportExport, readReportExport, reportExportSummaries } from "./report-export.ts";
 import { inspectInstallation } from "./installation.ts";
@@ -62,6 +63,9 @@ redteam context runs show TASK_ID
 redteam context runs diagnose TASK_ID
 redteam context runs start CONFIG_FILE --key-env ENV_NAME
 redteam context review preview FILE
+redteam context review save FILE
+redteam context review list [AFTER_ROW_ID [ROW_LIMIT]]
+redteam context review show REVIEW_ID
 redteam context sources list
 redteam context sources show SOURCE_ID
 redteam context sources withdraw SOURCE_ID REVISION REASON
@@ -211,11 +215,20 @@ async function main(): Promise<void> {
   if (command === "context") {
     const [category, operation, ...parameters] = args;
     if (category === "assess") { if (!operation || parameters.length) throw new Error("Usage: redteam context assess FILE"); print(assessGlobalContext(await readGlobalContextInput(operation))); return; }
-    const usage = "Usage: redteam context sources import METADATA_FILE TEXT_FILE|collect FILE|collect-release FILE|list|show SOURCE_ID|withdraw SOURCE_ID REVISION REASON; context snapshots preview FILE|create FILE|list|show SNAPSHOT_ID; context processing declare FILE|list|show AUTHORIZATION_ID|revoke AUTHORIZATION_ID 1 REASON; context runs list [AFTER_ROW_ID [ROW_LIMIT]]|show TASK_ID|diagnose TASK_ID|start CONFIG_FILE --key-env ENV_NAME; context review preview FILE";
+    const usage = "Usage: redteam context sources import METADATA_FILE TEXT_FILE|collect FILE|collect-release FILE|list|show SOURCE_ID|withdraw SOURCE_ID REVISION REASON; context snapshots preview FILE|create FILE|list|show SNAPSHOT_ID; context processing declare FILE|list|show AUTHORIZATION_ID|revoke AUTHORIZATION_ID 1 REASON; context runs list [AFTER_ROW_ID [ROW_LIMIT]]|show TASK_ID|diagnose TASK_ID|start CONFIG_FILE --key-env ENV_NAME; context review preview FILE|save FILE|show REVIEW_ID|list [AFTER_ROW_ID [ROW_LIMIT]]";
     if (category === "review") {
-      if (operation !== "preview" || parameters.length !== 1) throw new Error("Usage: redteam context review preview FILE");
-      const preview = await prepareContextOperatorReviewPreview(workspace, await readContextOperatorReviewInput(parameters[0]!));
-      console.log(encodeContextOperatorReviewPreview(workspace, preview)); return;
+      const reviewUsage="Usage: redteam context review preview FILE|save FILE|show REVIEW_ID|list [AFTER_ROW_ID [ROW_LIMIT]]";
+      if (operation === "preview" || operation === "save") {
+        if (parameters.length !== 1) throw new Error(reviewUsage);
+        const input=await readContextOperatorReviewInput(parameters[0]!);
+        if(operation==="preview")console.log(encodeContextOperatorReviewPreview(workspace,await prepareContextOperatorReviewPreview(workspace,input)));
+        else console.log(encodeContextOperatorReview(workspace,await createContextOperatorReview(workspace,input)));
+        return;
+      }
+      if(operation==="show") {if(parameters.length!==1)throw new Error(reviewUsage);console.log(encodeContextOperatorReview(workspace,await readContextOperatorReview(workspace,parameters[0]!)));return;}
+      if(operation!=="list"||parameters.length>2||parameters[1]!==undefined&&!/^[1-9][0-9]{0,2}$/u.test(parameters[1]))throw new Error(reviewUsage);
+      const rowLimit=parameters[1]===undefined?50:contextInteger(Number(parameters[1]),100);
+      console.log(encodeContextOperatorReview(workspace,await listContextOperatorReviews(workspace,{afterRowId:parameters[0]??"0",rowLimit})));return;
     }
     if (category === "runs") {
       if (operation === "diagnose") {
