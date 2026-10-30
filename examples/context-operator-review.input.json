@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0",
+  "kind": "context_operator_review_input",
+  "taskId": "00000000-0000-0000-0000-000000000001",
+  "reportSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "reviewerLabel": "Replace with your operator label",
+  "coverage": "selected_concerns",
+  "reportNote": "Replace with limitations of the inspection you actually performed.",
+  "items": [
+    {
+      "concernId": "C01",
+      "disposition": "needs_more_evidence",
+      "reason": "Replace with the reason for this operator declaration.",
+      "basisInspected": "Describe the basis you actually inspected; do not invent participant evidence."
+    }
+  ]
+}
