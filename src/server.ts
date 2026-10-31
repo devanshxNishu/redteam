@@ -20,6 +20,7 @@ import { reportExportSummaries, createReportExport, readReportExport, checkRepor
 import { outcomeEvidenceSummaries, registerOutcomeEvidence, readOutcomeEvidence, checkOutcomeEvidenceAccess, publicOutcomeEvidence } from "./outcome-evidence.ts";
 import {scanContextAnalystTasks} from "./context-analyst-catalog.ts";
 import {prepareContextAnalystReportResponse, prepareManagedContextAnalystReportResponse, encodeContextAnalystReportResponse} from "./context-analyst-api.ts";
+import {prepareContextOperatorReviewCatalogResponse,prepareContextOperatorReviewDetailResponse,encodeContextOperatorReviewCatalogResponse,encodeContextOperatorReviewDetailResponse} from "./context-operator-review-api.ts";
 import {ContextDataError} from "./context-data.ts";
 import { createReviewBrief, readReviewBrief, checkReviewBriefAccess, reviewBriefSummaries } from "./review-briefs.ts";
 
@@ -86,6 +87,21 @@ export async function createLocalServer(options: { workspace: string; assetsRoot
       const supplied = Buffer.from(authorization.startsWith("Bearer ") ? authorization.slice(7) : "");
       const expected = Buffer.from(token);
       if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) { send(response, 401, { error: "A local Redteam session is required." }); return; }
+      if(url.pathname==="/api/context-operator-reviews"||url.pathname.startsWith("/api/context-operator-reviews/")){
+        const unavailable=()=>{if(!response.destroyed&&!response.headersSent)send(response,404,{code:"context_operator_review_unavailable",error:"Operator declaration unavailable. Current source or saved integrity checks failed."});};
+        if(request.method!=="GET"){unavailable();return;}
+        const catalog=url.pathname==="/api/context-operator-reviews",selected=/^\/api\/context-operator-reviews\/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/.exec(url.pathname);
+        let afterRowId="0",rowLimit=50;
+        try{if(catalog){const entries=[...url.searchParams];if(entries.length>2||new Set(entries.map(([k])=>k)).size!==entries.length||entries.some(([k])=>!["afterRowId","rowLimit"].includes(k)))throw new ContextDataError();afterRowId=url.searchParams.get("afterRowId")??"0";const limit=url.searchParams.get("rowLimit")??"50";if(!/^[1-9][0-9]{0,2}$/.test(limit)||Number(limit)>100||!/^(0|[1-9][0-9]{0,18})$/.test(afterRowId)||BigInt(afterRowId)>9223372036854775807n)throw new ContextDataError();rowLimit=Number(limit);}else if(!selected||url.searchParams.size)throw new ContextDataError();}catch{unavailable();return;}
+        if(contextReadController){send(response,409,{code:"context_operator_review_busy",error:"A local context data read is already active."});return;}
+        const controller=new AbortController(),cancel=()=>controller.abort();contextReadController=controller;request.once("aborted",cancel);response.once("close",cancel);
+        try{const value=catalog?await prepareContextOperatorReviewCatalogResponse(options.workspace,{afterRowId,rowLimit,signal:controller.signal}):await prepareContextOperatorReviewDetailResponse(options.workspace,selected![1]!,{signal:controller.signal});
+          if(closing||response.destroyed||request.aborted)controller.abort();
+          const encoded=catalog?encodeContextOperatorReviewCatalogResponse(options.workspace,value):encodeContextOperatorReviewDetailResponse(options.workspace,selected![1]!,value);
+          response.writeHead(200,{"Content-Type":"application/json; charset=utf-8"});response.end(encoded);
+        }catch{unavailable();}finally{request.off("aborted",cancel);response.off("close",cancel);if(contextReadController===controller)contextReadController=null;}
+        return;
+      }
       if (url.pathname === "/api/context-runs" || url.pathname.startsWith("/api/context-runs/")) {
         const unavailable = () => { if (!response.destroyed && !response.headersSent) send(response, 404, {code: "context_run_unavailable", error: "Context run unavailable. Current source or saved integrity checks failed."}); };
         if (request.method !== "GET") { unavailable(); return; }
