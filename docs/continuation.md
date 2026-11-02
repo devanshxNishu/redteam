@@ -1,4 +1,4 @@
-# Current 0.64: local acceptance passed; private sync pending
+# Current 0.64: verified and privately synchronized source
 
 The human resumed work on November 2, 2026. This replaces the previous stop. The app confirmed that recurring continuation continue-redteam-development is ACTIVE at the previous 30-minute interval. A later human stop must stop owned work and delete that automation; queued heartbeats do not revoke a human stop.
 
@@ -8,9 +8,12 @@ The final 257-file archive and offline installation match every actual tar/root/
 
 This slice adds separate managed v2 saved-note delivery and literal Reviews inspection: explicit metadata windows/rechecks, exact note/report pins, current source validation and at most 30 seconds of local display. Hidden/navigation/close/cross-view/clock changes clear content. V1 wire, store and terminal formats are retained. Notes remain unverified operator declarations; reads grant no semantic approval and create no provider/task/job/budget/action/experiment work.
 
-Exact 19 ready paths are listed in work/ready-files-0.64.0.json. Source and checkpoint ordinary private pushes are next, after fresh known-origin/main/private preflight and exact staged-content audit. Last confirmed private checkpoint remains 76d942b1e4a12666ce0c463f0a4907062e9c81fd (0.63). No 0.64 push is claimed yet. Keep generated/private paths out of Git; no force, npm publication or deployment.
+Source commit 30e5edecc3c72c22c39440340bf449b2eb58fff1 was ordinarily pushed and verified exactly equal to private origin/main on November 2, 2026. All 19 staged files passed exact ready-list/current-byte, whitespace, private/generated-path and credential-pattern checks. Source-phase release and GitHub proofs are outputs/release-verification-0.64.0-source.json and outputs/github-sync-verification-0.64.0-source.json. This checkpoint-only follow-up changes no packaged/runtime bytes. Verify its own ordinary push against HEAD and outputs/github-sync-verification.json; the ignored outputs/continuation-completion-0.64.0.json records the final checkpoint SHA after actual confirmation. Never force, publish npm or deploy.
 
-After confirmed sync, the next candidate is deliberate protected note creation in work/context-review-create-next-0.65.md, preserving original successful publication and all three uncertain-write states without automatic retry. Independent human/held-out research, selected live model/key/rates/compatibility, partner app journeys, usefulness/paid demand, wider permitted dated context and production isolation remain missing. C03 gates broad hierarchy. No researched psychology or real purchase/investment prediction is established. No purchase or reset credit was used.
+The next candidate is deliberate protected note creation in work/context-review-create-next-0.65.md, preserving original successful publication and all three uncertain-write states without automatic retry. Independent human/held-out research, selected live model/key/rates/compatibility, partner app journeys, usefulness/paid demand, wider permitted dated context and production isolation remain missing. C03 gates broad hierarchy. No researched psychology or real purchase/investment prediction is established. No purchase or reset credit was used.
+
+
+All owned runtime verification and package processes completed. Recurring continuation is ACTIVE. No blocker remains for beginning the next bounded source slice; the external evidence gaps listed above remain. Preserve passing full/runtime evidence and recheck hashes before repeating checks.
 
 ---
 
