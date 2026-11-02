@@ -210,6 +210,7 @@ function closeDetail() {
   if ($("review-dialog").open) { expectedCloseEvents++; $("review-dialog").close(); }
 }
 function beginDetail() {
+  document.dispatchEvent(new CustomEvent("redteam:managed-detail-open", {detail: "review"}));
   resetDetail();
   detailController = new AbortController();
   return { generation: detailGeneration, signal: detailController.signal };
@@ -961,3 +962,5 @@ window.addEventListener("focus", () => { if (openedCodeRun) armCodeExpiry(); voi
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { if (openedCodeRun) armCodeExpiry(); void refresh(); } });
 setView();
 void refresh();
+
+document.addEventListener("redteam:managed-detail-open", event => { if (event.detail !== "review") closeDetail(); });

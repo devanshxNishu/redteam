@@ -12,7 +12,7 @@ A saved declaration is an operator statement. Its identity, inspected basis, dis
 | `/api/context-operator-reviews?afterRowId=0&rowLimit=50` | Explicit metadata window |
 | `/api/context-operator-reviews/REVIEW_ID` | Fixed checked declaration detail |
 
-The cursor is an exact decimal rowid from zero to signed 64-bit maximum. The row limit is 1 to 100; the default is 50. Duplicate or unknown queries, leading zero forms and unsupported methods fail. Detail requires a canonical lowercase UUID and no query or suffix. There is no API create, start, execute or managed display route in this version.
+The cursor is an exact decimal rowid from zero to signed 64-bit maximum. The row limit is 1 to 100; the default is 50. Duplicate or unknown queries, leading zero forms and unsupported methods fail. Detail requires a canonical lowercase UUID and no query or suffix. V1 has no API create, start or execute route and no managed display contract. Version0.64 adds a separate [managed v2 route and browser view](context-operator-reviews-web.md).
 
 Metadata contains record identities, timestamps and hashes. It reads no declaration body or source rights. Its status is `recorded_metadata_unverified`. A page is not a complete or recent catalog. Follow `nextAfterRowId` deliberately if `hasMoreRows` is true. The private catalog permits at most 8 MiB each for main and WAL files and 1 MiB for SHM, with one lookahead row and a two-second read window.
 

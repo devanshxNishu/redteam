@@ -1,3 +1,19 @@
+# Current 0.64: local acceptance passed; private sync pending
+
+The human resumed work on November 2, 2026. This replaces the previous stop. The app confirmed that recurring continuation continue-redteam-development is ACTIVE at the previous 30-minute interval. A later human stop must stop owned work and delete that automation; queued heartbeats do not revoke a human stop.
+
+Local acceptance is complete. The saved native full run has 1119 passes, zero failures/cancellations/skips/todo, and 3117.774353375 seconds. On resume, all 216 source/test/package/web/example/fixture hashes still matched; successful runtime tests were not repeated. Unit 5, native managed API 3, browser 21, installed API 12, the corrected recheck regression and old 0.63 compiled idea/app compatibility pass. The actual installed desktop/mobile layout check covers four combinations. Typecheck, three browser-script syntax checks and build pass.
+
+The final 257-file archive and offline installation match every actual tar/root/installed byte and SHA512/size. All executable and metadata bytes match the corrected actual before-release-docs runtime. Exactly README/status/backlog documentation changed afterward and was compared explicitly. No high-confidence credential pattern or excluded private path was found. Acceptance details are outputs/full-verification-0.64.0.json, outputs/installed-verification-0.64.0.json, outputs/package-content-0.64.0.json and outputs/release-verification-0.64.0.json.
+
+This slice adds separate managed v2 saved-note delivery and literal Reviews inspection: explicit metadata windows/rechecks, exact note/report pins, current source validation and at most 30 seconds of local display. Hidden/navigation/close/cross-view/clock changes clear content. V1 wire, store and terminal formats are retained. Notes remain unverified operator declarations; reads grant no semantic approval and create no provider/task/job/budget/action/experiment work.
+
+Exact 19 ready paths are listed in work/ready-files-0.64.0.json. Source and checkpoint ordinary private pushes are next, after fresh known-origin/main/private preflight and exact staged-content audit. Last confirmed private checkpoint remains 76d942b1e4a12666ce0c463f0a4907062e9c81fd (0.63). No 0.64 push is claimed yet. Keep generated/private paths out of Git; no force, npm publication or deployment.
+
+After confirmed sync, the next candidate is deliberate protected note creation in work/context-review-create-next-0.65.md, preserving original successful publication and all three uncertain-write states without automatic retry. Independent human/held-out research, selected live model/key/rates/compatibility, partner app journeys, usefulness/paid demand, wider permitted dated context and production isolation remain missing. C03 gates broad hierarchy. No researched psychology or real purchase/investment prediction is established. No purchase or reset credit was used.
+
+---
+
 # Current 0.63: verified and privately synchronized source
 
 Source commit 140eb23671cd6264f2b7fe18691cf23f81ce3637 was ordinarily pushed and verified exactly equal to private origin/main. All14staged source/test/document/metadata files passed exact ready-set/current bytes, whitespace, excluded private/generated paths and high-confidence credential-pattern checks0. outputs/staged-source-audit-0.63.0.json records actual hashes. outputs/release-verification-0.63.0-source.json and outputs/github-sync-verification-0.63.0-source.json preserve source synchronization. This checkpoint-only follow-up changes no packaged bytes. Its own final private push must match HEAD and outputs/github-sync-verification.json; outputs/continuation-completion-0.63.0.json records the final checkpoint SHA after actual verification. At a later entry, compare that proof with HEAD before repeating work.

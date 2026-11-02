@@ -18,3 +18,5 @@ textarea{width:100%;padding:12px;border:1px solid #dbe0da;border-radius:5px;back
 .brief-record .grant-main strong{overflow-wrap:anywhere}#review-brief-form>.primary{margin-top:18px}#review-brief-form input,#review-brief-form textarea{min-width:0;max-width:100%}
 
 .context-record .grant-main strong{overflow-wrap:anywhere}#context-dialog .small-button{white-space:normal}#context-dialog .icon-button{flex:0 0 32px}#context-detail-state{overflow-wrap:anywhere;line-height:1.9;margin-top:18px}
+
+.operator-note-record .grant-main strong{overflow-wrap:anywhere}#operator-note-dialog .small-button{white-space:normal}#operator-note-dialog .icon-button{flex:0 0 32px}#operator-note-detail-state{overflow-wrap:anywhere;line-height:1.9;margin-top:18px}

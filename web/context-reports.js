@@ -89,6 +89,7 @@
   function arm(v) { const now = Date.now(); selection.until = time(v.access.displayUntil); selection.wallStart = now; selection.monotonicUntil = performance.now() + Math.max(0, selection.until - now); clearTimeout(expiryTimer); expiryTimer = setTimeout(currentAccess, Math.max(1, selection.until - now)); }
   async function inspect(entry, recheck = false) {
     if (active) return;
+    document.dispatchEvent(new CustomEvent("redteam:managed-detail-open", {detail: "context-report"}));
     const prior = recheck ? selection : null; clear(); const target = {id: entry.id, runId: entry.runId, hash: prior?.hash ?? null}; selection = target;
     const attempt = generation, controller = new AbortController(); active = controller; $("context-detail-state").textContent = "Checking current source access and saved bytes…"; dialog.showModal(); $("context-title").focus();
     try { const v = checked(await request(`/api/context-runs/${target.id}/managed`, 64000, controller), target); if (attempt !== generation || selection !== target || controller.signal.aborted || !dialog.open) return; target.hash = v.reportSha256; render(v); arm(v); currentAccess(); if (selection !== target) return; $("context-detail-state").textContent = "Checked saved data. Analytical reasoning remains unreviewed."; $("context-recheck").disabled = false; }
@@ -109,5 +110,6 @@
   window.addEventListener("hashchange", () => { clear(); if (location.hash === "#reviews") void load(); });
   window.addEventListener("pagehide", () => clear()); window.addEventListener("pageshow", currentAccess); window.addEventListener("focus", currentAccess);
   document.addEventListener("visibilitychange", () => { if (document.hidden) clear("Managed display cleared while the page was hidden. Open again for a full check."); else currentAccess(); });
+  document.addEventListener("redteam:managed-detail-open", event => { if (event.detail !== "context-report") clear(); });
   if (location.hash === "#reviews") void load();
 })();

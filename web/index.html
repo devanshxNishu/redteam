@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="/styles.css">
   <script src="/app.js" defer></script>
   <script src="/context-reports.js" defer></script>
+  <script src="/operator-reviews.js" defer></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -44,6 +45,7 @@
       <div class="page-heading compact"><div><p class="eyebrow">OBSERVATIONS, WITH RECEIPTS</p><h1>Reviews</h1><p class="lede">Inspect the result. Follow the evidence.</p></div></div>
       <article class="card code-card"><div class="card-title"><h2>Ideas and apps</h2><span class="outline-badge">SUPPLIED INTAKE</span></div><p class="muted">Save a brief, its assumptions and unknowns. See review questions and missing inputs. Intake runs no test or agent and makes no buyer or investor decision. App access is a separate step.</p><button id="create-review-brief" class="small-button" disabled>Add idea or app brief</button><div id="review-brief-list"></div></article>
       <article class="card code-card"><div class="card-title"><h2>Saved analytical reports</h2><span class="outline-badge">UNREVIEWED ANALYSIS</span></div><p class="muted">Inspect saved idea/app analysis. Task metadata is unverified. Each report checks its current source access and saved bytes. This opens no model, test or stakeholder decision.</p><div class="detail-actions"><button id="context-refresh" class="small-button">Refresh metadata</button><button id="context-next" class="small-button" hidden>Next metadata window</button></div><p id="context-state" class="fine-print" role="status">Open Reviews or refresh to load bounded task metadata.</p><div id="context-run-list"></div></article>
+      <article class="card code-card"><div class="card-title"><h2>Saved review notes</h2><span class="outline-badge">UNVERIFIED DECLARATIONS</span></div><p class="muted">Inspect notes saved through the terminal, their reasons and original concerns. Operator statements remain unverified. Rechecks read current sources and clear the previous display.</p><div class="detail-actions"><button id="operator-note-refresh" class="small-button">Load note metadata</button><button id="operator-note-next" class="small-button" hidden>Next note window</button></div><p id="operator-note-state" class="fine-print" role="status">Load metadata to inspect saved terminal review notes.</p><div id="operator-note-list"></div></article>
       <article class="card table-card"><div class="card-title"><h2>Review history</h2><span class="muted">Local workspace</span></div><div class="table-scroll"><table><thead><tr><th>Review</th><th>State</th><th>Findings</th><th>Evidence</th><th>Created</th><th></th></tr></thead><tbody id="reviews-body"></tbody></table></div></article>
       <article class="card code-card"><div class="card-title"><h2>Repository snapshots</h2><span class="outline-badge">LOCAL SOURCE EVIDENCE</span></div><p id="code-state" class="muted" role="status">Loading permitted code records…</p><div id="repository-run-list"></div><details><summary>Capture from the terminal</summary><pre><code>redteam code snapshot --grant GRANT_ID --path ./my-app</code></pre></details></article>
       <article class="card code-card"><div class="card-title"><h2>Engineering source notes</h2><span class="outline-badge">UNREVIEWED</span></div><p class="muted">Supplied requirements and source citations. No executed test or approved defect is implied.</p><div id="engineering-run-list"></div><details><summary>Register supplied notes</summary><pre><code>redteam code observations add ./engineering-observations.input.json</code></pre></details></article>
@@ -70,7 +72,7 @@ redteam research models</code></pre></article>
     </section>
     <section data-panel="terminal" class="panel" hidden>
       <div class="page-heading compact"><div><p class="eyebrow">THE SAME WORKSPACE, FROM YOUR SHELL</p><h1>Made for the terminal.</h1><p class="lede">Install Redteam. Grant access. Run a review.<br>Open the evidence wherever you work.</p></div></div>
-      <div class="terminal-grid"><article class="card command-card"><div class="card-title"><h2>Install a packaged build</h2><span class="mono">NODE 24.12+</span></div><pre><code>npm install --global ./redteam-0.63.0.tgz
+      <div class="terminal-grid"><article class="card command-card"><div class="card-title"><h2>Install a packaged build</h2><span class="mono">NODE 24.12+</span></div><pre><code>npm install --global ./redteam-0.64.0.tgz
 redteam --help
 redteam doctor
 redteam ui</code></pre><p class="muted">The release archive is generated locally with <code>npm pack</code>. Registry publication is not required.</p></article><article class="card command-card"><h2>Grant project access</h2><pre><code>redteam access grant \
@@ -91,6 +93,7 @@ redteam ui</code></pre><p class="fine-print">Review data and credentials stay un
     <footer><span class="footer-brand">redteam</span><span>Evidence over assumption.</span><span class="mono">LOCAL WORKSPACE</span></footer>
   </main>
   <dialog id="review-dialog" aria-labelledby="detail-title"><div class="dialog-top"><div><p class="eyebrow">RUN DETAIL</p><h2 id="detail-title" tabindex="-1">Review</h2></div><button id="close-dialog" class="icon-button" aria-label="Close review detail">×</button></div><div id="detail-content"></div></dialog>
+  <dialog id="operator-note-dialog" aria-labelledby="operator-note-title"><div class="dialog-top"><div><p class="eyebrow">SAVED OPERATOR DECLARATION</p><h2 id="operator-note-title" tabindex="-1">Saved review note</h2></div><button id="operator-note-close" class="icon-button" aria-label="Close review note">×</button></div><p id="operator-note-detail-state" class="fine-print" role="status"></p><button id="operator-note-recheck" class="small-button" disabled>Recheck note and sources</button><div id="operator-note-content"></div></dialog>
   <dialog id="context-dialog" aria-labelledby="context-title"><div class="dialog-top"><div><p class="eyebrow">SAVED ANALYTICAL REPORT</p><h2 id="context-title" tabindex="-1">Unreviewed analysis</h2></div><button id="context-close" class="icon-button" aria-label="Close analytical report">×</button></div><p id="context-detail-state" class="fine-print" role="status"></p><button id="context-recheck" class="small-button" disabled>Recheck source access</button><div id="context-content"></div></dialog>
   <div id="toast" role="status" hidden></div>
 </body>
